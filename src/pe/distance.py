@@ -152,6 +152,7 @@ class WorkloadDistance:
         synth_df: pd.DataFrame,
         real_chunk: int = 5000,
         synth_chunk: int = 10000,
+        n_workers: int | None = None,
     ) -> np.ndarray:
         """Find the nearest synthetic neighbor for each real record.
 
@@ -160,11 +161,16 @@ class WorkloadDistance:
         distances are computed via scipy.cdist with cityblock metric;
         categorical mismatches are added per-column with query weights.
 
+        Threading provides true parallelism because scipy.cdist and numpy
+        operations release the GIL during their C-level computations.
+
         Returns
         -------
         np.ndarray of shape (n_real,)
             Index into synth_df of the nearest neighbor for each real record.
         """
+        import os
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         from scipy.spatial.distance import cdist
 
         real_cat = self._encode_cat_codes(real_df)
@@ -177,19 +183,21 @@ class WorkloadDistance:
 
         cat_int_real = np.empty((len(real_df), len(self.cat_cols)), dtype=np.int32)
         cat_int_synth = np.empty((len(synth_df), len(self.cat_cols)), dtype=np.int32)
-        vocab = {}
         for j in range(len(self.cat_cols)):
             all_vals = np.unique(np.concatenate([real_cat[:, j], synth_cat[:, j]]))
             mapping = {v: i for i, v in enumerate(all_vals)}
-            vocab[j] = mapping
             cat_int_real[:, j] = np.array([mapping[v] for v in real_cat[:, j]], dtype=np.int32)
             cat_int_synth[:, j] = np.array([mapping[v] for v in synth_cat[:, j]], dtype=np.int32)
 
         n_real = len(real_df)
         n_synth = len(synth_df)
         nn_indices = np.empty(n_real, dtype=np.int64)
+        cat_weights = self.cat_weights
 
-        for r_start in range(0, n_real, real_chunk):
+        if n_workers is None:
+            n_workers = min(os.cpu_count() or 4, 8)
+
+        def _process_real_chunk(r_start: int) -> tuple[int, np.ndarray]:
             r_end = min(r_start + real_chunk, n_real)
             r_size = r_end - r_start
 
@@ -205,12 +213,12 @@ class WorkloadDistance:
                     metric="cityblock",
                 ).astype(np.float32)
 
-                for j in range(len(self.cat_cols)):
+                for j in range(len(cat_weights)):
                     mismatch = (
                         cat_int_real[r_start:r_end, j:j+1]
                         != cat_int_synth[s_start:s_end, j]
                     )
-                    num_dist += self.cat_weights[j] * mismatch.astype(np.float32)
+                    num_dist += cat_weights[j] * mismatch.astype(np.float32)
 
                 block_min_idx = num_dist.argmin(axis=1)
                 block_min_dist = num_dist[np.arange(r_size), block_min_idx]
@@ -219,6 +227,22 @@ class WorkloadDistance:
                 best_dist[improved] = block_min_dist[improved]
                 best_idx[improved] = block_min_idx[improved] + s_start
 
-            nn_indices[r_start:r_end] = best_idx
+            return r_start, best_idx
+
+        r_starts = list(range(0, n_real, real_chunk))
+        completed = 0
+        total = len(r_starts)
+
+        with ThreadPoolExecutor(max_workers=n_workers) as executor:
+            futures = {
+                executor.submit(_process_real_chunk, rs): rs
+                for rs in r_starts
+            }
+            for future in as_completed(futures):
+                r_start, chunk_nn = future.result()
+                nn_indices[r_start:r_start + len(chunk_nn)] = chunk_nn
+                completed += 1
+                if completed % 20 == 0 or completed == total:
+                    print(f"  NN progress: {completed}/{total} chunks ({100*completed/total:.0f}%)")
 
         return nn_indices

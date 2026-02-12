@@ -25,7 +25,7 @@
 \contentsline {subsection}{\numberline {4.4}Browser usage percentages}{18}{subsection.4.4}%
 \contentsline {subsection}{\numberline {4.5}Continuous metric failure}{19}{subsection.4.5}%
 \contentsline {subsection}{\numberline {4.6}Wide-table sparsity}{20}{subsection.4.6}%
-\contentsline {subsection}{\numberline {4.7}Three-method comparison}{22}{subsection.4.7}%
+\contentsline {subsection}{\numberline {4.7}Four-method comparison}{22}{subsection.4.7}%
 \contentsline {subsection}{\numberline {4.8}Method complementarity}{24}{subsection.4.8}%
 \contentsline {subsection}{\numberline {4.9}Private Evolution: preliminary observations}{25}{subsection.4.9}%
 \contentsline {section}{\numberline {5}Discussion}{26}{section.5}%

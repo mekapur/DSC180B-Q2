@@ -12,6 +12,7 @@
 \definecolor{scorelo}{HTML}{FFCDD2}
 \definecolor{scorena}{HTML}{EEEEEE}
 \definecolor{ForestGreen}{RGB}{34,139,34}
+\definecolor{Goldenrod}{RGB}{218,165,32}
 
 \title{Training-based versus training-free \\ differential privacy for data synthesis}
 
@@ -556,9 +557,9 @@ A secondary consequence is system count inflation. The five-way chassis join ret
 
 \newpage
 
-\subsection{Three-method comparison}
+\subsection{Four-method comparison}
 
-Table~\ref{tab:method-comparison} summarizes the benchmark performance of the three completed synthesis methods. Both per-table methods (DP histogram and MST) pass 6 of 21 queries; the wide-table DP-VAE passes 1 of 8 evaluated queries.
+Table~\ref{tab:method-comparison} summarizes the benchmark performance of all four synthesis methods. Both per-table methods (DP histogram and MST) pass 6 of 21 queries; the wide-table DP-VAE passes 1 of 8 evaluated queries. Private Evolution, which evaluates the same 8 wide-table queries, passes TBD.
 
 \begin{table}[H]
 \centering
@@ -566,56 +567,57 @@ Table~\ref{tab:method-comparison} summarizes the benchmark performance of the th
 \toprule
 \textbf{Method} & \textbf{Evaluated} & \textbf{Passed} & \textbf{Pass rate} & \textbf{Avg score} & \textbf{Median score} \\
 \midrule
-Wide-table DP-SGD & 8 & 1 & 12.5\% & 0.258 & 0.212 \\
+Wide-table DP-SGD & 8 & 1 & 12.5\% & 0.258 & 0.208 \\
 Per-table DP-SGD & 21 & 6 & 28.6\% & 0.303 & 0.250 \\
 MST baseline & 21 & 6 & 28.6\% & 0.328 & 0.250 \\
+Private Evolution & 8 & TBD & TBD & TBD & TBD \\
 \bottomrule
 \end{tabular}
-\caption{Benchmark performance across synthesis methods. ``Passed'' counts queries with score $\geq 0.5$. The wide-table method evaluates only 8 queries because 13 require per-row columns absent from the wide-table representation.}
+\caption{Benchmark performance across synthesis methods. ``Passed'' counts queries with score $\geq 0.5$. The wide-table and PE methods evaluate only 8 queries because 13 require per-row columns absent from the wide-table representation.}
 \label{tab:method-comparison}
 \end{table}
 
 The methods pass different subsets of queries. Table~\ref{tab:per-query-scores} reports per-query scores. All three correctly identify the most popular browser per country. Both per-table methods pass the battery geographic summary and display vendor percentage queries. MST additionally passes the browser usage distribution and two application ranking queries, while per-table DP-SGD additionally passes the on/off sleep summary and RAM utilization histogram. Neither per-table method passes any of the three userwait queries or the display connection type query.
 
 % \begin{footnotesize}
-\begin{longtable}{>{\raggedright\arraybackslash}p{0.38\linewidth}>{\raggedright\arraybackslash}p{0.13\linewidth}ccc}
-\caption{Per-query scores for all three synthesis methods, color-coded by fidelity: \colorbox{scorehi}{\strut$\geq 0.5$} (pass), \colorbox{scoremid}{\strut$0.25$--$0.49$}, \colorbox{scorelo}{\strut$< 0.25$}, \colorbox{scorena}{\strut N/A}. Scores marked $\checkmark$ pass the 0.5 threshold.}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.33\linewidth}>{\raggedright\arraybackslash}p{0.10\linewidth}cccc}
+\caption{Per-query scores for all four synthesis methods, color-coded by fidelity: \colorbox{scorehi}{\strut$\geq 0.5$} (pass), \colorbox{scoremid}{\strut$0.25$--$0.49$}, \colorbox{scorelo}{\strut$< 0.25$}, \colorbox{scorena}{\strut N/A}. Scores marked $\checkmark$ pass the 0.5 threshold.}
 \label{tab:per-query-scores} \\
 \toprule
-\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} \\
+\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} & \textbf{PE} \\
 \midrule
 \endfirsthead
 \toprule
-\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} \\
+\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} & \textbf{PE} \\
 \midrule
 \endhead
 \midrule
-\multicolumn{5}{r}{\textit{Continued on next page}} \\
+\multicolumn{6}{r}{\textit{Continued on next page}} \\
 \endfoot
 \bottomrule
 \endlastfoot
-\texttt{avg\_platform\_power\_c0\_freq\_temp\_by\_chassis} & Agg+Join & \cellcolor{scorelo}0.167 & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
-\texttt{battery\_power\_on\_geographic\_summary} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}0.500\,$\checkmark$ \\
-\texttt{Xeon\_network\_consumption} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 \\
-\texttt{persona\_web\_cat\_usage\_analysis} & Pivot & \cellcolor{scorelo}0.065 & \cellcolor{scoremid}0.419 & \cellcolor{scorelo}0.194 \\
-\texttt{pkg\_power\_by\_country} & Geo/Demo & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 \\
-\texttt{most\_popular\_browser\ldots country} & Top-$k$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ \\
-\texttt{popular\_browsers\ldots percentage} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.333 & \cellcolor{scorehi}0.667\,$\checkmark$ \\
-\texttt{ram\_utilization\_histogram} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}0.500\,$\checkmark$ & \cellcolor{scorelo}0.000 \\
+\texttt{avg\_platform\_power\ldots chassis} & Agg+Join & \cellcolor{scorelo}0.167 & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}TBD \\
+\texttt{battery\_power\_on\ldots summary} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}0.500\,$\checkmark$ & \cellcolor{scorena}TBD \\
+\texttt{Xeon\_network\_consumption} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scorena}TBD \\
+\texttt{persona\_web\_cat\_usage\ldots} & Pivot & \cellcolor{scorelo}0.065 & \cellcolor{scoremid}0.419 & \cellcolor{scorelo}0.194 & \cellcolor{scorena}TBD \\
+\texttt{pkg\_power\_by\_country} & Geo/Demo & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scorena}TBD \\
+\texttt{most\_popular\_browser\ldots country} & Top-$k$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorena}TBD \\
+\texttt{popular\_browsers\ldots percentage} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.333 & \cellcolor{scorehi}0.667\,$\checkmark$ & \cellcolor{scorena}TBD \\
+\texttt{ram\_utilization\_histogram} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}0.500\,$\checkmark$ & \cellcolor{scorelo}0.000 & \cellcolor{scorena}TBD \\
 \midrule
-\texttt{battery\_on\_duration\_cpu\_family\_gen} & Geo/Demo & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
-\texttt{display\_devices\ldots durations\_ac\_dc} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
-\texttt{display\_devices\_vendors\_percentage} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ \\
-\texttt{mods\_blockers\_by\_osname\ldots} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 \\
-\texttt{on\_off\_mods\_sleep\_summary\ldots} & Pivot & \cellcolor{scorena}--- & \cellcolor{scorehi}0.636\,$\checkmark$ & \cellcolor{scoremid}0.273 \\
-\texttt{server\_exploration\_1} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.143 & \cellcolor{scoremid}0.429 \\
-\texttt{top\_mods\_blocker\_types\ldots} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
-\texttt{top\_10\_apps\ldots focal\_time} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
-\texttt{top\_10\_apps\ldots system\_count} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}1.000\,$\checkmark$ \\
-\texttt{top\_10\_apps\ldots total\_detections} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorehi}0.500\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ \\
-\texttt{userwait\_top\_10\_wait\_processes} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
-\texttt{userwait\_top\_10\ldots wait\_type\_ac\_dc} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
-\texttt{userwait\_top\_20\ldots ac\_dc\_unknown} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
+\texttt{battery\_on\_duration\ldots gen} & Geo/Demo & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{display\_devices\ldots ac\_dc} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{display\_devices\_vendors\ldots} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorena}--- \\
+\texttt{mods\_blockers\_by\_osname\ldots} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scorena}--- \\
+\texttt{on\_off\_mods\_sleep\_summary\ldots} & Pivot & \cellcolor{scorena}--- & \cellcolor{scorehi}0.636\,$\checkmark$ & \cellcolor{scoremid}0.273 & \cellcolor{scorena}--- \\
+\texttt{server\_exploration\_1} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.143 & \cellcolor{scoremid}0.429 & \cellcolor{scorena}--- \\
+\texttt{top\_mods\_blocker\_types\ldots} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{top\_10\_apps\ldots focal\_time} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{top\_10\_apps\ldots system\_count} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorena}--- \\
+\texttt{top\_10\_apps\ldots total\_detections} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorehi}0.500\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorena}--- \\
+\texttt{userwait\_top\_10\ldots processes} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{userwait\_top\_10\ldots ac\_dc} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{userwait\_top\_20\ldots unknown} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
 \end{longtable}
 % \end{footnotesize}
 
@@ -632,15 +634,15 @@ Figure~\ref{fig:method-comparison} visualizes the overall pass rates and average
     width=\linewidth,
     height=6cm,
     ylabel={Queries passed},
-    symbolic x coords={Wide,Per-table,MST},
+    symbolic x coords={Wide,Per-table,MST,PE},
     xtick=data,
     ymin=0, ymax=9,
     ytick={0,2,4,6,8},
     nodes near coords,
     every node near coord/.append style={font=\small},
-    enlarge x limits=0.3,
+    enlarge x limits=0.25,
 ]
-\addplot[fill=RoyalBlue!50, draw=RoyalBlue] coordinates {(Wide,1) (Per-table,6) (MST,6)};
+\addplot[fill=RoyalBlue!50, draw=RoyalBlue] coordinates {(Wide,1) (Per-table,6) (MST,6) (PE,0)}; % PE TBD
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
@@ -654,14 +656,14 @@ Figure~\ref{fig:method-comparison} visualizes the overall pass rates and average
     width=\linewidth,
     height=6cm,
     ylabel={Average score},
-    symbolic x coords={Wide,Per-table,MST},
+    symbolic x coords={Wide,Per-table,MST,PE},
     xtick=data,
     ymin=0, ymax=0.5,
     nodes near coords,
     every node near coord/.append style={font=\small, /pgf/number format/.cd, fixed, precision=3},
-    enlarge x limits=0.3,
+    enlarge x limits=0.25,
 ]
-\addplot[fill=RoyalBlue!50, draw=RoyalBlue] coordinates {(Wide,0.258) (Per-table,0.303) (MST,0.328)};
+\addplot[fill=RoyalBlue!50, draw=RoyalBlue] coordinates {(Wide,0.258) (Per-table,0.303) (MST,0.328) (PE,0)}; % PE TBD
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
@@ -701,7 +703,10 @@ Figure~\ref{fig:method-by-type} breaks down average scores by query type. The pe
 \addplot[fill=ForestGreen!40, draw=ForestGreen] coordinates {
     (Agg+Join,0.280) (Top-$k$,0.429) (Geo/Demo,0.271) (Histogram,0.333) (Pivot,0.233)
 };
-\legend{Wide DP-SGD, Per-table DP-SGD, MST}
+\addplot[fill=Goldenrod!60, draw=Goldenrod] coordinates {% PE TBD
+    (Agg+Join,0) (Top-$k$,0) (Geo/Demo,0) (Histogram,0) (Pivot,0)
+};
+\legend{Wide DP-SGD, Per-table DP-SGD, MST, PE}
 \end{axis}
 \end{tikzpicture}
 \caption{Average query score by query type across synthesis methods. The wide-table method evaluates 1--3 queries per type (vs.\ 2--7 for per-table methods), so its per-type averages have higher variance.}
@@ -796,8 +801,12 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
     (0.05,23.8) (0.10,23.8) (0.15,23.8) (0.20,28.6)
     (0.25,28.6) (0.50,38.1) (0.75,38.1) (1.00,52.4)
 };
+\addplot[Goldenrod, mark=diamond*] coordinates {% PE TBD
+    (0.05,0) (0.10,0) (0.15,0) (0.20,0)
+    (0.25,0) (0.50,0) (0.75,0) (1.00,0)
+};
 \draw[gray, dashed, thin] (axis cs:0.25,0) -- (axis cs:0.25,85);
-\legend{Wide, PT, MST}
+\legend{Wide, PT, MST, PE}
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
@@ -828,6 +837,10 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
 \addplot[ForestGreen, mark=triangle*] coordinates {
     (0.05,23.8) (0.10,28.6) (0.15,28.6) (0.20,28.6)
     (0.25,28.6) (0.30,28.6) (0.40,28.6) (0.50,28.6)
+};
+\addplot[Goldenrod, mark=diamond*] coordinates {% PE TBD
+    (0.05,0) (0.10,0) (0.15,0) (0.20,0)
+    (0.25,0) (0.30,0) (0.40,0) (0.50,0)
 };
 \draw[gray, dashed, thin] (axis cs:0.15,0) -- (axis cs:0.15,45);
 \end{axis}
@@ -860,6 +873,10 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
 \addplot[ForestGreen, mark=triangle*] coordinates {
     (0.0,28.6) (0.1,28.6) (0.2,28.6) (0.3,28.6) (0.4,28.6)
     (0.5,28.6) (0.6,28.6) (0.7,28.6) (0.8,28.6) (0.9,28.6)
+};
+\addplot[Goldenrod, mark=diamond*] coordinates {% PE TBD
+    (0.0,0) (0.1,0) (0.2,0) (0.3,0) (0.4,0)
+    (0.5,0) (0.6,0) (0.7,0) (0.8,0) (0.9,0)
 };
 \draw[gray, dashed, thin] (axis cs:0.5,0) -- (axis cs:0.5,45);
 \end{axis}

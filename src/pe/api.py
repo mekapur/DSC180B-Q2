@@ -543,19 +543,25 @@ class PEApi:
             path.unlink()
 
     def _run_multi_batch(
-        self, prompts: list[str], tag: str, work_dir: Path
+        self, prompts: list[str], tag: str, work_dir: Path,
+        n_target: int | None = None,
     ) -> list[list[dict]]:
         n_chunks = (len(prompts) + self.MAX_REQUESTS_PER_BATCH - 1) // self.MAX_REQUESTS_PER_BATCH
         print(f"  {n_chunks} sequential chunk(s) of up to {self.MAX_REQUESTS_PER_BATCH} requests")
 
         active_state = self._load_batch_state(tag, work_dir)
         all_results: list[list[dict]] = []
+        total_records = 0
 
         for ci in range(n_chunks):
             cached = self._load_chunk_results(ci, tag, work_dir)
             if cached is not None:
                 print(f"  {tag.upper()} chunk {ci+1}/{n_chunks}: loaded {len(cached)} cached records")
                 all_results.append(cached.to_dict(orient="records"))
+                total_records += len(cached)
+                if n_target and total_records >= n_target:
+                    print(f"  Target reached ({total_records:,} >= {n_target:,}), skipping remaining chunks")
+                    break
                 continue
 
             if active_state and active_state["chunk"] == ci:
@@ -587,7 +593,12 @@ class PEApi:
             self._save_chunk_results(chunk_records, ci, tag, work_dir)
             self._clear_batch_state(tag, work_dir)
             all_results.append(chunk_records)
+            total_records += len(chunk_records)
             print(f"  Chunk {ci+1}/{n_chunks}: {len(chunk_records)} records saved")
+
+            if n_target and total_records >= n_target:
+                print(f"  Target reached ({total_records:,} >= {n_target:,}), skipping remaining chunks")
+                break
 
         return all_results
 
@@ -608,7 +619,7 @@ class PEApi:
             f"RANDOM_API_BATCH: {n_records} records "
             f"({n_calls} calls across {n_chunks} batch(es), 25% buffer)"
         )
-        all_chunk_results = self._run_multi_batch(prompts, "random", work_dir)
+        all_chunk_results = self._run_multi_batch(prompts, "random", work_dir, n_target=n_records)
         all_records = [r for chunk in all_chunk_results for r in chunk]
         raw = len(all_records)
         df = self._records_to_df(all_records[:n_records])
