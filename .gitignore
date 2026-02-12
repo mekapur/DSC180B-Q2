@@ -27,6 +27,18 @@ venv/
 .DS_Store
 Thumbs.db
 
+# AI working files
+CLAUDE.md
+.ai/
+
+# Archive binary artifacts (teammates' old outputs)
+_archive/**/*.pt
+_archive/**/*.parquet
+_archive/**/*.npy
+_archive/**/*.jsonl
+_archive/**/*.png
+_archive/**/*.csv
+
 # IDE
 .vscode/
 .cursor/
