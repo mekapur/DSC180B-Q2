@@ -249,6 +249,7 @@ Three additional queries are permanently infeasible due to missing power consump
 | `scipy` | >=1.17.0 | Spearman correlation, Gaussian mechanism calibration |
 | `matplotlib` | >=3.10.8 | Evaluation visualizations |
 | `jupyter`, `ipykernel` | >=1.1.1, >=7.2.0 | Notebook execution |
+| `smartnoise-synth` | 1.0.5 | MST baseline (notebook 09); install separately via `uv pip install smartnoise-synth` |
 
 ---
 
