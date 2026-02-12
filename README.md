@@ -70,33 +70,53 @@ The DCA telemetry data (~20.7 GiB) is hosted on the HDSI Industry Data Repositor
 
 ```
 dsc180-q2/
+├── src/
+│   ├── pe/                                # Private Evolution pipeline
+│   │   ├── api.py                         # RANDOM_API / VARIATION_API via OpenAI Batch
+│   │   ├── distance.py                    # Workload-aware distance function
+│   │   ├── histogram.py                   # DP nearest-neighbor histogram + PE loop
+│   │   └── privacy.py                     # Analytic Gaussian mechanism (Balle-Wang)
+│   ├── eval/                              # Evaluation framework
+│   │   ├── benchmark.py                   # SQL query runner with table adaptation
+│   │   ├── compare.py                     # Query discrepancy metrics (RE, TV, Spearman)
+│   │   └── decompose.py                   # Wide table -> reporting table decomposition
+│   └── pipeline/                          # CLI-runnable pipeline stages
+│       ├── build_reporting.py             # Raw data -> 19 reporting tables
+│       ├── run_benchmark.py               # Execute SQL queries on any reporting dir
+│       └── evaluate.py                    # Compare real vs synthetic results
+│
 ├── notebooks/
-│   ├── 01-data-exploration.ipynb          # Validate downloaded data, check schemas and guid overlap
-│   ├── 02-query-feasibility.ipynb         # Verify all 24 benchmark queries against reporting schemas
-│   ├── 03-build-reporting-tables.ipynb    # Aggregate raw data into 19 reporting tables via DuckDB
-│   ├── 04-run-benchmark-queries.ipynb     # Execute all queries on real data, save ground truth CSVs
-│   └── 05-dp-sgd.ipynb                    # DP-VAE training, synthetic generation, benchmark evaluation
+│   ├── 01-data-exploration.ipynb          # Validate downloaded data, check schemas
+│   ├── 02-query-feasibility.ipynb         # Verify benchmark queries against schemas
+│   ├── 03-build-reporting-tables.ipynb    # Build 19 reporting tables via DuckDB
+│   ├── 04-run-benchmark-queries.ipynb     # Execute queries, save ground truth CSVs
+│   ├── 05-dp-sgd.ipynb                    # Wide-table DP-VAE (epsilon=4.0)
+│   ├── 06-private-evolution.ipynb         # PE via OpenAI Batch API (gpt-5-nano)
+│   ├── 07-pe-chunk-analysis.ipynb         # Inspect PE batch generation progress
+│   ├── 08-per-table-dpsgd.ipynb           # Per-table DP histogram synthesis
+│   └── 09-mst-baseline.ipynb             # MST marginal-based baseline
 │
 ├── report/
-│   ├── q2-report.tex
+│   ├── q2-report.tex                      # Main Q2 report (XeLaTeX)
 │   ├── q2-proposal.tex
 │   ├── q1-report.tex
 │   ├── reference.bib
-│   └── style/
+│   └── style/dsc180reportstyle.sty
 │
 ├── docs/
-│   ├── queries/                           # 24 benchmark SQL queries, in JSON
-│   ├── papers/                            # Reference papers and reading notes
-│   └── references/                        # Additional documentation
+│   ├── queries/                           # 24 benchmark SQL queries (JSON)
+│   └── papers/                            # Reference papers and reading notes
 │
 ├── data/                                  # Gitignored except README and manifests
 │   ├── README.md                          # Download instructions and file manifest
-│   ├── raw/                               # Parquet and gzipped source files
+│   ├── raw/                               # Parquet and gzipped source files (~20.7 GiB)
 │   ├── reporting/                         # 19 derived reporting tables (~11.5 GiB)
-│   ├── models/                            # DP-VAE checkpoint and sklearn transformer
+│   ├── models/                            # Model checkpoints (DP-VAE, per-table VAEs)
+│   ├── batch_jobs/                        # OpenAI Batch API artifacts (PE chunks)
 │   └── results/
 │       ├── real/                          # Ground truth query results (24 CSVs)
-│       └── synthetic/                     # Synthetic query results
+│       ├── synthetic/                     # Wide-table DP-SGD results
+│       └── synth_pertable/                # Per-table DP-SGD results
 │
 ├── dsc-180a-q1/                           # Git submodule: Q1 DP-VAE implementation
 ├── pyproject.toml
@@ -113,17 +133,38 @@ Follow the instructions in [`data/README.md`](data/README.md) to transfer files 
 
 ### 2. Run the pipeline
 
-The notebooks are numbered and should be run in order. Each notebook reads from the outputs of the previous one.
+The pipeline can be run via the numbered notebooks (for interactive exploration) or via standalone scripts (for batch execution). Each stage reads from the outputs of the previous one.
+
+Standalone scripts:
 
 ```bash
 # Build 19 reporting tables from raw data
+uv run python -m src.pipeline.build_reporting --raw-dir data/raw --out-dir data/reporting
+
+# Execute benchmark queries on real data (ground truth)
+uv run python -m src.pipeline.run_benchmark \
+    --reporting-dir data/reporting \
+    --output-dir data/results/real
+
+# Execute benchmark queries on synthetic data
+uv run python -m src.pipeline.run_benchmark \
+    --reporting-dir data/reporting/synth_pertable \
+    --output-dir data/results/synth_pertable
+
+# Compare real vs synthetic results
+uv run python -m src.pipeline.evaluate \
+    --real-dir data/results/real \
+    --synth-dir data/results/synth_pertable \
+    --output data/results/evaluation_pertable.csv
+```
+
+Equivalent notebook workflow:
+
+```bash
 jupyter execute notebooks/03-build-reporting-tables.ipynb
-
-# Execute all 24 benchmark queries on real data
 jupyter execute notebooks/04-run-benchmark-queries.ipynb
-
-# Train DP-VAE, generate synthetic data, evaluate against benchmark
-jupyter execute notebooks/05-dp-sgd.ipynb
+jupyter execute notebooks/05-dp-sgd.ipynb          # Wide-table DP-VAE
+jupyter execute notebooks/08-per-table-dpsgd.ipynb  # Per-table DP histograms
 ```
 
 Notebooks 01 and 02 are validation/exploration notebooks and do not need to be re-run for the pipeline to work.
@@ -149,11 +190,17 @@ The `.latexmkrc` in `report/` configures latexmk to use XeLaTeX.
 
 The pipeline transforms raw DCA telemetry into differentially private synthetic data and evaluates it against a SQL benchmark.
 
-**Data preparation** (notebooks 01-04): Raw Parquet and gzipped text files are ingested via DuckDB, aggregated into 19 reporting tables matching Intel's `reporting.system_*` schema, and used to execute 24 analytical SQL queries that produce ground truth results.
+Data preparation (notebooks 01-04): Raw Parquet and gzipped text files are ingested via DuckDB, aggregated into 19 reporting tables matching Intel's `reporting.system_*` schema, and used to execute 24 analytical SQL queries that produce ground truth results.
 
-**DP-SGD synthesis** (notebook 05): All 19 reporting tables are joined into a single wide table (1,000,000 rows, 70 columns) keyed on `guid`. A variational autoencoder is trained with DP-SGD using Opacus ($\varepsilon = 4.0$, $\delta = 10^{-5}$). The synthetic wide table is decomposed back into reporting table schemas and the same benchmark queries are re-executed for comparison.
+Wide-table DP-SGD (notebook 05): All 19 reporting tables are joined into a single wide table (1,000,000 rows, 70 columns) keyed on `guid`. A variational autoencoder is trained with DP-SGD via Opacus (epsilon=4.0, delta=1e-5). The synthetic wide table is decomposed back into reporting table schemas and the same benchmark queries are re-executed for comparison.
 
-**Private Evolution** (planned): A training-free alternative using black-box API access to foundation models, with privacy achieved through differentially private nearest-neighbor histograms.
+Per-table DP-SGD (notebook 08): Each reporting table is synthesized independently using DP histogram mechanisms calibrated to epsilon=4.0 per table. This avoids the zero-inflation problem of the wide table but sacrifices cross-table correlations.
+
+Private Evolution (notebook 06): A training-free approach using the OpenAI Batch API (gpt-5-nano) with workload-aware distance functions (Swanberg et al., 2025). The foundation model generates synthetic records that are selected via a differentially private nearest-neighbor histogram. Uses T=1 iteration (optimal for tabular per convergence theory).
+
+MST baseline (notebook 09): Marginal-based synthetic data generation using the MST algorithm (McKenna et al., 2021) as a non-neural baseline.
+
+Evaluation (src/eval/compare.py): Each synthetic method is scored on query discrepancy using relative error for scalars, total variation distance for distributions, and Spearman rank correlation for rankings.
 
 ---
 
@@ -175,12 +222,14 @@ Three additional queries are permanently infeasible due to missing power consump
 
 ## Dependencies
 
-| Package | Purpose |
-|---|---|
-| `duckdb` | SQL engine for data ingestion and query execution |
-| `pandas`, `pyarrow` | Data manipulation and Parquet I/O |
-| `torch` | DP-VAE model |
-| `opacus` | DP-SGD (per-sample gradient clipping + noise injection) |
-| `scikit-learn` | Preprocessing (ColumnTransformer, StandardScaler, OneHotEncoder) |
-| `matplotlib` | Evaluation visualizations |
-| `jupyter`, `ipykernel` | Notebook execution |
+| Package | Version | Purpose |
+|---|---|---|
+| `duckdb` | >=1.4.4 | SQL engine for data ingestion and query execution |
+| `pandas`, `pyarrow` | >=3.0.0, >=23.0.0 | Data manipulation and Parquet I/O |
+| `torch` | >=2.10.0 | DP-VAE model architecture |
+| `opacus` | >=1.5.4 | DP-SGD (per-sample gradient clipping + noise injection) |
+| `openai` | >=2.20.0 | PE pipeline: Batch API with structured outputs (gpt-5-nano) |
+| `scikit-learn` | >=1.8.0 | Preprocessing (ColumnTransformer, StandardScaler, OneHotEncoder) |
+| `scipy` | >=1.17.0 | Spearman correlation, Gaussian mechanism calibration |
+| `matplotlib` | >=3.10.8 | Evaluation visualizations |
+| `jupyter`, `ipykernel` | >=1.1.1, >=7.2.0 | Notebook execution |
