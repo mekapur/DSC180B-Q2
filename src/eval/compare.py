@@ -387,8 +387,16 @@ def _eval_aggregate(
         errors = []
         for group_key in overlap:
             idx_key = _unwrap_key(group_key)
-            r_val = float(real_indexed.loc[idx_key, col]) if idx_key in real_indexed.index else np.nan
-            s_val = float(synth_indexed.loc[idx_key, col]) if idx_key in synth_indexed.index else np.nan
+            try:
+                r_cell = real_indexed.loc[idx_key, col]
+                r_val = float(r_cell.iloc[0]) if hasattr(r_cell, "iloc") else float(r_cell)
+            except (KeyError, IndexError):
+                continue
+            try:
+                s_cell = synth_indexed.loc[idx_key, col]
+                s_val = float(s_cell.iloc[0]) if hasattr(s_cell, "iloc") else float(s_cell)
+            except (KeyError, IndexError):
+                continue
             if np.isnan(r_val) or np.isnan(s_val):
                 continue
             errors.append(relative_error(r_val, s_val))

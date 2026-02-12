@@ -13,6 +13,7 @@ schema that the 24 benchmark queries expect.
 from __future__ import annotations
 
 import argparse
+import inspect
 import time
 from pathlib import Path
 
@@ -59,6 +60,11 @@ def _register(name: str, source_type: str = "parquet", source_table: str | None 
         }
         return fn
     return decorator
+
+
+# Builders that need access to raw_dir (for cross-table joins) accept it as
+# a third parameter.  The build_all() dispatcher passes raw_dir when the
+# builder's signature expects it.
 
 
 @_register("system_sysinfo_unique_normalized", "parquet", "system_sysinfo_unique_normalized")
@@ -157,8 +163,10 @@ def _build_web_usage(con: duckdb.DuckDBPyConnection, src: str) -> str:
 
 
 @_register("system_memory_utilization", "parquet", "os_memsam_avail_percent")
-def _build_memory(con: duckdb.DuckDBPyConnection, src: str) -> str:
-    sysinfo_src = _find_raw_parquets(Path(src.strip("'")), "system_sysinfo_unique_normalized")
+def _build_memory(con: duckdb.DuckDBPyConnection, src: str, raw_dir: Path | None = None) -> str:
+    if raw_dir is None:
+        raise ValueError("system_memory_utilization requires raw_dir for sysinfo JOIN")
+    sysinfo_src = _find_raw_parquets(raw_dir, "system_sysinfo_unique_normalized")
     return f"""
         SELECT
             a.guid, a.dt,
@@ -319,23 +327,9 @@ def build_all(
 
         t0 = time.time()
         try:
-            if name == "system_memory_utilization":
-                sysinfo_src = _find_raw_parquets(raw_dir, "system_sysinfo_unique_normalized")
-                sql = f"""
-                    SELECT
-                        a.guid, a.dt,
-                        SUM(a.sample_count) AS nrs,
-                        CAST(b.ram * 1024 AS BIGINT) AS sysinfo_ram,
-                        ROUND(
-                            (CAST(b.ram * 1024 AS BIGINT) -
-                             SUM(a.sample_count * a.average) / SUM(a.sample_count))
-                            * 100.0 / CAST(b.ram * 1024 AS BIGINT)
-                        ) AS avg_percentage_used
-                    FROM read_parquet({src}) a
-                    INNER JOIN read_parquet({sysinfo_src}) b ON a.guid = b.guid
-                    WHERE b.ram != 0
-                    GROUP BY a.guid, a.dt, b.ram
-                """
+            sig = inspect.signature(builder_fn)
+            if "raw_dir" in sig.parameters:
+                sql = builder_fn(con, src, raw_dir=raw_dir)
             else:
                 sql = builder_fn(con, src)
 
