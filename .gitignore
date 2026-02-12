@@ -1,12 +1,12 @@
 # Data files (downloaded from Globus, too large for git)
+# Ignore all parquet, gz, csv, and duckdb files in data/
 data/**/*.parquet
 data/**/*.gz
+data/**/*.csv
 data/**/*.duckdb
 
-# Track README, results CSVs, and model artifacts
+# Track README and manifest JSONs, ignore everything else
 !data/README.md
-!data/results/**/*.csv
-!data/models/**
 
 # DuckDB databases
 *.duckdb
@@ -29,5 +29,16 @@ Thumbs.db
 
 # IDE
 .vscode/
+.cursor/
 *.swp
 *.swo
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz

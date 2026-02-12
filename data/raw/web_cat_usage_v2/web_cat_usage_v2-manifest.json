@@ -1,0 +1,42 @@
+{
+  "entries": [
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_usage_v2/0000_part_00.parquet", "meta": { "content_length": 864265808, "record_count": 21354922 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_usage_v2/0001_part_00.parquet", "meta": { "content_length": 871326973, "record_count": 21517681 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_usage_v2/0002_part_00.parquet", "meta": { "content_length": 852706791, "record_count": 21074754 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_usage_v2/0003_part_00.parquet", "meta": { "content_length": 851847745, "record_count": 20968692 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_usage_v2/0004_part_00.parquet", "meta": { "content_length": 877592414, "record_count": 21719842 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_usage_v2/0005_part_00.parquet", "meta": { "content_length": 856919355, "record_count": 21159319 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_usage_v2/0006_part_00.parquet", "meta": { "content_length": 866594897, "record_count": 21437100 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_usage_v2/0007_part_00.parquet", "meta": { "content_length": 861007083, "record_count": 21273927 }}
+  ],
+  "schema": {
+    "elements": [
+      {"name": "load_ts", "type": { "base": "timestamp without time zone" }},
+      {"name": "batch_id", "type": { "base": "character", "max_length": 15 }},
+      {"name": "audit_zip", "type": { "base": "character varying", "max_length": 200 }},
+      {"name": "audit_internal_path", "type": { "base": "character varying", "max_length": 300 }},
+      {"name": "guid", "type": { "base": "character varying", "max_length": 72 }},
+      {"name": "interval_start_utc", "type": { "base": "timestamp without time zone" }},
+      {"name": "interval_end_utc", "type": { "base": "timestamp without time zone" }},
+      {"name": "interval_local_start", "type": { "base": "timestamp without time zone" }},
+      {"name": "interval_local_end", "type": { "base": "timestamp without time zone" }},
+      {"name": "dt", "type": { "base": "date" }},
+      {"name": "browser", "type": { "base": "character varying", "max_length": 40 }},
+      {"name": "parent_category", "type": { "base": "character varying", "max_length": 200 }},
+      {"name": "sub_category", "type": { "base": "character varying", "max_length": 200 }},
+      {"name": "duration_ms", "type": { "base": "integer" }},
+      {"name": "page_load_count", "type": { "base": "integer" }},
+      {"name": "site_count", "type": { "base": "integer" }},
+      {"name": "domain_count", "type": { "base": "integer" }},
+      {"name": "page_visit_count", "type": { "base": "integer" }}
+    ]
+  },
+  "meta": {
+    "content_length": 6902261066,
+    "record_count": 170506237
+  },
+  "author": {
+    "name": "Amazon Redshift",
+    "version": "1.0.0"
+  }
+}

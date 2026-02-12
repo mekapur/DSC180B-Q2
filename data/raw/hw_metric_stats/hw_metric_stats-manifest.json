@@ -1,0 +1,40 @@
+{
+  "entries": [
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/hw_metric_stats/0000_part_00.parquet", "meta": { "content_length": 1165429204, "record_count": 56196901 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/hw_metric_stats/0001_part_00.parquet", "meta": { "content_length": 1160300341, "record_count": 55658893 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/hw_metric_stats/0002_part_00.parquet", "meta": { "content_length": 1174432181, "record_count": 56232014 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/hw_metric_stats/0003_part_00.parquet", "meta": { "content_length": 1171541935, "record_count": 56655481 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/hw_metric_stats/0004_part_00.parquet", "meta": { "content_length": 1163417611, "record_count": 55625389 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/hw_metric_stats/0005_part_00.parquet", "meta": { "content_length": 1157312312, "record_count": 56185253 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/hw_metric_stats/0006_part_00.parquet", "meta": { "content_length": 1177221729, "record_count": 56554858 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/hw_metric_stats/0007_part_00.parquet", "meta": { "content_length": 1153897266, "record_count": 55650273 }}
+  ],
+  "schema": {
+    "elements": [
+      {"name": "load_ts", "type": { "base": "timestamp without time zone" }},
+      {"name": "batch_id", "type": { "base": "character", "max_length": 15 }},
+      {"name": "audit_zip", "type": { "base": "character varying", "max_length": 200 }},
+      {"name": "audit_internal_path", "type": { "base": "character varying", "max_length": 300 }},
+      {"name": "guid", "type": { "base": "character varying", "max_length": 144 }},
+      {"name": "interval_start_utc", "type": { "base": "timestamp without time zone" }},
+      {"name": "interval_end_utc", "type": { "base": "timestamp without time zone" }},
+      {"name": "interval_local_start", "type": { "base": "timestamp without time zone" }},
+      {"name": "interval_local_end", "type": { "base": "timestamp without time zone" }},
+      {"name": "dt", "type": { "base": "date" }},
+      {"name": "name", "type": { "base": "character varying", "max_length": 765 }},
+      {"name": "instance", "type": { "base": "smallint" }},
+      {"name": "nrs", "type": { "base": "smallint" }},
+      {"name": "mean", "type": { "base": "double precision" }},
+      {"name": "min", "type": { "base": "double precision" }},
+      {"name": "max", "type": { "base": "double precision" }}
+    ]
+  },
+  "meta": {
+    "content_length": 9323552579,
+    "record_count": 448759062
+  },
+  "author": {
+    "name": "Amazon Redshift",
+    "version": "1.0.0"
+  }
+}

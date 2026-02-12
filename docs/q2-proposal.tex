@@ -1,0 +1,254 @@
+% !TEX TS-program = xelatex
+% !BIB TS-program = bibtex
+\documentclass[12pt,letterpaper]{article}
+\usepackage{style/dsc180reportstyle}
+\usepackage{minted}
+
+\title{Training-based versus training-free differential privacy for data synthesis}
+
+\author{Mehak Kapur \\
+  {\tt mekapur@ucsd.edu} \\\And
+  Hana Tjendrawasi  \\
+  {\tt htjendrawasi@ucsd.edu} \\\And
+  Jason Tran \\
+  {\tt jat037@ucsd.edu} \\\And
+  Phuc Tran \\
+  {\tt pct001@ucsd.edu} \\\And
+  Yu-Xiang Wang \\
+  {\tt yuxiangw@ucsd.edu} \\}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Differentially private synthetic data generation enables the release of realistic datasets without exposing individual records. Two paradigms dominate current research: \textit{training-based} methods such as differentially private stochastic gradient descent (DP-SGD), which inject noise during model optimization, and \textit{training-free} methods such as Private Evolution (PE), which achieve privacy guarantees through inference-only access to pre-trained foundation models.
+
+We propose to implement and rigorously compare both approaches on Intel's Driver and Client Applications (DCA) telemetry corpus, a multi-table dataset comprising system metadata, power consumption, application usage, and browsing behavior across thousands of Windows clients. Our evaluation centers on a benchmark of 22 analytical SQL queries representative of real business intelligence workloads, measuring whether synthetic data can substitute for real data in production analytics pipelines. Under matched privacy budgets, we assess query fidelity, statistical preservation, downstream utility, and computational cost to determine whether training-free methods can match training-based approaches while offering reduced implementation complexity.
+\end{abstract}
+
+\maketoc
+\clearpage
+
+\section{Introduction}
+
+
+\subsection{Motivation}
+
+Organizations routinely collect detailed telemetry from their products that drive critical business decisions. Engineers use it to diagnose failures, product teams analyze usage trends, and analysts extract insights that shape product roadmaps. However, the same granularity that makes telemetry valuable also makes it sensitive. Browsing patterns, work schedules, and device fingerprints can re-identify specific individuals even after conventional anonymization.
+
+Privacy regulations such as GDPR and CCPA, along with institutional policies, increasingly restrict how such data can be stored, shared, and analyzed. The resulting tension between data utility and privacy protection motivates the development of \textit{synthetic data generation}, which produces artificial datasets that preserve the statistical properties necessary for analysis while providing formal guarantees that no individual's information can be recovered.
+
+Two paradigms have emerged for generating synthetic data with rigorous privacy guarantees. \textit{Training-based methods} optimize generative models under constraints that guarantee privacy (by adding noise during the training process to effectively ``anonymize''). \textit{Training-free methods} leverage pre-trained foundation models (e.g., ChatGPT, Claude, Gemini), achieving privacy through carefully designed queries rather than private optimization. Both approaches have demonstrated success in isolation, yet no comprehensive comparison exists under controlled experimental conditions with realistic analytical workloads.
+
+This project provides that comparison. We implement both paradigms and evaluate them on a real telemetry corpus using a benchmark of 22 SQL queries representative of production analytics, measuring which approach better preserves query fidelity under equivalent privacy budgets.
+
+\subsection{Technical context}
+
+\textit{Differential privacy} (DP) provides the mathematical foundation for our privacy guarantees. Informally, a mechanism is differentially private if its output looks nearly the same whether or not any single individual's data is included. Formally, a mechanism $M$ satisfies $(\varepsilon, \delta)$-DP if for neighboring datasets $D \sim D'$ differing by one record:
+\begin{equation}
+    \Pr[M(D) \in S] \leq e^{\varepsilon} \Pr[M(D') \in S] + \delta.
+\end{equation}
+The parameter $\varepsilon$ controls the privacy-utility tradeoff, as smaller values mean stronger privacy but noisier outputs.
+
+Two methodologies dominate differentially private synthetic data generation:
+
+\begin{enumerate}
+    \item \textit{Training-based (DP-SGD):} Train a generative model while adding noise to gradients at each step \citep{abadi2016deep}. This is effective, but is computationally expensive and requires careful hyperparameter tuning.
+    
+    \item \textit{Training-free (Private Evolution):} Usw API access to pre-trained foundation models and treat them as black boxes, iteratively selecting and mutating candidates via differentially private histograms \citep{lin2025differentiallyprivatesyntheticdata}. This is much easier to deploy, but is theoretically more abstract.
+\end{enumerate}
+
+Our central research question: \textit{can training-free methods match the statistical fidelity of training-based approaches on real analytical workloads?}
+
+% \subsection{Prior work}
+
+% Differential privacy, introduced by \citet{dwork2014algorithmic}, provides the foundational framework for our investigation. The seminal work established key mechanisms (Laplace, Gaussian) for releasing numeric queries, along with composition theorems demonstrating that privacy loss accumulates across multiple analyses. These results underpin all modern differentially private algorithms.
+
+% \citet{abadi2016deep} extended differential privacy to deep learning through DP-SGD, enabling neural network training under formal privacy constraints. Their key insight was that per-sample gradient clipping bounds the sensitivity of each training step, allowing calibrated Gaussian noise to mask individual contributions. They introduced the \textit{moments accountant}, a privacy accounting technique that yields substantially tighter bounds on cumulative privacy loss than naive composition, enabling practical deep learning under modest privacy budgets.
+
+% Building upon DP-SGD, \citet{ghalebikesabi2023differentially} demonstrated that fine-tuning diffusion models with differentially private optimization generates high-quality synthetic images. However, their DP-Diffusion approach requires substantial privacy budgets ($\varepsilon \approx 32$ for CIFAR-10) and significant computational resources, limiting practical applicability.
+
+% \citet{lin2025differentiallyprivatesyntheticdata} proposed a fundamentally different paradigm with Private Evolution. Rather than training a model, PE operates exclusively through black-box API access to pre-trained foundation models. The algorithm iteratively evolves synthetic samples by computing differentially private nearest-neighbor histograms over embeddings of real data, using the histogram to guide selection and mutation of candidate samples. PE achieved Fréchet Inception Distance (FID) scores of $\leq 7.9$ at $\varepsilon = 0.67$ on image generation benchmarks, substantially outperforming DP-Diffusion in both privacy and utility. The versatility of this approach has since been demonstrated through extensions to text \citep{xie2024differentiallyprivatesyntheticdata} and tabular data \citep{swanberg2025apiaccessllmsuseful}.
+
+% Despite these advances, comprehensive empirical comparisons between training-based and training-free approaches under controlled experimental conditions remain limited. Existing evaluations use different datasets, privacy budgets, and utility metrics, making direct comparison difficult.
+
+\newpage
+
+\section{Data and problem statement}
+
+\subsection{Intel DCA telemetry data}
+
+Our investigation involves the Intel Driver and Client Applications (DCA) telemetry dataset, a large-scale collection of system-level signals from Windows client machines. Telemetry data is invaluable for product monitoring, performance optimization, and failure detection, yet contains sensitive behavioral patterns that could re-identify individual users. We describe the dataset structure and the analytical workload that synthetic data must preserve.
+
+\subsubsection{Schema overview}
+
+The DCA telemetry corpus comprises of $\approx 30$ interrelated tables, organized around a globally unique identifier (\texttt{guid}) assigned to each client system. Tables are indexed by \texttt{guid} and, where applicable, a date column (\texttt{dt}), The schema spans several categories:
+
+\begin{itemize}
+    \item \textit{Client metadata:} The \texttt{system\_sysinfo\_unique\_normalized} table provides static attributes, like chassis type (notebook, desktop, 2-in-1, tablet), country, OEM, RAM capacity, processor family/generation, graphics card, screen size, and a derived \textit{persona} classification (Gamer, Office/Productivity, Content Creator, etc.).
+    
+    \item \textit{Power and thermal:} Multiple tables capture physical instrumentation:
+    \begin{itemize}
+        \item \texttt{system\_hw\_pkg\_power}: Processor power draw (mean, max) in Watts
+        \item \texttt{system\_psys\_rap\_watts}: Total system power across AC/DC states
+        \item \texttt{system\_pkg\_temp\_centigrade}: Processor temp. distributions by power state
+        \item \texttt{system\_pkg\_c0}: C0 state residency (percentage of time fully active)
+        \item \texttt{system\_pkg\_avg\_freq\_mhz}: Clock frequency statistics
+    \end{itemize}
+    
+    \item \textit{Battery and mobility:} The \texttt{system\_batt\_dc\_events} table summarizes battery utilization (duration on DC, battery percentage, power cycle frequency). Daily durations for the on/off/sleep states are also recorded.
+    
+    \item \textit{Application behavior:} Foreground usage in \texttt{system\_frgnd\_apps\_types} and a daily summary (process names, categories, focal time). The \texttt{system\_userwait} table measures wait times for application starts.
+    
+    \item \textit{Web browsing:} The \texttt{system\_web\_cat\_pivot\_*} family decomposes browsing across 28 categories (social, productivity, entertainment, gaming, etc.) by duration, page loads, and domain counts.
+    
+    \item \textit{Network and memory:} The \texttt{system\_network\_consumption} table summarizes bytes sent/received; \texttt{system\_memory\_utilization} provides RAM usage statistics.
+    
+    \item \textit{Display:} The \texttt{system\_display\_devices} table records connected displays (connection type, resolution, refresh rate, duration by AC/DC state).
+\end{itemize}
+
+\newpage
+
+\subsubsection{Analytical query workload}
+
+The practical utility of synthetic telemetry data is determined by its ability to support \textit{real analytical workloads}. We operationalize this through a benchmark suite of 22 SQL queries representative of business intelligence tasks performed on the DCA corpus. These queries, developed by Intel analysts, span several classes, where the following are examples of such:
+
+\begin{enumerate}
+    \item \textit{Aggregate statistics with joins} involve weighted statistics across multiple tables joined on \texttt{guid}:
+
+\begin{minted}[breaklines]{sql}
+-- Average platform power, C0 residency, frequency, and temperature by chassis type
+SELECT chassistype, COUNT(DISTINCT guid) AS n_systems,
+       SUM(nrs * avg_psys_rap_watts) / SUM(nrs) AS avg_power,
+       SUM(nrs * avg_pkg_c0) / SUM(nrs) AS avg_c0, ...
+FROM system_sysinfo_unique_normalized a
+INNER JOIN system_psys_rap_watts b ON a.guid = b.guid
+INNER JOIN system_pkg_c0 c ON a.guid = c.guid ...
+GROUP BY chassistype;
+\end{minted}
+
+    \item \textit{Ranked top-$k$ queries} involve window functions for ranked lists:
+\begin{minted}{sql}
+-- Top 10 applications per category by focal screen time
+SELECT app_type, exe_name, avg_focal_sec_per_day,
+       RANK() OVER (PARTITION BY app_type 
+                    ORDER BY avg_focal_sec_per_day DESC) AS rank
+FROM (...) WHERE rank <= 10;
+\end{minted}
+
+    \item \textit{Geographic/demographic breakdowns} involve segmentation by country, processor generation, OEM, or persona:
+
+\begin{minted}{sql}
+-- Battery usage by country
+SELECT countryname_normalized, COUNT(DISTINCT guid),
+       AVG(num_power_ons), AVG(duration_mins)
+FROM system_batt_dc_events a
+INNER JOIN system_sysinfo_unique_normalized b ON a.guid = b.guid
+GROUP BY countryname_normalized HAVING COUNT(DISTINCT guid) > 100;
+\end{minted}
+
+    \item \textit{Histograms and distributions} involve binned aggregations testing distributional shape preservation:
+
+\begin{minted}{sql}
+-- RAM utilization by memory capacity
+SELECT sysinfo_ram / 1024 AS ram_gb, COUNT(DISTINCT guid),
+       ROUND(SUM(nrs * avg_percentage_used) / SUM(nrs)) AS avg_pct
+FROM system_memory_utilization
+WHERE avg_percentage_used > 0
+GROUP BY sysinfo_ram ORDER BY sysinfo_ram;
+\end{minted}
+
+    \item \textit{Complex multi-way pivots} involve high-dimensional joint distributions, e.g., web category usage percentages by persona across 28 browsing categories.
+\end{enumerate}
+
+\subsubsection{Formal benchmark definition}
+
+Let $\mathcal{Q} = \{q_1, \ldots, q_{22}\}$ denote our SQL query benchmark. Each query $q_j$ maps a database instance to a result set $q_j(D) \in \mathcal{R}_j$, where $\mathcal{R}_j$ may be a scalar, vector, or table. The \textit{query discrepancy} for synthetic data $\tilde{D}$ is:
+\begin{equation}
+    \Delta_j(D, \tilde{D}) = d_j(q_j(D), q_j(\tilde{D})),
+\end{equation}
+where $d_j$ is a distance metric appropriate to the result type (relative error for scalars, Spearman's $\rho$ for rankings, total variation for histograms). The aggregate benchmark score is:
+\begin{equation}
+    \text{Score}(\tilde{D}) = \frac{1}{22} \sum_{j=1}^{22} \mathbf{1}[\Delta_j(D, \tilde{D}) \leq \tau_j],
+\end{equation}
+where $\tau_j$ is a query-specific tolerance. A synthetic dataset ``passes'' the benchmark if it achieves high scores, indicating analysts could substitute $\tilde{D}$ for $D$ without materially affecting conclusions.
+
+\newpage
+
+\subsection{Problem statement}
+
+\subsubsection{Formal setup}
+
+Let $D = \{x_1, \ldots, x_n\}$ be a private dataset. Two datasets $D, D'$ are \textit{neighbors} if they differ by one record. A mechanism $M$ satisfies $(\varepsilon, \delta)$-differential privacy if for all neighbors $D \sim D'$ and all outputs $S$:
+\begin{equation}
+    \Pr[M(D) \in S] \leq e^{\varepsilon} \Pr[M(D') \in S] + \delta.
+\end{equation}
+
+Our objective is to construct a synthetic data mechanism $M$ producing $\tilde{D} = M(D)$ that satisfies $(\varepsilon, \delta)$-DP while preserving utility (i.e., the synthetic distribution should approximate the real distribution sufficiently for downstream analytics).
+
+\subsubsection{Limitations of existing approaches}
+
+Both paradigms exhibit known limitations:
+
+\begin{itemize}
+    \item \textit{DP-SGD limitations:}
+    \begin{itemize}
+        \item Gradient clipping bias disproportionately affects rare classes
+        \item Noise accumulation degrades convergence over many iterations
+        \item Complex hyperparameter tuning (batch size, learning rate, clip norm, noise multiplier)
+        \item High computational cost (see \citet{ghalebikesabi2023differentially})
+    \end{itemize}
+    
+    \item \textit{Private Evolution limitations:}
+    \begin{itemize}
+        \item Utility depends on foundation model quality, and somes may underperform on specialized tabular data
+        \item Nearest-neighbor histograms assume embedding similarity correlates with distributional similarity
+        \item Limited theoretical understanding compared to optimization-based methods
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Research questions}
+
+Given these limitations and our 22-query SQL benchmark, we investigate:
+
+\begin{enumerate}
+    \item Under matched $(\varepsilon, \delta)$, which method achieves higher scores on the SQL query benchmark? Which query types exhibit the largest discrepancy?
+    
+    \item Does error compound across multi-table joins, or do synthetic data preserve joint distributions adequately?
+    
+    \item Which method better preserves minority class frequencies ($< 5\%$ prevalence)?
+    
+    \item Do classifiers trained on synthetic data achieve comparable accuracy to those trained on real data?
+    
+    \item What are the wall-clock time and resource requirements for each method?
+\end{enumerate}
+
+These questions remain open because prior work evaluates methods in isolation, on different datasets, under incomparable conditions. Our contribution is a controlled comparison on a concrete analytical workload.
+
+\subsection{Approach}
+
+For training-based synthesis, we will implement a differentially private generative model using PyTorch and the Opacus library, with privacy guarantees via DP-SGD (per-sample gradient clipping and calibrated noise injection). For training-free synthesis, we will implement Private Evolution using black-box API access to foundation models, achieving privacy through differentially private nearest-neighbor histograms. Both methods will be evaluated under matched privacy budgets on our 22-query SQL benchmark, comparing query fidelity, statistical preservation, downstream utility, and computational cost.
+
+\section{Expected outputs}
+
+\begin{enumerate}
+    \item \textit{Technical report:} Implementation details, privacy analysis, query-by-query benchmark results, statistical fidelity analysis, and practical recommendations.
+    
+    \item \textit{SQL benchmark suite:} The 22-query benchmark with natural language specifications, SQL code, tolerance thresholds, evaluation scripts, and baseline results.
+    
+    \item \textit{Differentially private synthetic datasets:} Two synthetic versions of the DCA corpus under matched $(\varepsilon, \delta)$ (one from DP-SGD, one from PE) with documented privacy guarantees.
+    
+    \item \textit{Project website:} Public-facing summary with visualizations, query-level comparisons, and deployment guidelines.
+    
+    \item \textit{Open-source implementations:} Reproducible code for preprocessing, training, generation, and evaluation.
+\end{enumerate}
+
+\newpage
+
+\makereference
+
+\nocite{*}
+\bibliography{reference}
+\bibliographystyle{style/dsc180bibstyle}
+
+\end{document}

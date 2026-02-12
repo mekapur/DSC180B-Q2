@@ -1,0 +1,53 @@
+{
+  "entries": [
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_pivot/0000_part_00.parquet", "meta": { "content_length": 6939784, "record_count": 64338 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_pivot/0001_part_00.parquet", "meta": { "content_length": 6960729, "record_count": 64338 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_pivot/0002_part_00.parquet", "meta": { "content_length": 6973965, "record_count": 64338 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_pivot/0003_part_00.parquet", "meta": { "content_length": 6657086, "record_count": 61715 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_pivot/0004_part_00.parquet", "meta": { "content_length": 6971063, "record_count": 64337 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_pivot/0005_part_00.parquet", "meta": { "content_length": 6960456, "record_count": 64337 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_pivot/0006_part_00.parquet", "meta": { "content_length": 6958974, "record_count": 64337 }},
+    {"url":"https://g-3d1295.0ed28.75bc.data.globus.org/projects/dca/university_prod/web_cat_pivot/0007_part_00.parquet", "meta": { "content_length": 6953141, "record_count": 64337 }}
+  ],
+  "schema": {
+    "elements": [
+      {"name": "guid", "type": { "base": "character varying", "max_length": 72 }},
+      {"name": "social_social_network", "type": { "base": "bigint" }},
+      {"name": "private_private", "type": { "base": "bigint" }},
+      {"name": "productivity_word_processing", "type": { "base": "bigint" }},
+      {"name": "news_news", "type": { "base": "bigint" }},
+      {"name": "social_communication", "type": { "base": "bigint" }},
+      {"name": "productivity_spreadsheets", "type": { "base": "bigint" }},
+      {"name": "content_creation_photo_edit_creation", "type": { "base": "bigint" }},
+      {"name": "search_search", "type": { "base": "bigint" }},
+      {"name": "productivity_other", "type": { "base": "bigint" }},
+      {"name": "entertainment_music_audio_streaming", "type": { "base": "bigint" }},
+      {"name": "finance_banking_and_accounting", "type": { "base": "bigint" }},
+      {"name": "games_other", "type": { "base": "bigint" }},
+      {"name": "entertainment_other", "type": { "base": "bigint" }},
+      {"name": "education_education", "type": { "base": "bigint" }},
+      {"name": "productivity_programming", "type": { "base": "bigint" }},
+      {"name": "productivity_presentations", "type": { "base": "bigint" }},
+      {"name": "reference_reference", "type": { "base": "bigint" }},
+      {"name": "shopping_shopping", "type": { "base": "bigint" }},
+      {"name": "other_unclassified", "type": { "base": "bigint" }},
+      {"name": "recreation_travel", "type": { "base": "bigint" }},
+      {"name": "entertainment_video_streaming", "type": { "base": "bigint" }},
+      {"name": "games_video_games", "type": { "base": "bigint" }},
+      {"name": "productivity_crm", "type": { "base": "bigint" }},
+      {"name": "mail_mail", "type": { "base": "bigint" }},
+      {"name": "social_communication_live", "type": { "base": "bigint" }},
+      {"name": "content_creation_video_audio_edit_creation", "type": { "base": "bigint" }},
+      {"name": "productivity_project_management", "type": { "base": "bigint" }},
+      {"name": "content_creation_web_design_development", "type": { "base": "bigint" }}
+    ]
+  },
+  "meta": {
+    "content_length": 55375198,
+    "record_count": 512077
+  },
+  "author": {
+    "name": "Amazon Redshift",
+    "version": "1.0.0"
+  }
+}
