@@ -534,6 +534,15 @@ Figure~\ref{fig:method-heatmap} shows per-query scores across all three methods.
 \label{fig:method-heatmap}
 \end{figure}
 
+Figure~\ref{fig:method-by-type} breaks down average scores by query type. All three methods achieve their highest scores on distribution queries (browser percentage, vendor percentage). The per-table methods outperform the wide-table approach on histogram queries (RAM utilization) because the wide-table sparsity problem is absent. Aggregate queries involving multi-table joins remain the hardest category for all methods, with average scores below 0.3.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/method_comparison_by_type.pdf}
+\caption{Average query score by query type across synthesis methods. Distribution and ranking queries achieve higher scores than aggregate queries requiring cross-table joins.}
+\label{fig:method-by-type}
+\end{figure}
+
 \subsection{Private Evolution: preliminary observations}
 
 At the time of writing, PE generation via the OpenAI Batch API is ongoing (15 of 24 chunks completed, producing 118{,}363 of a target 150{,}000 synthetic records). Preliminary analysis of the completed chunks reveals several patterns.
