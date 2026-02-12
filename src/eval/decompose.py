@@ -1,3 +1,12 @@
+"""Decompose a synthetic wide table into individual reporting parquets.
+
+The wide training table has one row per guid with all attributes and
+pre-aggregated metrics. This module reverses that join: it splits the
+wide table back into the 12 reporting table schemas that the benchmark
+SQL queries expect, applying sparsity masks (only creating rows for
+guids with nonzero data) and column renaming.
+"""
+
 from pathlib import Path
 
 import numpy as np
@@ -8,10 +17,19 @@ STANDARD_RAM_GB = np.array([1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 128])
 
 
 def snap_ram(val):
+    """Snap a RAM value to the nearest standard GB size."""
     return int(STANDARD_RAM_GB[np.argmin(np.abs(STANDARD_RAM_GB - val))])
 
 
 def decompose_wide_table(synth_wide: pd.DataFrame, output_dir: Path) -> dict[str, int]:
+    """Split a synthetic wide table into individual reporting parquets.
+
+    Produces up to 12 parquet files in output_dir, each matching the
+    schema expected by the benchmark SQL queries. Only guids with nonzero
+    data for a given table are included (sparsity-aware decomposition).
+
+    Returns a dict mapping table name to row count for each produced file.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     sw = synth_wide
     counts = {}

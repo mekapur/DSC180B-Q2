@@ -228,27 +228,6 @@ QUERY_METADATA: dict[str, dict] = {
         "value_col": "ac_duration",
         "extra_value_cols": ["dc_duration", "unknown_duration"],
     },
-    "ranked_process_classifications": {
-        "type": "ranking_numeric",
-        "group_col": None,
-        "rank_col": "rnk",
-        "item_col": "user_id",
-        "value_col": "total_power_consumption",
-    },
-    "top_10_processes_per_user_id_ranked_by_total_power_consumption": {
-        "type": "ranking_numeric",
-        "group_col": "user_id",
-        "rank_col": "rnk",
-        "item_col": "app_id",
-        "value_col": "total_power_consumption",
-    },
-    "top_20_most_power_consuming_processes_by_avg_power_consumed": {
-        "type": "ranking_numeric",
-        "group_col": None,
-        "rank_col": "rnk",
-        "item_col": "app_id",
-        "value_col": "total_power_consumption",
-    },
 }
 
 
@@ -890,20 +869,13 @@ def compare_methods(
 
     methods = list(synth_dirs.keys())
     all_queries = sorted(QUERY_METADATA.keys())
-    infeasible = {
-        "ranked_process_classifications",
-        "top_10_processes_per_user_id_ranked_by_total_power_consumption",
-        "top_20_most_power_consuming_processes_by_avg_power_consumed",
-    }
-    feasible = [q for q in all_queries if q not in infeasible]
-
     rows = []
-    for q in feasible:
+    for q in all_queries:
         row = {"query": q, "type": QUERY_METADATA[q]["type"]}
         for m in methods:
             s = all_summaries[m]
             match = s[s["query"] == q]
-            if len(match) > 0 and pd.isna(match.iloc[0]["error"]):
+            if len(match) > 0 and match.iloc[0]["error"] == "":
                 row[f"{m}_score"] = match.iloc[0]["score"]
                 row[f"{m}_passed"] = bool(match.iloc[0]["passed"])
             else:

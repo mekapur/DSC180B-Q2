@@ -1,5 +1,18 @@
+"""
+Private Evolution API interface for generating synthetic telemetry records.
+
+Provides RANDOM_API and VARIATION_API via OpenAI's Responses API with Pydantic
+Structured Outputs for guaranteed schema compliance. Supports both real-time
+(async) and Batch API (50% cheaper, 24h window) modes.
+
+The Batch API mode splits large generation runs into chunks of up to 800
+requests, saves intermediate results to parquet, and can resume from
+interruptions by reading saved batch state files.
+"""
+
 import asyncio
 import json
+import logging
 import os
 import time
 from pathlib import Path
@@ -10,6 +23,8 @@ from openai import APITimeoutError, AsyncOpenAI, LengthFinishReasonError, OpenAI
 from pydantic import BaseModel
 
 from .distance import CAT_COLS, NUMERIC_COLS
+
+logger = logging.getLogger(__name__)
 
 
 class TelemetryRecord(BaseModel):
@@ -93,7 +108,48 @@ INSTRUCTIONS = (
 )
 
 
+_NUMERIC_GROUPS = {
+    "net": ["net_nrs", "net_received_bytes", "net_sent_bytes"],
+    "mem": ["mem_nrs", "mem_avg_pct_used", "mem_sysinfo_ram"],
+    "batt": ["batt_num_power_ons", "batt_duration_mins"],
+    "browser": [
+        "web_chrome_duration",
+        "web_edge_duration",
+        "web_firefox_duration",
+        "web_total_duration",
+        "web_num_instances",
+    ],
+    "webcat": [c for c in NUMERIC_COLS if c.startswith("webcat_")],
+    "onoff": ["onoff_on_time", "onoff_off_time", "onoff_mods_time", "onoff_sleep_time"],
+    "disp": ["disp_num_displays", "disp_total_duration_ac", "disp_total_duration_dc"],
+    "hw": [
+        "psys_rap_nrs", "psys_rap_avg", "pkg_c0_nrs", "pkg_c0_avg",
+        "avg_freq_nrs", "avg_freq_avg", "temp_nrs", "temp_avg",
+        "pkg_power_nrs", "pkg_power_avg",
+    ],
+}
+
+
+def _compute_group_sparsity(real_df: pd.DataFrame) -> dict[str, int]:
+    """Compute the percentage of rows with nonzero data per numeric group."""
+    n = len(real_df)
+    result = {}
+    for gname, cols in _NUMERIC_GROUPS.items():
+        present = [c for c in cols if c in real_df.columns]
+        if not present:
+            continue
+        nonzero_mask = real_df[present].abs().sum(axis=1) > 0
+        pct = int(round(100 * nonzero_mask.sum() / n))
+        result[gname] = max(pct, 1)
+    return result
+
+
 def _build_schema_description(real_df: pd.DataFrame) -> str:
+    """Build a natural-language schema description for the LLM prompt.
+
+    Includes top-10 categorical values and per-group sparsity percentages
+    computed dynamically from the real data.
+    """
     cat_info = []
     for c in CAT_COLS:
         if c not in real_df.columns:
@@ -101,54 +157,12 @@ def _build_schema_description(real_df: pd.DataFrame) -> str:
         top_vals = real_df[c].value_counts().head(10).index.tolist()
         cat_info.append(f"{c}: {json.dumps(top_vals)}")
 
+    group_sparsity = _compute_group_sparsity(real_df)
     num_groups = []
-    groups = {
-        "net": (["net_nrs", "net_received_bytes", "net_sent_bytes"], 4),
-        "mem": (["mem_nrs", "mem_avg_pct_used", "mem_sysinfo_ram"], 7),
-        "batt": (["batt_num_power_ons", "batt_duration_mins"], 2),
-        "browser": (
-            [
-                "web_chrome_duration",
-                "web_edge_duration",
-                "web_firefox_duration",
-                "web_total_duration",
-                "web_num_instances",
-            ],
-            6,
-        ),
-        "webcat": ([c for c in NUMERIC_COLS if c.startswith("webcat_")], 5),
-        "onoff": (
-            [
-                "onoff_on_time",
-                "onoff_off_time",
-                "onoff_mods_time",
-                "onoff_sleep_time",
-            ],
-            4,
-        ),
-        "disp": (
-            ["disp_num_displays", "disp_total_duration_ac", "disp_total_duration_dc"],
-            21,
-        ),
-        "hw": (
-            [
-                "psys_rap_nrs",
-                "psys_rap_avg",
-                "pkg_c0_nrs",
-                "pkg_c0_avg",
-                "avg_freq_nrs",
-                "avg_freq_avg",
-                "temp_nrs",
-                "temp_avg",
-                "pkg_power_nrs",
-                "pkg_power_avg",
-            ],
-            1,
-        ),
-    }
-    for gname, (cols, pct) in groups.items():
+    for gname, cols in _NUMERIC_GROUPS.items():
         present = [c for c in cols if c in real_df.columns]
-        if present:
+        if present and gname in group_sparsity:
+            pct = group_sparsity[gname]
             num_groups.append(f"{gname} ({pct}% of systems): {', '.join(present)}")
 
     return (
@@ -210,6 +224,29 @@ def _make_strict_schema() -> dict:
 
 
 class PEApi:
+    """Interface to OpenAI for generating and varying synthetic telemetry records.
+
+    Supports two modes:
+      - Real-time (async): ``random_api`` / ``variation_api`` for smoke tests.
+      - Batch API: ``random_api_batch`` / ``variation_api_batch`` for full runs
+        at 50% reduced cost, with checkpoint/resume support.
+
+    All API calls use Pydantic Structured Outputs (``RecordsBatch`` schema)
+    to guarantee 100% schema compliance. For reasoning models (gpt-5 family),
+    ``reasoning.effort`` is set to ``"minimal"`` to suppress hidden reasoning
+    tokens.
+
+    Parameters
+    ----------
+    real_df : pd.DataFrame
+        Real wide-table data used to compute sparsity percentages and
+        categorical value distributions for the generation prompt.
+    model : str
+        OpenAI model identifier (default ``"gpt-5-nano"``).
+    max_concurrent : int
+        Semaphore limit for async real-time calls (default 50).
+    """
+
     def __init__(
         self,
         real_df: pd.DataFrame,
@@ -248,9 +285,9 @@ class PEApi:
             if response.output_parsed and response.output_parsed.records:
                 return [r.model_dump() for r in response.output_parsed.records]
         except LengthFinishReasonError:
-            pass
+            logger.warning("Response truncated (max_output_tokens exceeded), dropping batch")
         except Exception as e:
-            print(f"  API error: {e}")
+            logger.warning("API error: %s", e)
         return []
 
     async def _batch_calls(

@@ -1,3 +1,11 @@
+"""SQL benchmark runner for evaluating synthetic data quality.
+
+Executes the 21-query DCA benchmark workload against either real or
+synthetic reporting tables. The adapt_sql function rewrites
+'reporting.table_name' references to read_parquet('path') calls so
+that DuckDB can execute the original Intel SQL unchanged.
+"""
+
 import json
 import re
 from pathlib import Path
@@ -7,6 +15,7 @@ import pandas as pd
 
 
 def adapt_sql(sql: str, reporting_path: Path) -> str:
+    """Rewrite reporting.table_name references to read_parquet() calls."""
     def replacer(match):
         table = match.group(1)
         path = reporting_path / f"{table}.parquet"
