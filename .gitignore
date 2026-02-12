@@ -4,6 +4,9 @@ data/**/*.parquet
 data/**/*.gz
 data/**/*.csv
 data/**/*.jsonl
+data/**/*.npy
+data/**/*.json
+data/**/*.txt
 data/**/*.duckdb
 
 # Track README and manifest JSONs, ignore everything else

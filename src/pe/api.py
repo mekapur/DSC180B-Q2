@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from openai import AsyncOpenAI, LengthFinishReasonError, OpenAI
+from openai import APITimeoutError, AsyncOpenAI, LengthFinishReasonError, OpenAI
 from pydantic import BaseModel
 
 from .distance import CAT_COLS, NUMERIC_COLS
@@ -293,7 +293,7 @@ class PEApi:
         for c in [col for col in NUMERIC_COLS if col in df.columns]:
             df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).clip(lower=0)
         for c in [col for col in CAT_COLS if col in df.columns]:
-            df[c] = df[c].astype(str).fillna("Unknown")
+            df[c] = df[c].fillna("Unknown").astype(str)
         return df
 
     async def random_api(
@@ -378,23 +378,44 @@ class PEApi:
                 }
                 f.write(json.dumps(request) + "\n")
 
-    def _submit_batch(self, jsonl_path: Path, desc: str = "") -> str:
-        with open(jsonl_path, "rb") as f:
-            uploaded = self.sync_client.files.create(file=f, purpose="batch")
-        job = self.sync_client.batches.create(
-            input_file_id=uploaded.id,
-            endpoint="/v1/responses",
-            completion_window="24h",
-        )
-        total = job.request_counts.total if job.request_counts else "?"
-        print(f"  {desc}: batch {job.id} submitted ({total} requests)")
-        return job.id
+    def _submit_batch(self, jsonl_path: Path, desc: str = "", max_retries: int = 5) -> str:
+        for attempt in range(max_retries):
+            try:
+                with open(jsonl_path, "rb") as f:
+                    uploaded = self.sync_client.files.create(file=f, purpose="batch")
+                job = self.sync_client.batches.create(
+                    input_file_id=uploaded.id,
+                    endpoint="/v1/responses",
+                    completion_window="24h",
+                )
+                total = job.request_counts.total if job.request_counts else "?"
+                print(f"  {desc}: batch {job.id} submitted ({total} requests)")
+                return job.id
+            except (APITimeoutError, Exception) as e:
+                if attempt >= max_retries - 1:
+                    raise
+                wait = 10 * (attempt + 1)
+                print(f"  {desc}: submit error ({type(e).__name__}), retry {attempt+1}/{max_retries} in {wait}s")
+                time.sleep(wait)
+        raise RuntimeError("unreachable")
 
     def _poll_batch(
-        self, batch_id: str, desc: str = "", poll_interval: int = 30
+        self, batch_id: str, desc: str = "", poll_interval: int = 30,
+        max_retries: int = 10,
     ) -> Any:
+        consecutive_errors = 0
         while True:
-            status = self.sync_client.batches.retrieve(batch_id)
+            try:
+                status = self.sync_client.batches.retrieve(batch_id)
+                consecutive_errors = 0
+            except (APITimeoutError, Exception) as e:
+                consecutive_errors += 1
+                if consecutive_errors >= max_retries:
+                    raise
+                wait = min(poll_interval * consecutive_errors, 120)
+                print(f"  {desc}: poll error ({type(e).__name__}), retry {consecutive_errors}/{max_retries} in {wait}s")
+                time.sleep(wait)
+                continue
             rc = status.request_counts
             if rc:
                 print(
@@ -404,11 +425,23 @@ class PEApi:
             else:
                 print(f"  {desc}: [{status.status}]")
             if status.status in ("completed", "failed", "cancelled", "expired"):
+                if status.status == "failed" and hasattr(status, "errors") and status.errors:
+                    for err in (status.errors.data or []):
+                        print(f"  BATCH ERROR: {err.code}: {err.message}")
                 return status
             time.sleep(poll_interval)
 
-    def _parse_batch_output(self, output_file_id: str) -> list[list[dict]]:
-        file_content = self.sync_client.files.content(output_file_id)
+    def _parse_batch_output(self, output_file_id: str, max_retries: int = 5) -> list[list[dict]]:
+        for attempt in range(max_retries):
+            try:
+                file_content = self.sync_client.files.content(output_file_id)
+                break
+            except (APITimeoutError, Exception) as e:
+                if attempt >= max_retries - 1:
+                    raise
+                wait = 10 * (attempt + 1)
+                print(f"  File download error ({type(e).__name__}), retry {attempt+1}/{max_retries} in {wait}s")
+                time.sleep(wait)
         indexed: list[tuple[int, list[dict]]] = []
         for line in file_content.text.strip().split("\n"):
             if not line:
@@ -438,6 +471,89 @@ class PEApi:
         indexed.sort(key=lambda x: x[0])
         return [recs for _, recs in indexed]
 
+    MAX_REQUESTS_PER_BATCH = 800
+
+    def _save_chunk_results(
+        self, records: list[dict], chunk_idx: int, tag: str, work_dir: Path
+    ) -> None:
+        path = work_dir / f"batch_{tag}_chunk{chunk_idx}.parquet"
+        if records:
+            self._records_to_df(records).to_parquet(path, index=False)
+
+    def _load_chunk_results(
+        self, chunk_idx: int, tag: str, work_dir: Path
+    ) -> pd.DataFrame | None:
+        path = work_dir / f"batch_{tag}_chunk{chunk_idx}.parquet"
+        if path.exists():
+            return pd.read_parquet(path)
+        return None
+
+    def _save_batch_state(
+        self, chunk_idx: int, batch_id: str, tag: str, work_dir: Path
+    ) -> None:
+        path = work_dir / f"batch_{tag}_active.json"
+        path.write_text(json.dumps({"chunk": chunk_idx, "batch_id": batch_id}))
+
+    def _load_batch_state(self, tag: str, work_dir: Path) -> dict | None:
+        path = work_dir / f"batch_{tag}_active.json"
+        if path.exists():
+            return json.loads(path.read_text())
+        return None
+
+    def _clear_batch_state(self, tag: str, work_dir: Path) -> None:
+        path = work_dir / f"batch_{tag}_active.json"
+        if path.exists():
+            path.unlink()
+
+    def _run_multi_batch(
+        self, prompts: list[str], tag: str, work_dir: Path
+    ) -> list[list[dict]]:
+        n_chunks = (len(prompts) + self.MAX_REQUESTS_PER_BATCH - 1) // self.MAX_REQUESTS_PER_BATCH
+        print(f"  {n_chunks} sequential chunk(s) of up to {self.MAX_REQUESTS_PER_BATCH} requests")
+
+        active_state = self._load_batch_state(tag, work_dir)
+        all_results: list[list[dict]] = []
+
+        for ci in range(n_chunks):
+            cached = self._load_chunk_results(ci, tag, work_dir)
+            if cached is not None:
+                print(f"  {tag.upper()} chunk {ci+1}/{n_chunks}: loaded {len(cached)} cached records")
+                all_results.append(cached.to_dict(orient="records"))
+                continue
+
+            if active_state and active_state["chunk"] == ci:
+                batch_id = active_state["batch_id"]
+                print(f"  {tag.upper()} chunk {ci+1}/{n_chunks}: resuming batch {batch_id}")
+            else:
+                start = ci * self.MAX_REQUESTS_PER_BATCH
+                end = min(start + self.MAX_REQUESTS_PER_BATCH, len(prompts))
+                chunk_prompts = prompts[start:end]
+                jsonl_path = work_dir / f"batch_{tag}_chunk{ci}.jsonl"
+                self._write_batch_jsonl(chunk_prompts, jsonl_path)
+                batch_id = self._submit_batch(
+                    jsonl_path, desc=f"{tag.upper()} chunk {ci+1}/{n_chunks}"
+                )
+                self._save_batch_state(ci, batch_id, tag, work_dir)
+
+            status = self._poll_batch(batch_id, desc=f"{tag.upper()} chunk {ci+1}/{n_chunks}")
+            chunk_records: list[dict] = []
+            if status.status == "completed" and status.output_file_id:
+                parsed = self._parse_batch_output(status.output_file_id)
+                chunk_records = [r for batch in parsed for r in batch]
+            elif status.output_file_id:
+                print(f"  Chunk {ci+1}: {status.status}, recovering partial results")
+                parsed = self._parse_batch_output(status.output_file_id)
+                chunk_records = [r for batch in parsed for r in batch]
+            else:
+                print(f"  Chunk {ci+1}: {status.status}, no results")
+
+            self._save_chunk_results(chunk_records, ci, tag, work_dir)
+            self._clear_batch_state(tag, work_dir)
+            all_results.append(chunk_records)
+            print(f"  Chunk {ci+1}/{n_chunks}: {len(chunk_records)} records saved")
+
+        return all_results
+
     def random_api_batch(
         self,
         n_records: int,
@@ -445,26 +561,18 @@ class PEApi:
         work_dir: Path = Path("."),
     ) -> pd.DataFrame:
         overshoot = int(n_records * 1.25)
-        n_batches = (overshoot + batch_size - 1) // batch_size
+        n_calls = (overshoot + batch_size - 1) // batch_size
+        n_chunks = (n_calls + self.MAX_REQUESTS_PER_BATCH - 1) // self.MAX_REQUESTS_PER_BATCH
         prompts = [
             _build_random_prompt(self.schema_desc, batch_size)
-            for _ in range(n_batches)
+            for _ in range(n_calls)
         ]
         print(
             f"RANDOM_API_BATCH: {n_records} records "
-            f"({n_batches} calls, 25% buffer)"
+            f"({n_calls} calls across {n_chunks} batch(es), 25% buffer)"
         )
-        jsonl_path = work_dir / "batch_random_input.jsonl"
-        self._write_batch_jsonl(prompts, jsonl_path)
-        batch_id = self._submit_batch(jsonl_path, desc="RANDOM")
-        status = self._poll_batch(batch_id, desc="RANDOM")
-
-        if status.status != "completed":
-            print(f"RANDOM_API_BATCH: failed ({status.status})")
-            return pd.DataFrame()
-
-        all_results = self._parse_batch_output(status.output_file_id)
-        all_records = [r for batch in all_results for r in batch]
+        all_chunk_results = self._run_multi_batch(prompts, "random", work_dir)
+        all_records = [r for chunk in all_chunk_results for r in chunk]
         raw = len(all_records)
         df = self._records_to_df(all_records[:n_records])
         print(
@@ -481,11 +589,10 @@ class PEApi:
         work_dir: Path = Path("."),
     ) -> pd.DataFrame:
         source_records = source_df[self.present_cols].to_dict(orient="records")
-        n_batches = (
-            len(source_records) + source_batch_size - 1
-        ) // source_batch_size
+        n_calls = (len(source_records) + source_batch_size - 1) // source_batch_size
+        n_chunks = (n_calls + self.MAX_REQUESTS_PER_BATCH - 1) // self.MAX_REQUESTS_PER_BATCH
         prompts = []
-        for i in range(n_batches):
+        for i in range(n_calls):
             start = i * source_batch_size
             end = min(start + source_batch_size, len(source_records))
             prompts.append(
@@ -495,19 +602,10 @@ class PEApi:
             )
         print(
             f"VARIATION_API_BATCH: {n_variations} variations for "
-            f"{len(source_df)} records ({n_batches} calls)"
+            f"{len(source_df)} records ({n_calls} calls across {n_chunks} batch(es))"
         )
-        jsonl_path = work_dir / "batch_variation_input.jsonl"
-        self._write_batch_jsonl(prompts, jsonl_path)
-        batch_id = self._submit_batch(jsonl_path, desc="VARIATION")
-        status = self._poll_batch(batch_id, desc="VARIATION")
-
-        if status.status != "completed":
-            print(f"VARIATION_API_BATCH: failed ({status.status})")
-            return pd.DataFrame()
-
-        all_results = self._parse_batch_output(status.output_file_id)
-        all_records = [r for batch in all_results for r in batch]
+        all_chunk_results = self._run_multi_batch(prompts, "variation", work_dir)
+        all_records = [r for chunk in all_chunk_results for r in chunk]
         df = self._records_to_df(all_records)
         print(f"VARIATION_API_BATCH: {len(df)} records")
         return df

@@ -143,9 +143,11 @@ def decompose_wide_table(synth_wide: pd.DataFrame, output_dir: Path) -> dict[str
 
     webcat_cols = {c: c.replace("webcat_", "") for c in sw.columns if c.startswith("webcat_")}
     if webcat_cols:
-        pivot_synth = sw[["guid"]].copy()
+        webcat_wide = list(webcat_cols.keys())
+        webcat_mask = sw[webcat_wide].abs().sum(axis=1) > 0
+        pivot_synth = sw.loc[webcat_mask, ["guid"]].copy()
         for wide_col, pivot_col in webcat_cols.items():
-            pivot_synth[pivot_col] = sw[wide_col].values
+            pivot_synth[pivot_col] = sw.loc[webcat_mask, wide_col].values
         pivot_synth.to_parquet(
             output_dir / "system_web_cat_pivot_duration.parquet", index=False
         )
@@ -153,13 +155,14 @@ def decompose_wide_table(synth_wide: pd.DataFrame, output_dir: Path) -> dict[str
 
     onoff_cols = ["onoff_on_time", "onoff_off_time", "onoff_mods_time", "onoff_sleep_time"]
     if all(c in sw.columns for c in onoff_cols):
+        onoff_mask = sw[onoff_cols].abs().sum(axis=1) > 0
         onoff_synth = pd.DataFrame(
             {
-                "guid": sw["guid"].values,
-                "on_time": sw["onoff_on_time"].values,
-                "off_time": sw["onoff_off_time"].values,
-                "mods_time": sw["onoff_mods_time"].values,
-                "sleep_time": sw["onoff_sleep_time"].values,
+                "guid": sw.loc[onoff_mask, "guid"].values,
+                "on_time": sw.loc[onoff_mask, "onoff_on_time"].values,
+                "off_time": sw.loc[onoff_mask, "onoff_off_time"].values,
+                "mods_time": sw.loc[onoff_mask, "onoff_mods_time"].values,
+                "sleep_time": sw.loc[onoff_mask, "onoff_sleep_time"].values,
             }
         )
         onoff_synth.to_parquet(
