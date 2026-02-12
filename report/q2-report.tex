@@ -339,9 +339,15 @@ Given \citeauthor{swanberg2025apiaccessllmsuseful}'s negative result on tabular 
 
 \subsection{Per-table DP synthesis}
 
-To isolate the sparsity artifact of the wide-table approach, we implement an independent per-table synthesis baseline. Each of the 19 reporting tables is synthesized separately using DP histogram mechanisms calibrated to $\varepsilon = 4.0$ per table. For each table, we aggregate to the \texttt{guid} level, compute join rates (fraction of anchor \texttt{guid}s with data), and generate proportionally sized synthetic tables.
+To isolate the sparsity artifact of the wide-table approach, we implement an independent per-table synthesis baseline. Each of the 19 reporting tables is synthesized separately at $\varepsilon = 4.0$ per table.
 
-This approach sacrifices cross-table correlations by design. Synthetic \texttt{guid}s in one table bear no relationship to those in another. However, it avoids the zero-inflation problem: each table's model trains only on \texttt{guid}s that have data, so the input distribution is not dominated by zeros. Per-table synthesis serves as a diagnostic: if it outperforms the wide-table approach on single-table queries while failing on multi-table joins, that confirms the sparsity hypothesis.
+Two tables receive dedicated DP-VAE treatment. The sysinfo anchor table (1{,}000{,}000 rows, 9 categorical and 1 numeric column) uses a VAE with latent dimension 32, hidden size 256, batch size 4{,}096, 15 epochs, KL weight 0.1, trained with Opacus at $\varepsilon = 4.0$, $\delta = 10^{-5}$. Categoricals are top-50 binned and one-hot encoded. The cpu\_metadata table (1{,}000{,}000 rows, 5 categorical and 1 numeric column) uses the same architecture.
+
+The remaining 17 tables use DP histogram synthesis. For each table, we compute the join rate (fraction of anchor \texttt{guid}s with data) and generate proportionally many synthetic rows. Continuous columns are discretized into 20 equal-width bins spanning the 1st to 99th percentile, with Laplace noise ($\text{scale} = 1/\varepsilon_c$) added to bin counts and $\varepsilon_c = \varepsilon / k$ split uniformly across $k$ columns. Categorical columns receive analogous noisy histogram sampling.
+
+This approach sacrifices cross-table correlations by design. Synthetic \texttt{guid}s in one table bear no relationship to those in another. However, it avoids the zero-inflation problem: each table's model trains only on \texttt{guid}s that have data, so the input distribution is not dominated by zeros. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, substantially weaker than the wide-table guarantee of $\varepsilon = 4.0$. This is a known limitation of per-table synthesis; tighter accounting (e.g., via parallel composition for disjoint subsets or R\'{e}nyi composition) could reduce the effective budget but remains future work.
+
+Per-table synthesis serves as a diagnostic: if it outperforms the wide-table approach on single-table queries while failing on multi-table joins, that confirms the sparsity hypothesis.
 
 \subsection{MST baseline}
 
@@ -514,7 +520,49 @@ MST baseline & 21 & 6 & 28.6\% & 0.328 & 0.250 \\
 \label{tab:method-comparison}
 \end{table}
 
-The methods pass different subsets of queries. All three correctly identify the most popular browser per country. Both per-table methods pass the battery geographic summary and display vendor percentage queries. MST additionally passes the browser usage distribution, while per-table DP-SGD additionally passes the on/off sleep summary and RAM utilization histogram. Neither per-table method passes any of the three userwait queries or the display connection type query.
+The methods pass different subsets of queries. Table~\ref{tab:per-query-scores} reports per-query scores. All three correctly identify the most popular browser per country. Both per-table methods pass the battery geographic summary and display vendor percentage queries. MST additionally passes the browser usage distribution and two application ranking queries, while per-table DP-SGD additionally passes the on/off sleep summary and RAM utilization histogram. Neither per-table method passes any of the three userwait queries or the display connection type query.
+
+\begin{footnotesize}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\linewidth}>{\raggedright\arraybackslash}p{0.12\linewidth}ccc}
+\caption{Per-query scores for all three synthesis methods. Scores marked with $\checkmark$ pass the 0.5 threshold. ``---'' indicates queries not evaluable for the wide-table method (they require per-row columns absent from the wide-table representation).}
+\label{tab:per-query-scores} \\
+\toprule
+\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{avg\_platform\_power\_c0\_freq\_temp\_by\_chassis} & Agg+Join & 0.167 & 0.000 & 0.000 \\
+\texttt{battery\_power\_on\_geographic\_summary} & Geo/Demo & 0.250 & 1.000\,$\checkmark$ & 0.500\,$\checkmark$ \\
+\texttt{Xeon\_network\_consumption} & Geo/Demo & 0.250 & 0.250 & 0.250 \\
+\texttt{persona\_web\_cat\_usage\_analysis} & Pivot & 0.065 & 0.419 & 0.194 \\
+\texttt{pkg\_power\_by\_country} & Geo/Demo & 0.333 & 0.333 & 0.333 \\
+\texttt{most\_popular\_browser\ldots country} & Top-$k$ & 1.000\,$\checkmark$ & 1.000\,$\checkmark$ & 1.000\,$\checkmark$ \\
+\texttt{popular\_browsers\ldots percentage} & Histogram & 0.000 & 0.333 & 0.667\,$\checkmark$ \\
+\texttt{ram\_utilization\_histogram} & Histogram & 0.000 & 0.500\,$\checkmark$ & 0.000 \\
+\midrule
+\texttt{battery\_on\_duration\_cpu\_family\_gen} & Geo/Demo & --- & 0.000 & 0.000 \\
+\texttt{display\_devices\ldots durations\_ac\_dc} & Agg+Join & --- & 0.000 & 0.000 \\
+\texttt{display\_devices\_vendors\_percentage} & Agg+Join & --- & 1.000\,$\checkmark$ & 1.000\,$\checkmark$ \\
+\texttt{mods\_blockers\_by\_osname\ldots} & Agg+Join & --- & 0.250 & 0.250 \\
+\texttt{on\_off\_mods\_sleep\_summary\ldots} & Pivot & --- & 0.636\,$\checkmark$ & 0.273 \\
+\texttt{server\_exploration\_1} & Row-level & --- & 0.143 & 0.429 \\
+\texttt{top\_mods\_blocker\_types\ldots} & Agg+Join & --- & 0.000 & 0.000 \\
+\texttt{top\_10\_apps\ldots focal\_time} & Top-$k$ & --- & 0.000 & 0.000 \\
+\texttt{top\_10\_apps\ldots system\_count} & Top-$k$ & --- & 0.000 & 1.000\,$\checkmark$ \\
+\texttt{top\_10\_apps\ldots total\_detections} & Top-$k$ & --- & 0.500\,$\checkmark$ & 1.000\,$\checkmark$ \\
+\texttt{userwait\_top\_10\_wait\_processes} & Top-$k$ & --- & 0.000 & 0.000 \\
+\texttt{userwait\_top\_10\ldots wait\_type\_ac\_dc} & Top-$k$ & --- & 0.000 & 0.000 \\
+\texttt{userwait\_top\_20\ldots ac\_dc\_unknown} & Top-$k$ & --- & 0.000 & 0.000 \\
+\end{longtable}
+\end{footnotesize}
 
 Figure~\ref{fig:method-comparison} visualizes the overall pass rates and average scores.
 
@@ -543,6 +591,20 @@ Figure~\ref{fig:method-by-type} breaks down average scores by query type. All th
 \label{fig:method-by-type}
 \end{figure}
 
+\subsection{Method complementarity}
+
+Per-table DP-SGD and MST pass different subsets of queries, revealing complementary strengths tied to each algorithm's treatment of continuous versus categorical data.
+
+Per-table DP-SGD excels on queries requiring accurate continuous values. The battery geographic summary passes all four metrics (Jaccard = 0.79, system count RE = 0.12, power-on count RE = 0.14, duration RE = 0.24). The on/off sleep summary passes 7 of 11 metrics, with on-time RE = 0.13, off-time RE = 0.15, sleep-time RE = 0.04, and total-time RE = 0.07. The DP histogram synthesis preserves the shape of continuous distributions because it samples from the noisy empirical distribution directly, and the Laplace noise on bin counts is small relative to the signal when the table has tens of thousands of rows.
+
+MST excels on queries requiring accurate rankings. The top-10 applications by system count achieves a perfect score (Jaccard = 0.41, Spearman $\rho$ = 1.00), while per-table DP-SGD scores 0.00 on the same query (Jaccard = 0.13, $\rho$ = $-0.05$). Similarly, top-10 by total detections: MST achieves $\rho$ = 0.71 versus per-table's 0.11. MST preserves rankings because it captures pairwise marginals between the application name and the count column, maintaining relative ordering even when absolute values are noisy.
+
+Both methods fail on the three userwait queries (score 0.00 each). The userwait table contains 175M rows across 38{,}142 \texttt{guid}s with process names, wait types, and AC/DC power states. The per-table approach generates the correct table structure but cannot reproduce the long-tailed distribution of process-specific wait times. MST bins the continuous wait duration into marginals, losing the per-process ranking that the queries test.
+
+The 5-way chassis join query (\texttt{avg\_platform\_power\_c0\_freq\_temp\_by\_chassis}) fails for both per-table methods (score 0.00) because it requires correlations across five independently synthesized tables. The wide-table approach scores 0.17 on this query, the only method that produces any correct values, because it preserves the joint distribution (though the values are near-zero due to sparsity).
+
+MST produces dramatically different continuous values from per-table DP-SGD on the same queries. On the on/off sleep summary, MST reports avg\_on\_time RE = 40.2 and avg\_off\_time RE = 45.1 (the synthesized values are 40$\times$ too large), while per-table DP-SGD reports RE = 0.13 and 0.15 respectively. On the battery geographic summary, MST's avg\_duration RE = 28.2 versus per-table's 0.24. This difference arises because MST discretizes all columns into marginal bins, and the bin midpoints can be far from the true conditional means when the distribution is skewed.
+
 \subsection{Private Evolution: preliminary observations}
 
 At the time of writing, PE generation via the OpenAI Batch API is ongoing (15 of 24 chunks completed, producing 118{,}363 of a target 150{,}000 synthetic records). Preliminary analysis of the completed chunks reveals several patterns.
@@ -557,11 +619,13 @@ Full evaluation of PE against the benchmark requires completing the generation r
 
 The three-method comparison provides answers to several of our research questions.
 
-Research question (1), which method achieves higher benchmark scores, has a nuanced answer. The per-table DP-SGD and MST baseline both pass 6 of 21 queries (28.6\%), with MST achieving a slightly higher average score (0.328 vs.\ 0.303). The wide-table DP-VAE passes only 1 of 8 evaluated queries (12.5\%). No method comes close to passing all queries. The methods pass different subsets: MST excels on browser distribution queries (popular\_browsers\_by\_count passes with TV $\leq 0.15$), while per-table DP-SGD excels on time-segmented queries (on/off sleep summary, RAM histogram). This complementarity suggests that no single synthesis approach dominates across all query types.
+Research question (1), which method achieves higher benchmark scores, has a nuanced answer. Per-table DP-SGD and MST both pass 6 of 21 queries (28.6\%), with MST achieving a slightly higher average score (0.328 vs.\ 0.303). The wide-table DP-VAE passes only 1 of 8 evaluated queries (12.5\%). No method comes close to passing all queries. The two per-table methods pass different query subsets: per-table DP-SGD passes the on/off sleep summary (score 0.64) and RAM histogram (0.50), while MST passes browser usage distribution (0.67) and two application ranking queries (1.00 each). This complementarity reflects fundamental algorithmic differences. DP histogram synthesis preserves continuous distributions by sampling from noisy bin counts, yielding low relative error on time-based metrics (on-time RE = 0.13, sleep-time RE = 0.04). MST preserves pairwise marginals between categorical keys and count columns, maintaining rankings (Spearman $\rho$ = 1.00 on application system counts) even when absolute values are distorted. Neither algorithm achieves both properties simultaneously.
 
-Research question (2), whether error compounds across multi-table joins, receives a clear affirmative. The wide-table design preserves joint distributions in principle but creates a feature matrix where most columns are nearly degenerate. The VAE collapses these sparse columns to their mode (zero), destroying any signal in the nonzero tail. The per-table approach eliminates the zero-inflation problem for single-table queries but loses cross-table correlations entirely. Both per-table methods achieve comparable results on the 21-query benchmark, indicating that the wide-table sparsity artifact is the dominant failure mode rather than the choice of synthesis algorithm.
+Research question (2), whether error compounds across multi-table joins, receives a clear affirmative. The 5-way chassis join query requires data from five independently synthesized tables. Both per-table methods score 0.00 because the synthetic tables share no correlated \texttt{guid}s; the inner join produces empty results (per-table DP-SGD) or random associations (MST). The wide-table DP-VAE scores 0.17 on this query, the only method that preserves any cross-table structure, but the values are near-zero due to sparsity. The server exploration query (a 2-way join) similarly suffers: both per-table methods overcount matching rows by 5--7$\times$ and report network byte values with RE $\approx 1.0$, because the independently synthesized network and sysinfo tables produce spurious \texttt{guid} overlaps.
 
-The browser ranking result demonstrates that synthesis succeeds for well-populated categorical attributes. The joint distribution between country and browser preference is dense (every \texttt{guid} has a country; most have web browsing data), so all three methods learn meaningful conditional distributions. Both per-table approaches achieve over 90\% country accuracy on this query.
+Research question (3), minority class preservation, is partially addressed. The browser ranking query demonstrates that all methods preserve dominant categorical associations: per-table DP-SGD achieves 47/50 correct top browsers per country, matching the wide-table result of 42/50. For rare categories, per-table DP-SGD inflates minority chassis types (``Intel NUC/STK'' at 8.4\% synthetic vs.\ 2.0\% real) due to the top-50 binning and uniform noise in DP-SGD, while MST underrepresents them (generating too few entries for rare combinations). Both methods underperform on queries involving rare process names or application-specific rankings.
+
+Research question (5), wall-clock time, shows clear differences. The wide-table DP-VAE trains in 360 minutes on CPU (20 epochs, 1M rows, 307 features). Per-table synthesis completes in approximately 90 minutes total (two VAEs at $\sim$30 minutes each for sysinfo and cpu\_metadata, plus histogram synthesis for 17 smaller tables). MST runs in under 10 minutes per table using the \texttt{mst} library. PE's cost is dominated by API latency: the 150{,}000-record generation run requires 7{,}500 batch API calls at approximately \$18--37 total, with completion time determined by OpenAI's batch processing queue (typically 1--4 hours).
 
 The preliminary PE results suggest that foundation models import their own distributional priors rather than learning the target distribution (e.g., over-representing Win11 at 77.8\% vs.\ 10.4\% real). The hallucinated categorical values further reduce effective sample size by generating records that cannot match any real data point in the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
 
@@ -569,8 +633,8 @@ Several mitigation strategies warrant investigation:
 
 \begin{itemize}
     \item A two-stage model in which a Bernoulli model predicts zero vs.\ nonzero per column, followed by a conditional model for nonzero values only.
-    \item A zero-inflated loss function replacing plain MSE for numeric columns.
-    \item Restricting the wide table to \texttt{guid}s with sufficient coverage (e.g., present in $\geq 3$ metric tables), reducing sparsity at the cost of population representativeness.
+    \item Relational DP synthesis methods that handle multi-table structure directly, eliminating the zero-inflation problem while preserving cross-table correlations.
+    \item Method ensembling: using per-table DP-SGD for queries requiring continuous accuracy and MST for queries requiring ranking preservation, selecting per query type.
     \item Post-processing the synthetic data with mode patching and constraint enforcement, as proposed by recent work on model-agnostic DP post-processing.
 \end{itemize}
 
@@ -578,13 +642,13 @@ Several mitigation strategies warrant investigation:
 
 We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing four synthesis approaches: a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, MST marginal-based synthesis, and Private Evolution via foundation model APIs.
 
-Three methods have completed evaluation against the 21-query benchmark. The per-table methods (DP-SGD and MST) each pass 6 of 21 queries at 28.6\% pass rate. The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%). No method achieves satisfactory fidelity on queries involving sparse continuous metrics such as power consumption, CPU frequency, or temperature, where the underlying reporting tables cover fewer than 1\% of \texttt{guid}s.
+Three methods have completed evaluation against the 21-query benchmark. Per-table DP-SGD and MST each pass 6 of 21 queries (28.6\% pass rate), passing different subsets that reflect their algorithmic strengths: DP histogram synthesis preserves continuous distributions (on-time RE = 0.13) while MST preserves rankings (Spearman $\rho$ = 1.00 on application counts). The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%), with all continuous metrics near zero due to extreme sparsity in the wide-table representation.
 
-The central finding is that wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide-table approach preserves joint distributions in principle but creates a feature matrix where 93--99.9\% of values are zero. Both per-table methods avoid this problem and achieve comparable results despite using different algorithms (neural network vs.\ graphical model), confirming that the bottleneck is data structure rather than model capacity.
+Two structural findings emerge. First, wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide table has 93--99.9\% zero values in metric columns, and the VAE collapses these to their mode. Second, per-table independence destroys cross-table correlations: the 5-way chassis join produces empty or random results under both per-table methods, while the wide-table approach at least preserves some cross-table structure (score 0.17). Neither the joint nor the independent approach provides a satisfactory solution for multi-table relational data.
 
-Preliminary PE results suggest that foundation models import their own distributional priors rather than learning the target distribution, generating systematic biases in categorical marginals and hallucinating values outside the real vocabulary. Full PE evaluation is pending completion of the generation run.
+Preliminary PE results suggest that foundation models import their own distributional priors, generating systematic biases in categorical marginals (Win11 at 77.8\% vs.\ 10.4\% real) and hallucinating values outside the real vocabulary. Full PE evaluation is pending completion of the generation run.
 
-These results identify two directions for future work. First, relational DP synthesis methods that handle multi-table structure directly (without flattening to a wide table) could eliminate the zero-inflation problem while preserving cross-table correlations. Second, post-processing techniques such as mode patching and constraint enforcement could improve fidelity on categorical distributions where the underlying signal is present but noisy.
+These results point toward relational DP synthesis as the most promising direction: methods that handle multi-table structure directly could eliminate zero-inflation while preserving cross-table correlations. A secondary direction is method ensembling, selecting per-table DP-SGD for continuous-valued queries and MST for ranking queries, capitalizing on their complementary strengths.
 
 \newpage
 
