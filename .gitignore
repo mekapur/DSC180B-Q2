@@ -3,6 +3,7 @@
 data/**/*.parquet
 data/**/*.gz
 data/**/*.csv
+data/**/*.jsonl
 data/**/*.duckdb
 
 # Track README and manifest JSONs, ignore everything else
@@ -54,3 +55,5 @@ _archive/**/*.csv
 *.log
 *.out
 *.synctex.gz
+
+.env
