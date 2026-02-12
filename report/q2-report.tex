@@ -602,7 +602,7 @@ The methods pass different subsets of queries. Table~\ref{tab:per-query-scores} 
 \texttt{display\_devices\_vendors\_percentage} & Agg+Join & --- & 1.000\,$\checkmark$ & 1.000\,$\checkmark$ \\
 \texttt{mods\_blockers\_by\_osname\ldots} & Agg+Join & --- & 0.250 & 0.250 \\
 \texttt{on\_off\_mods\_sleep\_summary\ldots} & Pivot & --- & 0.636\,$\checkmark$ & 0.273 \\
-\texttt{server\_exploration\_1} & Row-level & --- & 0.143 & 0.429 \\
+\texttt{server\_exploration\_1} & Agg+Join & --- & 0.143 & 0.429 \\
 \texttt{top\_mods\_blocker\_types\ldots} & Agg+Join & --- & 0.000 & 0.000 \\
 \texttt{top\_10\_apps\ldots focal\_time} & Top-$k$ & --- & 0.000 & 0.000 \\
 \texttt{top\_10\_apps\ldots system\_count} & Top-$k$ & --- & 0.000 & 1.000\,$\checkmark$ \\
