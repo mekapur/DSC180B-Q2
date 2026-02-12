@@ -337,6 +337,24 @@ For $T = 1$ iteration, the privacy analysis reduces to a single Gaussian mechani
 
 Given \citeauthor{swanberg2025apiaccessllmsuseful}'s negative result on tabular PE (API access did not improve over marginal-based baselines), we treat this comparison as an empirical test of whether PE's advantages in the image and text domains transfer to heterogeneous, sparse telemetry data.
 
+\begin{algorithm}[ht]
+\caption{Private Evolution for tabular data ($T = 1$)}
+\label{alg:pe}
+\SetKwInOut{KwInput}{Input}
+\SetKwInOut{KwOutput}{Output}
+\KwInput{Real table $X \in \mathbb{R}^{n \times d}$, target $\varepsilon^\star$, $\delta$, population size $N_{\text{synth}}$, variation factor $L$}
+\KwOutput{Synthetic dataset $S$ of size $N_{\text{synth}}$}
+Calibrate $\sigma$ via analytic Gaussian mechanism \citep{balle2018improving} for $(\varepsilon^\star, \delta, T{=}1)$\;
+$S_0 \gets \texttt{RANDOM\_API}(N_{\text{synth}} \times L)$\tcp*{generate candidates via LLM}
+\For{$i = 1, \ldots, n$}{
+    $j^\star_i \gets \arg\min_{j} \; d_W(x_i, S_0^{(j)})$\tcp*{nearest neighbor under workload distance}
+}
+$h_j \gets |\{i : j^\star_i = j\}|$ for each candidate $j$\tcp*{vote histogram}
+$\tilde{h}_j \gets h_j + \mathcal{N}(0, \sigma^2)$ for each $j$\tcp*{add calibrated Gaussian noise}
+$S \gets$ top $N_{\text{synth}}$ candidates ranked by $\tilde{h}_j$\tcp*{rank-based selection}
+\Return{$S$}
+\end{algorithm}
+
 \subsection{Per-table DP synthesis}
 
 To isolate the sparsity artifact of the wide-table approach, we implement an independent per-table synthesis baseline. Each of the 19 reporting tables is synthesized separately at $\varepsilon = 4.0$ per table.
@@ -362,6 +380,27 @@ As a non-neural baseline, we implement the Maximum Spanning Tree (MST) algorithm
 MST requires all columns to have finite cardinality. We discretize continuous columns into 20 quantile bins (computed on the nonzero values only, with a separate zero bin when present) and cap categorical columns at 50 categories (the same top-$k$ binning used for the DP-VAE). After synthesis, continuous values are reconstructed by sampling uniformly within each bin's range.
 
 Like the per-table DP-SGD approach, MST synthesizes each of the 19 reporting tables independently at $\varepsilon = 4.0$ per table, $\delta = 10^{-5}$, with guid assignment proportional to each table's real join rate against the sysinfo anchor. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, identical to the per-table DP-SGD baseline. Marginal-based methods represent the current state of the art for tabular DP synthesis \citep{swanberg2025apiaccessllmsuseful} and provide the reference point against which both DP-SGD and PE should be measured.
+
+\subsection{Privacy budget summary}
+
+Table~\ref{tab:privacy-params} compares the privacy parameters across all four synthesis methods. The wide-table DP-VAE and PE operate on a single model or mechanism, yielding a total budget equal to the per-unit budget. The per-table methods apply independent synthesis to each of the 19 reporting tables, so their total budget under basic composition is $19 \times \varepsilon = 76.0$. Tighter accounting via parallel composition (for tables with disjoint column sets) or R\'{e}nyi composition could reduce this, but we use basic composition as a conservative bound.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Method} & \textbf{Per-unit $\varepsilon$} & $\boldsymbol{\delta}$ & \textbf{Mechanism} & \textbf{Composition} & \textbf{Total $\varepsilon$} \\
+\midrule
+Wide-table DP-VAE & 4.0 & $10^{-5}$ & DP-SGD (RDP) & single model & 3.996 \\
+Per-table DP-SGD & 4.0 & $10^{-5}$ & DP-SGD + Laplace & $19\times$ basic & 76.0 \\
+MST & 4.0 & $10^{-5}$ & Gaussian + Exp.\ mech. & $19\times$ basic & 76.0 \\
+Private Evolution & 4.0 & $10^{-5}$ & Gaussian (analytic) & $T{=}1$, single & 4.0 \\
+\bottomrule
+\end{tabular}
+\caption{Privacy parameters across synthesis methods. ``Per-unit $\varepsilon$'' is the budget allocated to each model or table. ``Total $\varepsilon$'' is the effective privacy guarantee under the stated composition. The wide-table and PE methods offer strictly stronger privacy than the per-table methods at matched per-unit budgets.}
+\label{tab:privacy-params}
+\end{table}
 
 \newpage
 
