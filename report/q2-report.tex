@@ -495,29 +495,68 @@ A secondary consequence is system count inflation. The five-way chassis join ret
 
 \newpage
 
+\subsection{Three-method comparison}
+
+Table~\ref{tab:method-comparison} summarizes the benchmark performance of the three completed synthesis methods. Both per-table methods (DP histogram and MST) pass 6 of 21 queries; the wide-table DP-VAE passes 1 of 8 evaluated queries.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Method} & \textbf{Evaluated} & \textbf{Passed} & \textbf{Pass rate} & \textbf{Avg score} & \textbf{Median score} \\
+\midrule
+Wide-table DP-SGD & 8 & 1 & 12.5\% & 0.258 & 0.212 \\
+Per-table DP-SGD & 21 & 6 & 28.6\% & 0.303 & 0.250 \\
+MST baseline & 21 & 6 & 28.6\% & 0.328 & 0.250 \\
+\bottomrule
+\end{tabular}
+\caption{Benchmark performance across synthesis methods. ``Passed'' counts queries with score $\geq 0.5$. The wide-table method evaluates only 8 queries because 13 require per-row columns absent from the wide-table representation.}
+\label{tab:method-comparison}
+\end{table}
+
+The methods pass different subsets of queries. All three correctly identify the most popular browser per country. Both per-table methods pass the battery geographic summary and display vendor percentage queries. MST additionally passes the browser usage distribution, while per-table DP-SGD additionally passes the on/off sleep summary and RAM utilization histogram. Neither per-table method passes any of the three userwait queries or the display connection type query.
+
+Figure~\ref{fig:method-comparison} visualizes the overall pass rates and average scores.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/method_comparison_overall.pdf}
+\caption{Left: number of queries passing (score $\geq 0.5$) for each method. Right: average score across all evaluated queries. The per-table methods evaluate all 21 queries; the wide-table method evaluates 8.}
+\label{fig:method-comparison}
+\end{figure}
+
+Figure~\ref{fig:method-heatmap} shows per-query scores across all three methods. The heatmap reveals that no method achieves high scores on aggregate queries involving continuous metrics (the top rows), while categorical and ranking queries (bottom rows) show more variation across methods.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\linewidth]{figures/method_comparison_heatmap.pdf}
+\caption{Per-query scores across methods. Green indicates high fidelity; red indicates large discrepancy. ``N/A'' marks queries not evaluated for the wide-table method.}
+\label{fig:method-heatmap}
+\end{figure}
+
 \subsection{Private Evolution: preliminary observations}
 
-At the time of writing, PE generation via the OpenAI Batch API is ongoing (11 of 24 chunks completed, producing 86{,}865 of a target 150{,}000 synthetic records). Preliminary analysis of the completed chunks reveals several patterns.
+At the time of writing, PE generation via the OpenAI Batch API is ongoing (15 of 24 chunks completed, producing 118{,}363 of a target 150{,}000 synthetic records). Preliminary analysis of the completed chunks reveals several patterns.
 
 Categorical distributions show systematic deviations from the real data. The model over-represents Win11 (77.8\% vs.\ 10.4\% real) and under-represents Win10 (9.2\% vs.\ 86.2\% real), likely reflecting the foundation model's training data distribution rather than the DCA telemetry distribution. The model also generates hallucinated categorical values not present in the real data: 132 extra \texttt{chassistype} values (including misspellings like ``Noteboook'', ``DeskTop'', ``NoteBook''), 33 extra countries (leading-whitespace variants like `` Brazil''), and 15 extra OS values (including ``WinServer'', ``n/a''). These hallucinated values always score as maximum mismatch in the workload-aware distance function, wasting a portion of the generation budget.
 
 Numeric columns exhibit the same sparsity problem as DP-SGD. The foundation model generates near-zero values for sparse metrics: network bytes, memory utilization, battery duration, and all hardware metrics have $< 1\%$ nonzero rates in the synthetic data (vs.\ 2--7\% in real data). The model has learned that most fields are zero (the prompt describes the sparsity structure), but it generates too few nonzero records relative to the real distribution.
 
-One notable exception: display device columns. The PE data shows 87.5\% nonzero rate for \texttt{disp\_num\_displays} (vs.\ 20.9\% real), suggesting the model over-generates display data. Browser duration columns show a similar pattern: 13.3\% nonzero rate for chrome (vs.\ 5.3\% real).
-
 Full evaluation of PE against the benchmark requires completing the generation run, computing the DP histogram, and selecting the final population. These steps incur no additional API cost (the histogram and selection operate on local data with the already-calibrated noise $\sigma \approx 1.08$).
 
 \section{Discussion}
 
-The DP-SGD results provide a direct answer to research question (2). Error compounds dramatically across multi-table joins when the synthesis approach introduces structural sparsity artifacts. The wide-table design is correct in principle, as it preserves the joint distribution across tables by construction. In practice, it creates a feature matrix where most columns are nearly degenerate. The VAE collapses these sparse columns to their mode (zero), destroying any signal in the nonzero tail.
+The three-method comparison provides answers to several of our research questions.
 
-The browser ranking result demonstrates that the approach succeeds for well-populated categorical attributes. The joint distribution between country and browser preference is dense (every \texttt{guid} has a country; most have web browsing data), so the model learns a meaningful conditional distribution that preserves top-1 rankings in 84\% of countries.
+Research question (1), which method achieves higher benchmark scores, has a nuanced answer. The per-table DP-SGD and MST baseline both pass 6 of 21 queries (28.6\%), with MST achieving a slightly higher average score (0.328 vs.\ 0.303). The wide-table DP-VAE passes only 1 of 8 evaluated queries (12.5\%). No method comes close to passing all queries. The methods pass different subsets: MST excels on browser distribution queries (popular\_browsers\_by\_count passes with TV $\leq 0.15$), while per-table DP-SGD excels on time-segmented queries (on/off sleep summary, RAM histogram). This complementarity suggests that no single synthesis approach dominates across all query types.
 
-The preliminary PE results suggest that foundation models are not well-suited to this particular domain. Rather than learning the DCA-specific distribution, the model imports its own priors (e.g., over-representing Win11, a more recent OS that dominates the model's training data rather than the DCA corpus vintage). The hallucinated categorical values further reduce effective sample size by generating records that cannot match any real data point in the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
+Research question (2), whether error compounds across multi-table joins, receives a clear affirmative. The wide-table design preserves joint distributions in principle but creates a feature matrix where most columns are nearly degenerate. The VAE collapses these sparse columns to their mode (zero), destroying any signal in the nonzero tail. The per-table approach eliminates the zero-inflation problem for single-table queries but loses cross-table correlations entirely. Both per-table methods achieve comparable results on the 21-query benchmark, indicating that the wide-table sparsity artifact is the dominant failure mode rather than the choice of synthesis algorithm.
 
-The per-table DP synthesis approach (notebook 08, in progress) addresses the zero-inflation problem directly by training each table's model only on \texttt{guid}s that have data. This eliminates the degenerate distribution but introduces a different failure mode: cross-table correlations are lost entirely. The tradeoff between these two failure modes is the central diagnostic of our evaluation.
+The browser ranking result demonstrates that synthesis succeeds for well-populated categorical attributes. The joint distribution between country and browser preference is dense (every \texttt{guid} has a country; most have web browsing data), so all three methods learn meaningful conditional distributions. Both per-table approaches achieve over 90\% country accuracy on this query.
 
-Several additional mitigation strategies warrant investigation:
+The preliminary PE results suggest that foundation models import their own distributional priors rather than learning the target distribution (e.g., over-representing Win11 at 77.8\% vs.\ 10.4\% real). The hallucinated categorical values further reduce effective sample size by generating records that cannot match any real data point in the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
+
+Several mitigation strategies warrant investigation:
 
 \begin{itemize}
     \item A two-stage model in which a Bernoulli model predicts zero vs.\ nonzero per column, followed by a conditional model for nonzero values only.
@@ -528,13 +567,15 @@ Several additional mitigation strategies warrant investigation:
 
 \section{Conclusion}
 
-We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing three synthesis approaches: a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, and Private Evolution via foundation model APIs.
+We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing four synthesis approaches: a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, MST marginal-based synthesis, and Private Evolution via foundation model APIs.
 
-The wide-table DP-VAE ($\varepsilon = 3.996$, $\delta = 10^{-5}$) preserves categorical joint distributions (42/50 countries receive the correct top browser) but fails on all continuous metrics due to extreme zero-inflation. This result identifies the sparsity structure of multi-table joins as a critical factor in the success or failure of DP synthetic data generation. When coverage varies across tables (as it does in any real multi-table dataset), a unified representation concentrates nearly all probability mass at zero for sparse columns, and standard generative models learn to reproduce this mode.
+Three methods have completed evaluation against the 21-query benchmark. The per-table methods (DP-SGD and MST) each pass 6 of 21 queries at 28.6\% pass rate. The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%). No method achieves satisfactory fidelity on queries involving sparse continuous metrics such as power consumption, CPU frequency, or temperature, where the underlying reporting tables cover fewer than 1\% of \texttt{guid}s.
 
-Preliminary PE results suggest that foundation models import their own distributional priors rather than learning the target distribution, generating systematic biases in categorical marginals and hallucinating values outside the real vocabulary. The sparsity problem persists: the model generates near-zero values for sparse numeric columns at rates comparable to, or worse than, the DP-VAE.
+The central finding is that wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide-table approach preserves joint distributions in principle but creates a feature matrix where 93--99.9\% of values are zero. Both per-table methods avoid this problem and achieve comparable results despite using different algorithms (neural network vs.\ graphical model), confirming that the bottleneck is data structure rather than model capacity.
 
-The complete comparison across all four methods (wide-table DP-SGD, per-table DP-SGD, Private Evolution, and MST baseline), using matched privacy budgets and the same 21-query benchmark, is ongoing. Per-table DP-SGD and MST results will provide the diagnostic baselines needed to disentangle the effect of cross-table correlation loss from the effect of zero-inflation.
+Preliminary PE results suggest that foundation models import their own distributional priors rather than learning the target distribution, generating systematic biases in categorical marginals and hallucinating values outside the real vocabulary. Full PE evaluation is pending completion of the generation run.
+
+These results identify two directions for future work. First, relational DP synthesis methods that handle multi-table structure directly (without flattening to a wide table) could eliminate the zero-inflation problem while preserving cross-table correlations. Second, post-processing techniques such as mode patching and constraint enforcement could improve fidelity on categorical distributions where the underlying signal is present but noisy.
 
 \newpage
 
