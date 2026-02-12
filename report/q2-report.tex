@@ -431,7 +431,7 @@ We evaluate the wide-table DP-VAE synthetic data on 8 of 21 feasible benchmark q
 
 \subsection{Browser ranking preservation}
 
-The \texttt{most\_popular\_browser\_in\_each\_country} query identifies the dominant browser in each country by system count. The real data produces rankings for 51 countries; the synthetic data covers 50 (the United Arab Emirates is absent). Of the 50 shared countries, the DP-VAE correctly identifies the most popular browser in 42 (84\% accuracy). All 8 mismatches involve a swap between chrome and edge in countries where these two browsers are close in prevalence (e.g., the United States, the United Kingdom, Australia, Canada), making the ranking sensitive to small perturbations. This result demonstrates that the DP-VAE preserves the joint distribution between country and browser preference well enough to maintain top-1 rankings in the majority of cases.
+The \texttt{most\_popular\_browser\_in\_each\_country} query identifies the dominant browser in each country by system count. The real data produces rankings for 51 countries; the wide-table synthetic data covers 50 (the United Arab Emirates is absent). Of the 50 overlapping countries, the DP-VAE correctly identifies the most popular browser in 42 (84\%). All 8 mismatches involve a swap between chrome and edge in countries where these two browsers are close in prevalence (e.g., the United States, the United Kingdom, Australia, Canada), making the ranking sensitive to small perturbations. This result demonstrates that the DP-VAE preserves the joint distribution between country and browser preference well enough to maintain top-1 rankings in the majority of cases.
 
 \subsection{Browser usage percentages}
 
@@ -559,7 +559,7 @@ A secondary consequence is system count inflation. The five-way chassis join ret
 
 \subsection{Four-method comparison}
 
-Table~\ref{tab:method-comparison} summarizes the benchmark performance of all four synthesis methods. Both per-table methods (DP histogram and MST) pass 6 of 21 queries; the wide-table DP-VAE passes 1 of 8 evaluated queries. Private Evolution, which evaluates the same 8 wide-table queries, passes TBD.
+Table~\ref{tab:method-comparison} summarizes the benchmark performance of all four synthesis methods. Both per-table methods (DP histogram and MST) pass 6 of 21 queries; the wide-table DP-VAE passes 1 of 8 evaluated queries. Private Evolution, which evaluates the same 8 wide-table queries, passes 2 of 8 (25.0\%).
 
 \begin{table}[H]
 \centering
@@ -570,14 +570,14 @@ Table~\ref{tab:method-comparison} summarizes the benchmark performance of all fo
 Wide-table DP-SGD & 8 & 1 & 12.5\% & 0.258 & 0.208 \\
 Per-table DP-SGD & 21 & 6 & 28.6\% & 0.303 & 0.250 \\
 MST baseline & 21 & 6 & 28.6\% & 0.328 & 0.250 \\
-Private Evolution & 8 & TBD & TBD & TBD & TBD \\
+Private Evolution & 8 & 2 & 25.0\% & 0.150 & 0.000 \\
 \bottomrule
 \end{tabular}
 \caption{Benchmark performance across synthesis methods. ``Passed'' counts queries with score $\geq 0.5$. The wide-table and PE methods evaluate only 8 queries because 13 require per-row columns absent from the wide-table representation.}
 \label{tab:method-comparison}
 \end{table}
 
-The methods pass different subsets of queries. Table~\ref{tab:per-query-scores} reports per-query scores. All three correctly identify the most popular browser per country. Both per-table methods pass the battery geographic summary and display vendor percentage queries. MST additionally passes the browser usage distribution and two application ranking queries, while per-table DP-SGD additionally passes the on/off sleep summary and RAM utilization histogram. Neither per-table method passes any of the three userwait queries or the display connection type query.
+The methods pass different subsets of queries. Table~\ref{tab:per-query-scores} reports per-query scores. All three non-PE methods correctly identify the most popular browser per country, while PE scores 0.000 on this query (13 of 15 overlapping countries correct, but only 15 of 51 real countries appear in the synthetic data). Both per-table methods pass the battery geographic summary and display vendor percentage queries. MST additionally passes the browser usage distribution and two application ranking queries, while per-table DP-SGD additionally passes the on/off sleep summary and RAM utilization histogram. PE passes the browser usage distribution (score 0.667, matching MST) and RAM utilization histogram (score 0.500, matching per-table DP-SGD). Neither per-table method passes any of the three userwait queries or the display connection type query.
 
 % \begin{footnotesize}
 \begin{longtable}{>{\raggedright\arraybackslash}p{0.33\linewidth}>{\raggedright\arraybackslash}p{0.10\linewidth}cccc}
@@ -596,14 +596,14 @@ The methods pass different subsets of queries. Table~\ref{tab:per-query-scores} 
 \endfoot
 \bottomrule
 \endlastfoot
-\texttt{avg\_platform\_power\ldots chassis} & Agg+Join & \cellcolor{scorelo}0.167 & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}TBD \\
-\texttt{battery\_power\_on\ldots summary} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}0.500\,$\checkmark$ & \cellcolor{scorena}TBD \\
-\texttt{Xeon\_network\_consumption} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scorena}TBD \\
-\texttt{persona\_web\_cat\_usage\ldots} & Pivot & \cellcolor{scorelo}0.065 & \cellcolor{scoremid}0.419 & \cellcolor{scorelo}0.194 & \cellcolor{scorena}TBD \\
-\texttt{pkg\_power\_by\_country} & Geo/Demo & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scorena}TBD \\
-\texttt{most\_popular\_browser\ldots country} & Top-$k$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorena}TBD \\
-\texttt{popular\_browsers\ldots percentage} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.333 & \cellcolor{scorehi}0.667\,$\checkmark$ & \cellcolor{scorena}TBD \\
-\texttt{ram\_utilization\_histogram} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}0.500\,$\checkmark$ & \cellcolor{scorelo}0.000 & \cellcolor{scorena}TBD \\
+\texttt{avg\_platform\_power\ldots chassis} & Agg+Join & \cellcolor{scorelo}0.167 & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
+\texttt{battery\_power\_on\ldots summary} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}0.500\,$\checkmark$ & \cellcolor{scorelo}0.000 \\
+\texttt{Xeon\_network\_consumption} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scorelo}0.000 \\
+\texttt{persona\_web\_cat\_usage\ldots} & Pivot & \cellcolor{scorelo}0.065 & \cellcolor{scoremid}0.419 & \cellcolor{scorelo}0.194 & \cellcolor{scorelo}0.032 \\
+\texttt{pkg\_power\_by\_country} & Geo/Demo & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scorelo}0.000 \\
+\texttt{most\_popular\_browser\ldots country} & Top-$k$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorehi}1.000\,$\checkmark$ & \cellcolor{scorelo}0.000 \\
+\texttt{popular\_browsers\ldots percentage} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.333 & \cellcolor{scorehi}0.667\,$\checkmark$ & \cellcolor{scorehi}0.667\,$\checkmark$ \\
+\texttt{ram\_utilization\_histogram} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}0.500\,$\checkmark$ & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}0.500\,$\checkmark$ \\
 \midrule
 \texttt{battery\_on\_duration\ldots gen} & Geo/Demo & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
 \texttt{display\_devices\ldots ac\_dc} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
@@ -642,7 +642,7 @@ Figure~\ref{fig:method-comparison} visualizes the overall pass rates and average
     every node near coord/.append style={font=\small},
     enlarge x limits=0.25,
 ]
-\addplot[fill=RoyalBlue!50, draw=RoyalBlue] coordinates {(Wide,1) (Per-table,6) (MST,6) (PE,0)}; % PE TBD
+\addplot[fill=RoyalBlue!50, draw=RoyalBlue] coordinates {(Wide,1) (Per-table,6) (MST,6) (PE,2)};
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
@@ -663,7 +663,7 @@ Figure~\ref{fig:method-comparison} visualizes the overall pass rates and average
     every node near coord/.append style={font=\small, /pgf/number format/.cd, fixed, precision=3},
     enlarge x limits=0.25,
 ]
-\addplot[fill=RoyalBlue!50, draw=RoyalBlue] coordinates {(Wide,0.258) (Per-table,0.303) (MST,0.328) (PE,0)}; % PE TBD
+\addplot[fill=RoyalBlue!50, draw=RoyalBlue] coordinates {(Wide,0.258) (Per-table,0.303) (MST,0.328) (PE,0.150)};
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
@@ -703,8 +703,8 @@ Figure~\ref{fig:method-by-type} breaks down average scores by query type. The pe
 \addplot[fill=ForestGreen!40, draw=ForestGreen] coordinates {
     (Agg+Join,0.280) (Top-$k$,0.429) (Geo/Demo,0.271) (Histogram,0.333) (Pivot,0.233)
 };
-\addplot[fill=Goldenrod!60, draw=Goldenrod] coordinates {% PE TBD
-    (Agg+Join,0) (Top-$k$,0) (Geo/Demo,0) (Histogram,0) (Pivot,0)
+\addplot[fill=Goldenrod!60, draw=Goldenrod] coordinates {
+    (Agg+Join,0.000) (Top-$k$,0.000) (Geo/Demo,0.000) (Histogram,0.583) (Pivot,0.032)
 };
 \legend{Wide DP-SGD, Per-table DP-SGD, MST, PE}
 \end{axis}
@@ -727,31 +727,33 @@ The 5-way chassis join query (\texttt{avg\_platform\_power\_c0\_freq\_temp\_by\_
 
 MST produces dramatically different continuous values from per-table DP-SGD on the same queries. On the on/off sleep summary, MST reports avg\_on\_time RE = 40.2 and avg\_off\_time RE = 45.1 (the synthesized values are 40$\times$ too large), while per-table DP-SGD reports RE = 0.13 and 0.15 respectively. On the battery geographic summary, MST's avg\_duration RE = 28.2 versus per-table's 0.24. This difference arises because MST discretizes all columns into marginal bins, and the bin midpoints can be far from the true conditional means when the distribution is skewed.
 
-\subsection{Private Evolution: preliminary observations}
+\subsection{Private Evolution}
 
-At the time of writing, PE generation via the OpenAI Batch API is ongoing (17 of 24 chunks completed, producing approximately 133{,}000 of a target 150{,}000 synthetic records). Preliminary analysis of the completed chunks reveals several patterns.
+PE completes generation of 150{,}000 candidates via the OpenAI Batch API (gpt-5-nano), followed by the DP nearest-neighbor histogram ($\sigma \approx 1.08$) and rank-based selection of 50{,}000 records. Total wall-clock time is 59 minutes, of which the histogram computation accounts for the majority. The final privacy expenditure is $\varepsilon = 4.0$ at $\delta = 10^{-5}$.
 
-Categorical distributions show systematic deviations from the real data. The model over-represents Win11 (77.8\% vs.\ 10.4\% real) and under-represents Win10 (9.2\% vs.\ 86.2\% real), likely reflecting the foundation model's training data distribution rather than the DCA telemetry distribution. The model also generates hallucinated categorical values not present in the real data: 132 extra \texttt{chassistype} values (including misspellings like ``Noteboook'', ``DeskTop'', ``NoteBook''), 33 extra countries (leading-whitespace variants like `` Brazil''), and 15 extra OS values (including ``WinServer'', ``n/a''). These hallucinated values always score as maximum mismatch in the workload-aware distance function, wasting a portion of the generation budget.
+PE passes 2 of 8 evaluated queries (25.0\%), with an average score of 0.150. The two passing queries are the browser usage distribution (score 0.667) and the RAM utilization histogram (score 0.500). These are the same query types where the DP nearest-neighbor histogram can correct for the foundation model's distributional biases: the histogram selects candidates whose browser and RAM distributions best match the real data, even though the raw LLM output deviates substantially.
+
+All aggregate and geographic queries score 0.000. The 5-way chassis join, network consumption, battery summary, and power-by-country queries all fail because the selected synthetic records contain near-zero values for continuous metrics. The browser ranking query also scores 0.000. PE generates only 15 of 51 real countries (vs.\ 50 for the wide-table DP-VAE), and achieves 13 correct among those 15, because the foundation model's categorical priors concentrate on a narrow set of countries and distort the joint distribution between country and browser preference. The persona web category pivot scores 0.032 (1 of 31 metrics passing).
+
+Categorical distributions in the PE output show systematic deviations from the real data. The model over-represents Win11 (77.8\% vs.\ 10.4\% real) and under-represents Win10 (9.2\% vs.\ 86.2\% real), reflecting the foundation model's training data distribution rather than the DCA telemetry distribution. The model also generates hallucinated categorical values not present in the real data: 132 extra \texttt{chassistype} values (including misspellings like ``Noteboook'', ``DeskTop'', ``NoteBook''), 33 extra countries (leading-whitespace variants like `` Brazil''), and 15 extra OS values (including ``WinServer'', ``n/a''). These hallucinated values always score as maximum mismatch in the workload-aware distance function, wasting a portion of the generation budget.
 
 Numeric columns exhibit the same sparsity problem as DP-SGD. The foundation model generates near-zero values for sparse metrics: network bytes, memory utilization, battery duration, and all hardware metrics have $< 1\%$ nonzero rates in the synthetic data (vs.\ 2--7\% in real data). The model has learned that most fields are zero (the prompt describes the sparsity structure), but it generates too few nonzero records relative to the real distribution.
 
-Full evaluation of PE against the benchmark requires completing the generation run, computing the DP histogram, and selecting the final population. These steps incur no additional API cost (the histogram and selection operate on local data with the already-calibrated noise $\sigma \approx 1.08$).
-
 \section{Discussion}
 
-The three-method comparison provides answers to several of our research questions.
+The four-method comparison provides answers to several of our research questions.
 
-Research question (1), which method achieves higher benchmark scores, has a nuanced answer. Per-table DP-SGD and MST both pass 6 of 21 queries (28.6\%), with MST achieving a slightly higher average score (0.328 vs.\ 0.303). The wide-table DP-VAE passes only 1 of 8 evaluated queries (12.5\%). No method comes close to passing all queries. The two per-table methods pass different query subsets: per-table DP-SGD passes the on/off sleep summary (score 0.64) and RAM histogram (0.50), while MST passes browser usage distribution (0.67) and two application ranking queries (1.00 each). This complementarity reflects fundamental algorithmic differences. DP histogram synthesis preserves continuous distributions by sampling from noisy bin counts, yielding low relative error on time-based metrics (on-time RE = 0.13, sleep-time RE = 0.04). MST preserves pairwise marginals between categorical keys and count columns, maintaining rankings (Spearman $\rho$ = 1.00 on application system counts) even when absolute values are distorted. Neither algorithm achieves both properties simultaneously.
+Research question (1), which method achieves higher benchmark scores, has a nuanced answer. Per-table DP-SGD and MST both pass 6 of 21 queries (28.6\%), with MST achieving a slightly higher average score (0.328 vs.\ 0.303). The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%). PE passes 2 of 8 (25.0\%), outperforming the wide-table DP-VAE on the same query set but with a lower average score (0.150 vs.\ 0.258). No method comes close to passing all queries. The two per-table methods pass different query subsets: per-table DP-SGD passes the on/off sleep summary (score 0.64) and RAM histogram (0.50), while MST passes browser usage distribution (0.67) and two application ranking queries (1.00 each). PE's two passing queries (browser usage distribution at 0.667 and RAM histogram at 0.500) overlap with the per-table methods, indicating that the DP histogram selection can correct distributional biases in the LLM output for histogram-type queries. This complementarity reflects fundamental algorithmic differences. DP histogram synthesis preserves continuous distributions by sampling from noisy bin counts, yielding low relative error on time-based metrics (on-time RE = 0.13, sleep-time RE = 0.04). MST preserves pairwise marginals between categorical keys and count columns, maintaining rankings (Spearman $\rho$ = 1.00 on application system counts) even when absolute values are distorted. Neither algorithm achieves both properties simultaneously.
 
 Research question (2), whether error compounds across multi-table joins, receives a clear affirmative. The 5-way chassis join query requires data from five independently synthesized tables. Both per-table methods score 0.00 because the synthetic tables share no correlated \texttt{guid}s; the inner join produces empty results (per-table DP-SGD) or random associations (MST). The wide-table DP-VAE scores 0.17 on this query, the only method that preserves any cross-table structure, but the values are near-zero due to sparsity. The server exploration query (a 2-way join) similarly suffers: both per-table methods overcount matching rows by 5--7$\times$ and report network byte values with RE $\approx 1.0$, because the independently synthesized network and sysinfo tables produce spurious \texttt{guid} overlaps.
 
-Research question (3), minority class preservation, is partially addressed. The browser ranking query demonstrates that all methods preserve dominant categorical associations: per-table DP-SGD achieves 47/50 correct top browsers per country, matching the wide-table result of 42/50. For rare categories, per-table DP-SGD inflates minority chassis types (``Intel NUC/STK'' at 8.4\% synthetic vs.\ 2.0\% real) due to the top-50 binning and uniform noise in DP-SGD, while MST underrepresents them (generating too few entries for rare combinations). Both methods underperform on queries involving rare process names or application-specific rankings.
+Research question (3), minority class preservation, is partially addressed. The browser ranking query demonstrates that all methods preserve dominant categorical associations: per-table DP-SGD achieves 47 of 50 correct top browsers per country, and the wide-table DP-VAE achieves 42 of 50. For rare categories, per-table DP-SGD inflates minority chassis types (``Intel NUC/STK'' at 8.4\% synthetic vs.\ 2.0\% real) due to the top-50 binning and uniform noise in DP-SGD, while MST underrepresents them (generating too few entries for rare combinations). Both methods underperform on queries involving rare process names or application-specific rankings.
 
 Research question (4), classifier comparability, remains unaddressed. The benchmark queries are analytical (aggregate statistics, rankings, distributions), not predictive, so training downstream classifiers on the synthetic data was not a natural fit for this evaluation framework. A direct comparison would require defining a classification task on the DCA data (e.g., predicting chassis type from usage patterns), training models on real versus synthetic data, and comparing test accuracy. We defer this to future work.
 
-Research question (5), wall-clock time, shows clear differences. The wide-table DP-VAE trains in 360 minutes on CPU (20 epochs, 1M rows, 307 features). Per-table synthesis completes in approximately 90 minutes total (two VAEs at $\sim$30 minutes each for sysinfo and cpu\_metadata, plus histogram synthesis for 17 smaller tables). MST runs in under 10 minutes per table using the \texttt{mst} library. PE's cost is dominated by API latency: the 150{,}000-record generation run requires 7{,}500 batch API calls at approximately \$18--37 total, with completion time determined by OpenAI's batch processing queue (typically 1--4 hours).
+Research question (5), wall-clock time, shows clear differences. The wide-table DP-VAE trains in 360 minutes on CPU (20 epochs, 1M rows, 307 features). Per-table synthesis completes in approximately 90 minutes total (two VAEs at $\sim$30 minutes each for sysinfo and cpu\_metadata, plus histogram synthesis for 17 smaller tables). MST runs in under 10 minutes per table using the \texttt{mst} library. PE completes in 59 minutes total: the OpenAI Batch API generates 150{,}000 candidate records (7{,}500 batch calls at approximately \$18--37), and the DP nearest-neighbor histogram over 1{,}000{,}000 real $\times$ 150{,}000 synthetic records accounts for the remaining computation.
 
-The preliminary PE results suggest that foundation models import their own distributional priors rather than learning the target distribution (e.g., over-representing Win11 at 77.8\% vs.\ 10.4\% real). The hallucinated categorical values further reduce effective sample size by generating records that cannot match any real data point in the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
+The PE results confirm that foundation models import their own distributional priors rather than learning the target distribution (Win11 at 77.8\% vs.\ 10.4\% real). The DP nearest-neighbor histogram partially corrects these biases for histogram-type queries (PE matches MST on browser usage at 0.667 and outperforms the wide-table DP-VAE on RAM utilization at 0.500 vs.\ 0.000), but cannot compensate for the near-total absence of nonzero continuous metrics in the LLM output. The hallucinated categorical values further reduce effective sample size by generating records that cannot match any real data point in the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
 
 Several mitigation strategies warrant investigation:
 
@@ -801,9 +803,9 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
     (0.05,23.8) (0.10,23.8) (0.15,23.8) (0.20,28.6)
     (0.25,28.6) (0.50,38.1) (0.75,38.1) (1.00,52.4)
 };
-\addplot[Goldenrod, mark=diamond*] coordinates {% PE TBD
-    (0.05,0) (0.10,0) (0.15,0) (0.20,0)
-    (0.25,0) (0.50,0) (0.75,0) (1.00,0)
+\addplot[Goldenrod, mark=diamond*] coordinates {
+    (0.05,12.5) (0.10,12.5) (0.15,12.5) (0.20,12.5)
+    (0.25,25.0) (0.50,25.0) (0.75,25.0) (1.00,62.5)
 };
 \draw[gray, dashed, thin] (axis cs:0.25,0) -- (axis cs:0.25,85);
 \legend{Wide, PT, MST, PE}
@@ -838,9 +840,9 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
     (0.05,23.8) (0.10,28.6) (0.15,28.6) (0.20,28.6)
     (0.25,28.6) (0.30,28.6) (0.40,28.6) (0.50,28.6)
 };
-\addplot[Goldenrod, mark=diamond*] coordinates {% PE TBD
-    (0.05,0) (0.10,0) (0.15,0) (0.20,0)
-    (0.25,0) (0.30,0) (0.40,0) (0.50,0)
+\addplot[Goldenrod, mark=diamond*] coordinates {
+    (0.05,12.5) (0.10,12.5) (0.15,25.0) (0.20,25.0)
+    (0.25,25.0) (0.30,25.0) (0.40,25.0) (0.50,25.0)
 };
 \draw[gray, dashed, thin] (axis cs:0.15,0) -- (axis cs:0.15,45);
 \end{axis}
@@ -874,9 +876,9 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
     (0.0,28.6) (0.1,28.6) (0.2,28.6) (0.3,28.6) (0.4,28.6)
     (0.5,28.6) (0.6,28.6) (0.7,28.6) (0.8,28.6) (0.9,28.6)
 };
-\addplot[Goldenrod, mark=diamond*] coordinates {% PE TBD
-    (0.0,0) (0.1,0) (0.2,0) (0.3,0) (0.4,0)
-    (0.5,0) (0.6,0) (0.7,0) (0.8,0) (0.9,0)
+\addplot[Goldenrod, mark=diamond*] coordinates {
+    (0.0,25.0) (0.1,25.0) (0.2,25.0) (0.3,25.0) (0.4,25.0)
+    (0.5,25.0) (0.6,25.0) (0.7,25.0) (0.8,25.0) (0.9,25.0)
 };
 \draw[gray, dashed, thin] (axis cs:0.5,0) -- (axis cs:0.5,45);
 \end{axis}
@@ -890,11 +892,11 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
 
 We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing four synthesis approaches: a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, MST marginal-based synthesis, and Private Evolution via foundation model APIs.
 
-Three methods have completed evaluation against the 21-query benchmark. Per-table DP-SGD and MST each pass 6 of 21 queries (28.6\% pass rate), passing different subsets that reflect their algorithmic strengths: DP histogram synthesis preserves continuous distributions (on-time RE = 0.13) while MST preserves rankings (Spearman $\rho$ = 1.00 on application counts). The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%), with all continuous metrics near zero due to extreme sparsity in the wide-table representation.
+All four methods have completed evaluation against the 21-query benchmark. Per-table DP-SGD and MST each pass 6 of 21 queries (28.6\% pass rate), passing different subsets that reflect their algorithmic strengths: DP histogram synthesis preserves continuous distributions (on-time RE = 0.13) while MST preserves rankings (Spearman $\rho$ = 1.00 on application counts). The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%), with all continuous metrics near zero due to extreme sparsity in the wide-table representation. PE passes 2 of 8 (25.0\%), outperforming the wide-table DP-VAE in pass count but with a lower average score (0.150 vs.\ 0.258). PE's two passing queries (browser usage distribution and RAM utilization histogram) are histogram-type queries where the DP nearest-neighbor selection can correct the foundation model's distributional biases.
 
-Two structural findings emerge. First, wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide table has 93--99.9\% zero values in metric columns, and the VAE collapses these to their mode. Second, per-table independence destroys cross-table correlations: the 5-way chassis join produces empty or random results under both per-table methods, while the wide-table approach at least preserves some cross-table structure (score 0.17). Neither the joint nor the independent approach provides a satisfactory solution for multi-table relational data.
+Two structural findings emerge. First, wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide table has 93--99.9\% zero values in metric columns, and both the VAE and the foundation model collapse these to their mode. Second, per-table independence destroys cross-table correlations: the 5-way chassis join produces empty or random results under both per-table methods, while the wide-table approaches (DP-VAE and PE) at least preserve some cross-table structure.
 
-Preliminary PE results suggest that foundation models import their own distributional priors, generating systematic biases in categorical marginals (Win11 at 77.8\% vs.\ 10.4\% real) and hallucinating values outside the real vocabulary. Full PE evaluation is pending completion of the generation run.
+PE confirms the negative result of \citet{swanberg2025apiaccessllmsuseful}: API access to foundation models does not improve DP tabular synthesis beyond established baselines on the DCA corpus. The foundation model imports its own distributional priors (Win11 at 77.8\% vs.\ 10.4\% real), hallucinates categorical values outside the real vocabulary, and generates near-zero continuous metrics. The DP histogram partially corrects distributional queries but cannot compensate for the absence of signal in aggregate and geographic queries.
 
 These results point toward relational DP synthesis as the most promising direction: methods that handle multi-table structure directly could eliminate zero-inflation while preserving cross-table correlations. A secondary direction is method ensembling, selecting per-table DP-SGD for continuous-valued queries and MST for ranking queries, capitalizing on their complementary strengths.
 

@@ -62,5 +62,5 @@ data/**/*.pt
 *.out
 *.synctex.gz
 *.xdv
-
+.claude/
 .env
