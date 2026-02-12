@@ -1,0 +1,32 @@
+\@ifundefined {etoctocstyle}{\let \etoc@startlocaltoc \@gobble \let \etoc@settocdepth \@gobble \let \etoc@depthtag \@gobble \let \etoc@setlocaltop \@gobble }{}
+\etoc@startlocaltoc {1}
+\contentsline {section}{\numberline {1}Introduction}{3}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Motivation}{3}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Prior work}{3}{subsection.1.2}%
+\contentsline {section}{\numberline {2}Data and problem statement}{5}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Intel DCA telemetry data}{5}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Analytical query workload}{7}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Query inventory}{7}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Formal benchmark definition}{9}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Research questions}{9}{subsection.2.5}%
+\contentsline {section}{\numberline {3}Methods}{11}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Wide-table construction}{11}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}DP-VAE architecture}{11}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}DP-SGD training and privacy accounting}{12}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Synthetic data generation and decomposition}{13}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Private Evolution (planned)}{13}{subsection.3.5}%
+\contentsline {section}{\numberline {4}Results}{14}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Browser ranking preservation}{14}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Browser usage percentages}{14}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Continuous metric failure}{15}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Wide-table sparsity}{16}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Discussion}{17}{section.5}%
+\contentsline {section}{\numberline {6}Conclusion}{17}{section.6}%
+\contentsline {section}{References}{19}{section*.1}%
+\contentsline {section}{\numberline {A}Project proposal}{20}{appendix.A}%
+\contentsline {subsection}{\numberline {A.1}Problem statement}{20}{subsection.A.1}%
+\contentsline {subsection}{\numberline {A.2}Data}{20}{subsection.A.2}%
+\contentsline {subsection}{\numberline {A.3}Methods}{20}{subsection.A.3}%
+\contentsline {subsection}{\numberline {A.4}Research questions}{21}{subsection.A.4}%
+\contentsline {subsection}{\numberline {A.5}Expected outputs}{21}{subsection.A.5}%
+\contentsline {section}{\numberline {B}Contributions}{22}{appendix.B}%

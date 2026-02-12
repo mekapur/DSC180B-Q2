@@ -199,7 +199,7 @@
 \usepackage[amsmath]{ntheorem}
 \usepackage{mathtools}
 \usepackage{verbatim}
-\usepackage{color}
+\usepackage{xcolor}
 \definecolor{MyBrown}{rgb}{0.3,0,0}
 \definecolor{MyBlue}{rgb}{.2,.2,.8}
 \definecolor{MyRed}{rgb}{0.4,0,0.1}
@@ -319,10 +319,12 @@
 \defaultfontfeatures{Ligatures=TeX, Mapping = tex-text}
 % Set the default fonts
 \usepackage[bitstream-charter]{mathdesign}
+\SetMathAlphabet{\mathcal}{normal}{OMS}{cmsy}{m}{n}
+\SetMathAlphabet{\mathcal}{bold}{OMS}{cmsy}{b}{n}
 % https://mirror.math.princeton.edu/pub/CTAN/fonts/xcharter/doc/xcharter-doc.pdf
 \setmainfont{XCharter}
 % \usepackage[sups]{XCharter}
-\setsansfont{Arial}
+% \setsansfont{Arial}
 \setmonofont[Scale=0.9]{Fira Code}
 
 
@@ -347,7 +349,9 @@
 \renewenvironment{enumerate}[1]{\begin{compactenum}#1}{\end{compactenum}}
 \renewenvironment{description}[0]{\begin{compactdesc}}{\end{compactdesc}}
 
-
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 % tikz
 % \usepackage{tikz}
 % \usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}
@@ -381,7 +385,7 @@
 \newcommand{\tocless}[2]{\bgroup\let\addcontentsline=\nocontentsline#1{#2}\egroup}
 \providecommand{\maketoc}{}
 \renewcommand{\maketoc}{%
-    \etocsettocdepth{1}
+    \etocsettocdepth{3}
     \etocsettocstyle{\medskip}{\bigskip}
     \newlength{\npageW}
     \settowidth{\npageW}{9} % width of the page number box
@@ -394,6 +398,11 @@
     {}
     {\normalfont\noindent}
     {\hspace{0.5in}\llap{\makebox[\subnumberW][l]{\etocnumber}}\etocname\DotsAndPage}
+    {}
+    \etocsetstyle{subsection}
+    {}
+    {\normalfont\noindent}
+    {\hspace{0.85in}\llap{\makebox[\subnumberW][l]{\etocnumber}}\etocname\DotsAndPage}
     {}
     \localtableofcontents
 }

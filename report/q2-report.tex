@@ -2,6 +2,10 @@
 % !BIB TS-program = bibtex
 \documentclass[12pt,letterpaper]{article}
 \usepackage{style/dsc180reportstyle}
+\definecolor{RoyalBlue}{RGB}{65,105,225}
+\definecolor{BrickRed}{RGB}{203,65,84}
+\renewcommand{\_}{\textunderscore\allowbreak}
+\emergencystretch=2em
 
 \title{Training-based versus training-free \\ differential privacy for data synthesis}
 
@@ -20,13 +24,14 @@
 \maketitle
 
 \begin{abstract}
-Differentially private synthetic data generation enables the release of realistic datasets while protecting individual privacy. Two paradigms dominate current research: training-based methods such as differentially private stochastic gradient descent (DP-SGD), which inject noise during model optimization, and training-free methods such as Private Evolution (PE), which achieve privacy through inference-only access to foundation models. We investigate both approaches on Intel's Driver and Client Applications (DCA) telemetry corpus, a multi-table dataset comprising system metadata, power and thermal instrumentation, application usage, and browsing behavior across one million Windows clients. Our evaluation centers on a benchmark of 21 analytical SQL queries spanning aggregate statistics, ranked lists, geographic breakdowns, histograms, and complex pivots. For the training-based approach, we construct a unified wide table (one row per client, 307 encoded features) and train a differentially private variational autoencoder under $\varepsilon = 4.0$ at $\delta = 10^{-5}$. The model preserves categorical joint distributions: 42 of 50 countries present in the synthetic data receive the correct most-popular browser in a ranking query. All continuous metrics fail with relative errors exceeding 99\%, a consequence of extreme zero-inflation in the wide table, where 93--99.9\% of numeric columns are structurally zero. This sparsity failure identifies a fundamental limitation of wide-table approaches to multi-table DP synthesis. Experiments with Private Evolution under matched privacy budgets are planned to assess whether training-free methods better handle sparse, heterogeneous telemetry data.
+Differentially private synthetic data generation promises to resolve the tension between data utility and individual privacy, enabling the release of datasets that preserve the statistical properties analysts need while bounding what any adversary can learn about a single record. Two paradigms have emerged to fulfill this promise. Training-based methods inject calibrated noise during model optimization, coupling privacy to the learning process itself. Training-free methods instead leverage foundation models through black-box API access, achieving privacy through selection mechanisms that never touch the model's parameters. Both have demonstrated success on image and text benchmarks, yet their behavior on realistic, multi-table relational data remains largely unexplored. We investigate both approaches on Intel's Driver and Client Applications (DCA) telemetry corpus, evaluating against a benchmark of 21 analytical SQL queries representative of production business intelligence workloads.
 \end{abstract}
 
 \begin{center}
 Code: \url{https://github.com/jktrns/DSC180B-Q2}
 \end{center}
 
+\clearpage
 \maketoc
 \clearpage
 
@@ -36,7 +41,7 @@ Code: \url{https://github.com/jktrns/DSC180B-Q2}
 
 Organizations routinely collect detailed telemetry from their products to drive business decisions. Engineers use it to diagnose failures, product teams analyze usage trends, and analysts extract insights that shape product roadmaps. The same granularity that makes telemetry valuable also makes it sensitive. Browsing patterns, work schedules, and device fingerprints can re-identify specific individuals even after conventional anonymization.
 
-Privacy regulations such as GDPR and CCPA, along with institutional policies, increasingly restrict how such data can be stored, shared, and analyzed. The resulting tension between data utility and privacy protection motivates the development of \textit{synthetic data generation}: producing artificial datasets that preserve the statistical properties necessary for analysis while providing formal guarantees that no individual's information can be recovered.
+Privacy regulations such as GDPR and CCPA, along with institutional policies, increasingly restrict how such data can be stored, shared, and analyzed. The resulting tension between data utility and privacy protection motivates the development of \textit{synthetic data generation}, producing artificial datasets that preserve the statistical properties necessary for analysis while providing formal guarantees that no individual's information can be recovered.
 
 Two paradigms have emerged for generating synthetic data with rigorous privacy guarantees. \textit{Training-based methods} optimize generative models under constraints that bound individual influence, adding calibrated noise during the training process. \textit{Training-free methods} leverage pre-trained foundation models through black-box API access, achieving privacy through carefully designed selection mechanisms rather than private optimization. Both approaches have demonstrated success in isolation on image and text benchmarks, yet no comprehensive comparison exists under controlled experimental conditions with realistic analytical workloads on multi-table relational data.
 
@@ -48,17 +53,17 @@ Differential privacy, introduced by \citet{dwork2014algorithmic}, provides the f
 \begin{equation}
     \Pr[\mathcal{M}(D) \in S] \leq e^{\varepsilon} \Pr[\mathcal{M}(D') \in S] + \delta.
 \end{equation}
-The parameter $\varepsilon$ controls the privacy-utility tradeoff: smaller values confer stronger privacy at the cost of noisier outputs. The slack $\delta$ permits rare violations and must remain negligible relative to the database size. The work established key mechanisms (Laplace, Gaussian, exponential) for releasing numeric queries, along with composition theorems demonstrating that privacy loss accumulates across multiple analyses.
+The parameter $\varepsilon$ controls the privacy-utility tradeoff. Smaller values confer stronger privacy at the cost of noisier outputs. The slack $\delta$ permits rare violations and must remain negligible relative to the database size. The work established key mechanisms (Laplace, Gaussian, exponential) for releasing numeric queries, along with composition theorems demonstrating that privacy loss accumulates across multiple analyses.
 
 \citet{abadi2016deep} extended differential privacy to deep learning through DP-SGD. Standard gradient descent leaks information through the unbounded influence any single training example can exert on model parameters. DP-SGD bounds this influence by clipping each per-sample gradient to a fixed $\ell_2$ norm and injecting calibrated Gaussian noise to mask individual contributions. The accompanying \textit{moments accountant} yields substantially tighter privacy bounds than naive composition, enabling practical deep learning under modest privacy budgets.
 
 \citet{ghalebikesabi2023differentially} demonstrated that fine-tuning diffusion models with DP-SGD generates synthetic images of reasonable quality, though their approach requires substantial privacy budgets ($\varepsilon \approx 32$ for CIFAR-10). This motivates the search for methods that achieve comparable fidelity at lower $\varepsilon$.
 
-\citet{lin2025differentiallyprivatesyntheticdata} introduced Private Evolution (PE), a fundamentally different paradigm that avoids model training entirely. PE operates through black-box API access to pre-trained foundation models, iteratively evolving synthetic samples by computing differentially private nearest-neighbor histograms. Each private data point votes for its nearest synthetic candidate; Gaussian noise is added to the vote histogram, and candidates are resampled according to the noisy distribution. PE achieved FID $\leq 7.9$ at $\varepsilon = 0.67$ on CIFAR-10, a substantial improvement over DP-Diffusion in both privacy cost and output quality. The privacy analysis is simple: each iteration releases one Gaussian mechanism, and $T$ iterations compose to a single mechanism with noise multiplier $\sigma / \sqrt{T}$.
+\citet{lin2025differentiallyprivatesyntheticdata} introduced Private Evolution (PE), a fundamentally different paradigm that avoids model training entirely. PE operates through black-box API access to pre-trained foundation models, iteratively evolving synthetic samples by computing differentially private nearest-neighbor histograms. Each private data point votes for its nearest synthetic candidate; Gaussian noise is added to the vote histogram, and candidates are resampled according to the noisy distribution. PE achieved FID $\leq 7.9$ at $\varepsilon = 0.67$ on CIFAR-10, a substantial improvement over DP-Diffusion in both privacy cost and output quality. The privacy analysis is straightforward. Each iteration releases one Gaussian mechanism, and $T$ iterations compose to a single mechanism with noise multiplier $\sigma / \sqrt{T}$.
 
 \citet{xie2024differentiallyprivatesyntheticdata} extended PE to text through Aug-PE, introducing fill-in-the-blanks variation, adaptive text lengths, and rank-based selection. Aug-PE with GPT-3.5 outperformed DP-finetuning baselines at the same privacy budget while running 12--66$\times$ faster.
 
-\citet{swanberg2025apiaccessllmsuseful} adapted PE for tabular data using a workload-aware distance function that measures proximity in terms of query-relevant predicates rather than raw feature similarity. Their central finding is negative: API access to large language models does not yet improve differentially private tabular synthesis beyond established marginal-based baselines such as MST and JAM. This result informs our expectations for applying PE to the DCA telemetry corpus.
+\citet{swanberg2025apiaccessllmsuseful} adapted PE for tabular data using a workload-aware distance function that measures proximity in terms of query-relevant predicates rather than raw feature similarity. Their central finding is negative. API access to large language models does not yet improve differentially private tabular synthesis beyond established marginal-based baselines such as MST and JAM. This result informs our expectations for applying PE to the DCA telemetry corpus.
 
 \newpage
 
@@ -66,27 +71,72 @@ The parameter $\varepsilon$ controls the privacy-utility tradeoff: smaller value
 
 \subsection{Intel DCA telemetry data}
 
-Our investigation uses the Intel Driver and Client Applications (DCA) telemetry dataset, a large-scale collection of system-level signals from Windows client machines. The corpus comprises approximately 30 interrelated tables organized around a globally unique identifier (\texttt{guid}) assigned to each client system. We construct 19 reporting tables from the raw telemetry data, each aggregated to the \texttt{guid} level. The schema spans several categories:
+Our investigation uses the Intel Driver and Client Applications (DCA) telemetry dataset, a large-scale collection of system-level signals from Windows client machines. The full corpus comprises approximately 115 tables in the \texttt{university\_prod} schema (9.1~TB total), organized around a globally unique identifier (\texttt{guid}) assigned to each client system. Raw event tables record per-interval measurements (hourly or daily) across power, thermal, network, application, and browsing domains. Individual tables range from tens of millions to billions of rows.
 
-\begin{itemize}
-    \item \textit{Client metadata:} The \texttt{system\_sysinfo\_unique\_normalized} table (1{,}000{,}000 rows) provides static attributes including chassis type, country, OEM, RAM capacity, processor family, and a derived persona classification. This table serves as the anchor for all joins.
+The 24 benchmark queries do not reference the raw event tables directly. They reference a \texttt{reporting} schema of pre-aggregated views that Intel analysts built on top of the raw data. These reporting tables aggregate per-event measurements to per-\texttt{guid} summaries (or per-\texttt{guid}-per-day, depending on the table). Since the reporting views are not distributed with the raw data, we reconstruct them from the raw tables using DuckDB aggregation scripts that follow Intel's documented ETL logic.
 
-    \item \textit{Power and thermal:} Five tables capture physical instrumentation: processor power draw (\texttt{system\_hw\_pkg\_power}), total system power (\texttt{system\_psys\_rap\_watts}), processor temperature (\texttt{system\_pkg\_temp\_centigrade}), C0 state residency (\texttt{system\_pkg\_C0}), and clock frequency (\texttt{system\_pkg\_avg\_freq\_mhz}). Each provides per-\texttt{guid} weighted averages with sample counts.
+We work with a sample of the full corpus. Each raw table in the repository is split into multiple partition files of varying size, and we download a single partition per table (the first available file, typically between 1 and 5~GiB). Several tables are supplemented or replaced entirely by pre-aggregated files from a December 2024 update that Intel added to the repository. The \texttt{system\_sysinfo\_unique\_normalized} anchor table is downloaded in full (1{,}000{,}000 \texttt{guid}s). All event tables are filtered to \texttt{guid}s present in this anchor, ensuring a coherent sample. Total data on disk is approximately 20.7~GiB.
 
-    \item \textit{Battery and mobility:} The \texttt{system\_batt\_dc\_events} table summarizes battery utilization (duration on DC power, power cycle counts). Daily on/off/suspend durations are recorded in \texttt{system\_on\_off\_suspend\_time\_day}.
+Table~\ref{tab:reporting-tables} lists the 19 reporting tables we construct, organized by category. The \texttt{guid} coverage column reports how many of the 1{,}000{,}000 anchor \texttt{guid}s have at least one nonzero entry in each table. Coverage varies by two orders of magnitude. The web browsing pivot table covers 512{,}077 \texttt{guid}s (51.2\%), while the PSYS RAP power metric covers only 816 (0.08\%). This heterogeneous coverage is a defining characteristic of the dataset and, as we show in Section~4, a primary source of difficulty for synthesis.
 
-    \item \textit{Application behavior:} Foreground application usage by category (\texttt{system\_frgnd\_apps\_types}) and application wait times (\texttt{system\_userwait}).
+\begin{footnotesize}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}p{0.14\linewidth}>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.12\linewidth}>{\raggedright\arraybackslash}p{0.11\linewidth}}
+\caption{The 19 reporting tables constructed from raw DCA telemetry data. ``Guids'' reports the number of anchor \texttt{guid}s with nonzero data in our sample. ``Raw source'' identifies the \texttt{university\_prod} table or December 2024 update file from which each reporting table is derived.}
+\label{tab:reporting-tables} \\
+\toprule
+\textbf{Reporting table} & \textbf{Category} & \textbf{Raw source} & \textbf{Rows} & \textbf{Guids} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Reporting table} & \textbf{Category} & \textbf{Raw source} & \textbf{Rows} & \textbf{Guids} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{system\_sysinfo\_unique\_normalized} & Metadata & Direct copy & 1{,}000{,}000 & 1{,}000{,}000 \\
+\texttt{system\_cpu\_metadata} & Metadata & Dec.\ 2024 update & 1{,}000{,}000 & 1{,}000{,}000 \\
+\texttt{system\_os\_codename\_history} & Metadata & Dec.\ 2024 update & 639{,}223 & --- \\
+\midrule
+\texttt{system\_hw\_pkg\_power} & Power/thermal & \texttt{hw\_metric\_stats} & 318{,}791 & $\sim$800 \\
+\texttt{system\_psys\_rap\_watts} & Power/thermal & \texttt{hw\_metric\_stats} & 4{,}846 & 816 \\
+\texttt{system\_pkg\_C0} & Power/thermal & \texttt{hw\_metric\_stats} & 945{,}500 & 8{,}943 \\
+\texttt{system\_pkg\_avg\_freq\_mhz} & Power/thermal & \texttt{hw\_metric\_stats} & 12{,}844 & 613 \\
+\texttt{system\_pkg\_temp\_centigrade} & Power/thermal & \texttt{hw\_metric\_stats} & 13{,}091 & 622 \\
+\midrule
+\texttt{system\_batt\_dc\_events} & Battery & Dec.\ 2024 update & $\sim$49{,}000 & --- \\
+\texttt{system\_on\_off\_suspend\_time\_day} & Battery & Dec.\ 2024 update & 1{,}582{,}017 & --- \\
+\midrule
+\texttt{system\_frgnd\_apps\_types} & Application & Dec.\ 2024 update & 56{,}755{,}998 & 55{,}830 \\
+\texttt{system\_userwait} & Application & \texttt{userwait\_v2} & 175{,}223{,}880 & 38{,}142 \\
+\midrule
+\texttt{system\_web\_cat\_pivot\_duration} & Browsing & \texttt{web\_cat\_pivot} & 512{,}077 & 512{,}077 \\
+\texttt{system\_web\_cat\_usage} & Browsing & \texttt{web\_cat\_usage\_v2} & 21{,}354{,}922 & 64{,}276 \\
+\midrule
+\texttt{system\_network\_consumption} & Network & \texttt{os\_network\_consumption\_v2} & 121{,}843{,}286 & 37{,}224 \\
+\texttt{system\_memory\_utilization} & Memory & \texttt{os\_memsam\_avail\_percent} & 21{,}688{,}089 & 69{,}552 \\
+\midrule
+\texttt{system\_display\_devices} & Display & Dec.\ 2024 update & 220{,}997{,}262 & 209{,}239 \\
+\texttt{system\_mods\_top\_blocker\_hist} & Sleep study & Dec.\ 2024 update & 92{,}460{,}980 & --- \\
+\texttt{system\_mods\_power\_consumption} & Sleep study & Dec.\ 2024 update (stub) & 10{,}000 & 1 \\
+\end{longtable}
+\end{footnotesize}
 
-    \item \textit{Web browsing:} The \texttt{system\_web\_cat\_pivot\_duration} table decomposes browsing across 28 categories (social, productivity, entertainment, gaming, etc.) by duration. A companion table (\texttt{system\_web\_cat\_usage}) provides per-browser aggregate statistics.
+The anchor table (\texttt{system\_sysinfo\_unique\_normalized}) provides static client attributes such as chassis type, country, OEM, RAM capacity, CPU family and generation, processor number, operating system, and a derived persona classification. Every benchmark query that segments by demographic or geographic attributes joins against this table.
 
-    \item \textit{Network and memory:} Network bytes sent and received (\texttt{system\_network\_consumption}) and RAM utilization statistics (\texttt{system\_memory\_utilization}).
+The five power and thermal tables are all derived from a single raw source (\texttt{hw\_metric\_stats}) by filtering on the \texttt{name} column (e.g., \texttt{HW::PACKAGE:IA\_POWER:WATTS:} for package power, \texttt{HW::PACKAGE:C0\_RESIDENCY:PERCENT:} for C0 residency). Each provides per-\texttt{guid} weighted averages and sample counts. Coverage is sparse. The C0 metric has 8{,}943 \texttt{guid}s, while PSYS RAP, frequency, and temperature each cover fewer than 1{,}000.
 
-    \item \textit{Display:} Connected display devices with connection type, resolution, and duration by AC/DC state (\texttt{system\_display\_devices}).
-\end{itemize}
+The application tables contain per-process and per-application breakdowns. \texttt{system\_userwait} records wait events (duration $> 1$~second) with the offending process name, wait type, and AC/DC power state. \texttt{system\_frgnd\_apps\_types} records foreground application usage by executable name, application type, and daily focal screen time.
+
+The browsing tables take two forms. \texttt{system\_web\_cat\_pivot\_duration} is a wide table with one row per \texttt{guid} and 28 browsing-category columns (education, finance, gaming, mail, news, social media, etc.), each recording total duration. \texttt{system\_web\_cat\_usage} provides per-browser statistics (chrome, edge, firefox) with system count, instance count, and duration.
+
+The \texttt{system\_mods\_power\_consumption} table is a stub. Intel's December 2024 update contains only 10{,}000 rows from a single \texttt{guid}. Three benchmark queries reference this table; they execute and produce rankings, but the results reflect one client's power profile rather than population-level statistics. We retain these queries for pipeline completeness but exclude them from quantitative evaluation.
 
 \subsection{Analytical query workload}
 
-The practical utility of synthetic telemetry data is determined by its ability to support real analytical workloads. We operationalize this through a benchmark suite of 24 SQL queries developed by Intel analysts. Of these, 21 are feasible given our data coverage; 3 are permanently infeasible due to missing power consumption tables for which no viable raw source exists. The 21 feasible queries span five categories:
+The practical utility of synthetic telemetry data is determined by its ability to support real analytical workloads. We operationalize this through a benchmark suite of 21 SQL queries developed by Intel analysts, spanning five categories:
 
 \begin{enumerate}
     \item \textit{Aggregate statistics with joins} (6 queries): weighted averages across multiple tables joined on \texttt{guid}, testing whether cross-table correlations survive synthesis.
@@ -96,13 +146,62 @@ The practical utility of synthetic telemetry data is determined by its ability t
     \item \textit{Complex multi-way pivots} (2 queries): high-dimensional joint distributions across browsing categories, devices, or user segments.
 \end{enumerate}
 
+\subsection{Query inventory}
+
+Table~\ref{tab:query-inventory} lists all 21 feasible queries in the benchmark. Three additional queries are permanently infeasible because they require the \texttt{system\_mods\_power\_consumption} table, for which no viable data source exists in the DCA corpus available to us.\footnote{The three infeasible queries are \texttt{ranked\_process\_classifications}, \texttt{top\_10\_processes\_per\_user\_id\_ranked\_by\_total\_power\_consumption}, and \texttt{top\_20\_most\_power\_consuming\_processes\_by\_avg\_power\_consumed}.}
+
+\begin{small}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}p{0.12\linewidth}>{\raggedright\arraybackslash}p{0.44\linewidth}}
+\caption{Complete inventory of the 21 feasible benchmark queries, grouped by query type. ``Agg+Join'' denotes aggregate statistics with multi-table joins; ``Top-$k$'' denotes ranked lists produced by window functions; ``Geo/Demo'' denotes geographic or demographic breakdowns; ``Histogram'' denotes binned distributions; ``Pivot'' denotes complex multi-way pivots.}
+\label{tab:query-inventory} \\
+\toprule
+\textbf{Query} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Query} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{avg\_platform\_power\_c0\_freq\_temp\_by\_chassis} & Agg+Join & Average power, C0 residency, frequency, and temperature by chassis type (5-way join). \\
+\texttt{server\_exploration\_1} & Agg+Join & Identify client machines sending more data than they receive, joined with sysinfo for OS and chassis. \\
+\texttt{mods\_blockers\_by\_osname\_and\_codename} & Agg+Join & Count distribution of modern sleep study blockers by Windows OS name and codename. \\
+\texttt{top\_mods\_blocker\_types\_durations\_by\_osname\_and\_codename} & Agg+Join & Blocker entry counts and average durations by OS name, codename, blocker type, and activity level. \\
+\texttt{display\_devices\_connection\_type\_resolution\_durations\_ac\_dc} & Agg+Join & Display connection types with resolution and average AC/DC durations. \\
+\texttt{display\_devices\_vendors\_percentage} & Agg+Join & Percentage of systems by display vendor. \\
+\midrule
+\texttt{most\_popular\_browser\_in\_each\_country\_by\_system\_count} & Top-$k$ & Most popular browser per country by system count. \\
+\texttt{userwait\_top\_10\_wait\_processes} & Top-$k$ & Top 10 applications by average wait time. \\
+\texttt{userwait\_top\_10\_wait\_processes\_wait\_type\_ac\_dc} & Top-$k$ & Top 10 wait-time applications by wait type (app start vs.\ in-app) and power state. \\
+\texttt{userwait\_top\_20\_wait\_processes\_compare\_ac\_dc\_unknown\_durations} & Top-$k$ & Top 20 wait-time applications with durations pivoted by power state (AC/DC/Unknown). \\
+\texttt{top\_10\_applications\_by\_app\_type\_ranked\_by\_focal\_time} & Top-$k$ & Top 10 applications per app type by average daily focal screen time. \\
+\texttt{top\_10\_applications\_by\_app\_type\_ranked\_by\_system\_count} & Top-$k$ & Top 10 applications per app type by distinct client count. \\
+\texttt{top\_10\_applications\_by\_app\_type\_ranked\_by\_total\_detections} & Top-$k$ & Top 10 applications per app type by total daily detection count. \\
+\midrule
+\texttt{Xeon\_network\_consumption} & Geo/Demo & Network consumption summary for Xeon vs.\ non-Xeon systems, by OS. \\
+\texttt{pkg\_power\_by\_country} & Geo/Demo & Average CPU package power by country. \\
+\texttt{battery\_power\_on\_geographic\_summary} & Geo/Demo & Battery power-on count and duration by country (min.\ 100 clients). \\
+\texttt{battery\_on\_duration\_cpu\_family\_gen} & Geo/Demo & Battery duration by CPU family and generation (min.\ 100 clients). \\
+\midrule
+\texttt{ram\_utilization\_histogram} & Histogram & Average RAM utilization percentage by memory capacity. \\
+\texttt{popular\_browsers\_by\_count\_usage\_percentage} & Histogram & Percentage of systems, instances, and duration by browser. \\
+\midrule
+\texttt{persona\_web\_cat\_usage\_analysis} & Pivot & Web browsing category duration as weighted percentages, by persona. \\
+\texttt{on\_off\_mods\_sleep\_summary\_by\_cpu\_marketcodename\_gen} & Pivot & On/off/sleep/MODS time percentages by CPU generation and market codename. \\
+\end{longtable}
+\end{small}
+
 \subsection{Formal benchmark definition}
 
 Let $\mathcal{Q} = \{q_1, \ldots, q_{21}\}$ denote our SQL query benchmark. Each query $q_j$ maps a database instance to a result set $q_j(D) \in \mathcal{R}_j$, where $\mathcal{R}_j$ may be a scalar, vector, or table. The query discrepancy for synthetic data $\tilde{D}$ is:
 \begin{equation}
     \Delta_j(D, \tilde{D}) = d_j\bigl(q_j(D),\; q_j(\tilde{D})\bigr),
 \end{equation}
-where $d_j$ is a distance metric appropriate to the result type: relative error for scalars, Spearman's $\rho$ for rankings, and total variation for histograms. The aggregate benchmark score is:
+where $d_j$ is a distance metric appropriate to the result type (relative error for scalars, Spearman's $\rho$ for rankings, total variation for histograms). The aggregate benchmark score is:
 \begin{equation}
     \text{Score}(\tilde{D}) = \frac{1}{|\mathcal{Q}|} \sum_{j=1}^{|\mathcal{Q}|} \mathbf{1}\bigl[\Delta_j(D, \tilde{D}) \leq \tau_j\bigr],
 \end{equation}
@@ -110,7 +209,7 @@ where $\tau_j$ is a query-specific tolerance threshold. A synthetic dataset pass
 
 \subsection{Research questions}
 
-Given the 21-query benchmark and matched privacy budgets, we investigate:
+Given the 21-query benchmark and matched privacy budgets, we investigate the following.
 
 \begin{enumerate}
     \item Under matched $(\varepsilon, \delta)$, which method achieves higher benchmark scores? Which query types exhibit the largest discrepancy?
@@ -126,13 +225,13 @@ Given the 21-query benchmark and matched privacy budgets, we investigate:
 
 \subsection{Wide-table construction}
 
-The unit of synthesis is the \texttt{guid}. Each \texttt{guid} represents one client system, and the privacy guarantee is per-\texttt{guid}: neighboring databases differ by adding or removing all rows associated with a single device.
+The unit of synthesis is the \texttt{guid}. Each \texttt{guid} represents one client system, and the privacy guarantee is per-\texttt{guid}, meaning neighboring databases differ by adding or removing all rows associated with a single device.
 
 Synthesizing each reporting table independently would destroy cross-table correlations. Most benchmark queries join multiple tables on \texttt{guid}; if synthetic tables share no relationship, joins produce either zero matches (mismatched \texttt{guid}s) or random associations (correct \texttt{guid}s but uncorrelated attributes). Queries measuring cross-table relationships (e.g., ``average network consumption by chassis type'') would return meaningless results.
 
 We therefore construct a single wide table with one row per \texttt{guid} containing all attributes and pre-aggregated metrics from every reporting table. For each reporting table, we compute \texttt{guid}-level aggregations of the columns referenced by benchmark queries. Multi-row-per-\texttt{guid} tables (e.g., web browsing by category) are pivoted into separate columns per category. All aggregations are LEFT JOINed onto the sysinfo anchor table (1{,}000{,}000 \texttt{guid}s).
 
-The resulting wide table has 1{,}000{,}000 rows and 70 columns: 9 categorical attributes and 59 numeric metrics, plus \texttt{guid}. We encode categoricals via top-$k$ binning ($k = 50$, with remaining values grouped into ``Other'') and one-hot encoding. Numeric columns are clipped at the 99.9th percentile, transformed via $\log(1 + x)$ to reduce skew, and standardized with zero mean and unit variance. The final feature matrix has $1{,}000{,}000 \times 307$ entries (248 one-hot indicators plus 59 scaled numerics).
+The resulting wide table has 1{,}000{,}000 rows and 70 columns, comprising 9 categorical attributes and 59 numeric metrics plus \texttt{guid}. We encode categoricals via top-$k$ binning ($k = 50$, with remaining values grouped into ``Other'') and one-hot encoding. Numeric columns are clipped at the 99.9th percentile, transformed via $\log(1 + x)$ to reduce skew, and standardized with zero mean and unit variance. The final feature matrix has $1{,}000{,}000 \times 307$ entries (248 one-hot indicators plus 59 scaled numerics).
 
 \subsection{DP-VAE architecture}
 
@@ -140,8 +239,8 @@ We train a differentially private variational autoencoder (DP-VAE) on the wide t
 
 The decoder uses separate heads for categorical and numeric attributes:
 \begin{itemize}
-    \item 9 categorical heads, each producing logits over the corresponding column's vocabulary. Loss: cross-entropy.
-    \item 1 numeric head mapping $z$ to 59 outputs. Loss: mean squared error.
+    \item 9 categorical heads, each producing logits over the corresponding column's vocabulary, trained with cross-entropy loss.
+    \item 1 numeric head mapping $z$ to 59 outputs, trained with mean squared error.
 \end{itemize}
 
 The total loss is:
@@ -151,7 +250,7 @@ The total loss is:
 
 The model has 505{,}971 trainable parameters.
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
 \caption{DP-VAE training with DP-SGD}
 \label{alg:dpvae}
 \SetKwInOut{KwInput}{Input}
@@ -179,7 +278,7 @@ We use the Opacus library to apply DP-SGD. Rather than manually selecting a nois
 
 Table~\ref{tab:hyperparams} reports the training configuration. The final privacy expenditure is $\varepsilon = 3.996$.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{lc}
 \toprule
@@ -211,7 +310,7 @@ After training, we generate 1{,}000{,}000 synthetic \texttt{guid} records:
     \item Sample $z \sim \mathcal{N}(0, I_{64})$.
     \item Decode to produce categorical logits and numeric outputs.
     \item For each categorical column, sample from the softmax distribution over the vocabulary.
-    \item For each numeric column, apply the inverse transformations: de-standardize, apply $\text{expm1}(x) = e^x - 1$, and clip to the observed range.
+    \item For each numeric column, apply the inverse transformations (de-standardize, apply $\text{expm1}(x) = e^x - 1$, clip to the observed range).
 \end{enumerate}
 
 The synthetic wide table is then decomposed back into 12 reporting table schemas by selecting the relevant columns for each table and assigning synthetic \texttt{guid}s. The original benchmark SQL queries execute unchanged on these synthetic reporting tables.
@@ -240,35 +339,13 @@ We evaluate the DP-VAE synthetic data on 8 of 21 feasible benchmark queries. The
 
 \subsection{Browser ranking preservation}
 
-The \texttt{most\_popular\_browser\_in\_each\_country} query identifies the dominant browser in each country by system count. The real data produces rankings for 51 countries; the synthetic data covers 50 (the United Arab Emirates is absent). Of the 50 shared countries, the DP-VAE correctly identifies the most popular browser in 42 (84\% accuracy). Table~\ref{tab:browser-ranking} shows the 8 countries where the synthetic ranking diverges.
-
-\begin{table}[h]
-\centering
-\begin{tabular}{lcc}
-\toprule
-\textbf{Country} & \textbf{Real} & \textbf{Synthetic} \\
-\midrule
-Australia & chrome & edge \\
-Canada & chrome & edge \\
-China & edge & chrome \\
-Egypt & chrome & edge \\
-Hong Kong & chrome & edge \\
-Korea, Republic of & edge & chrome \\
-United Kingdom & chrome & edge \\
-United States & chrome & edge \\
-\bottomrule
-\end{tabular}
-\caption{Countries where the DP-VAE assigns the wrong most-popular browser. All 8 mismatches involve a swap between chrome and edge, reflecting the global near-parity between these two browsers in prevalence.}
-\label{tab:browser-ranking}
-\end{table}
-
-This result demonstrates that the DP-VAE preserves the joint distribution between \texttt{countryname\_normalized} and browser preference well enough to maintain rankings. The errors occur in countries where chrome and edge are close in prevalence, making the ranking sensitive to small perturbations.
+The \texttt{most\_popular\_browser\_in\_each\_country} query identifies the dominant browser in each country by system count. The real data produces rankings for 51 countries; the synthetic data covers 50 (the United Arab Emirates is absent). Of the 50 shared countries, the DP-VAE correctly identifies the most popular browser in 42 (84\% accuracy). All 8 mismatches involve a swap between chrome and edge in countries where these two browsers are close in prevalence (e.g., the United States, the United Kingdom, Australia, Canada), making the ranking sensitive to small perturbations. This result demonstrates that the DP-VAE preserves the joint distribution between country and browser preference well enough to maintain top-1 rankings in the majority of cases.
 
 \subsection{Browser usage percentages}
 
 The \texttt{popular\_browsers} query computes the percentage of systems, instances, and total duration attributable to each of the three major browsers. Figure~\ref{fig:browser-usage} compares real and synthetic results.
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
@@ -303,13 +380,11 @@ The \texttt{popular\_browsers} query computes the percentage of systems, instanc
 
 The percent-systems metric is roughly preserved for chrome ($82.1\% \to 80.0\%$) but inflated for edge ($55.2\% \to 73.9\%$) and firefox ($18.4\% \to 66.8\%$). The percent-instances metric collapses to near-uniform ($\approx 33\%$ per browser) because the wide-table decomposition creates exactly one row per \texttt{guid} per browser, losing real instance-count variation.
 
-\newpage
-
 \subsection{Continuous metric failure}
 
 All queries involving continuous metrics (power, temperature, frequency, network bytes, memory utilization, battery duration) produce synthetic values near zero, with relative errors exceeding 99\%. Table~\ref{tab:continuous-failure} reports representative values for the five-way chassis join query and other continuous queries.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{lccc}
 \toprule
@@ -330,7 +405,7 @@ avg\_duration (battery, min) & 144 & 0.11 & $> 99\%$ \\
 
 Figure~\ref{fig:ram-utilization} illustrates the failure on the RAM utilization histogram. Real data shows a clear inverse relationship between RAM capacity and utilization percentage. The synthetic data reports 0\% utilization across all capacities.
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
@@ -362,11 +437,11 @@ Figure~\ref{fig:ram-utilization} illustrates the failure on the RAM utilization 
 \label{fig:ram-utilization}
 \end{figure}
 
-\subsection{Root cause: wide-table sparsity}
+\subsection{Wide-table sparsity}
 
 The continuous metric failure stems from extreme zero-inflation in the wide table. Most metric columns are nonzero for only a small fraction of the 1{,}000{,}000 \texttt{guid}s, because each event table covers a different subset of devices:
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrr}
 \toprule
@@ -392,14 +467,14 @@ A secondary consequence is system count inflation. The five-way chassis join ret
 
 \section{Discussion}
 
-The DP-SGD results provide a direct answer to research question (2): error compounds dramatically across multi-table joins when the synthesis approach introduces structural sparsity artifacts. The wide-table design is correct in principle, as it preserves the joint distribution across tables by construction. In practice, it creates a feature matrix where most columns are nearly degenerate. The VAE collapses these sparse columns to their mode (zero), destroying any signal in the nonzero tail.
+The DP-SGD results provide a direct answer to research question (2). Error compounds dramatically across multi-table joins when the synthesis approach introduces structural sparsity artifacts. The wide-table design is correct in principle, as it preserves the joint distribution across tables by construction. In practice, it creates a feature matrix where most columns are nearly degenerate. The VAE collapses these sparse columns to their mode (zero), destroying any signal in the nonzero tail.
 
 The browser ranking result demonstrates that the approach succeeds for well-populated categorical attributes. The joint distribution between country and browser preference is dense (every \texttt{guid} has a country; most have web browsing data), so the model learns a meaningful conditional distribution that preserves top-1 rankings in 84\% of countries.
 
-Several mitigation strategies warrant investigation:
+Several mitigation strategies warrant investigation.
 
 \begin{itemize}
-    \item A two-stage model: first a Bernoulli model for zero vs.\ nonzero per column, then a conditional model for nonzero values only.
+    \item A two-stage model in which a Bernoulli model predicts zero vs.\ nonzero per column, followed by a conditional model for nonzero values only.
     \item Per-table independent synthesis (sacrificing cross-table correlations) as a baseline to isolate the sparsity effect.
     \item A zero-inflated loss function replacing plain MSE for numeric columns.
     \item Restricting the wide table to \texttt{guid}s with sufficient coverage (e.g., present in $\geq 3$ metric tables).
@@ -432,7 +507,7 @@ The following is reproduced from the Q2 project proposal submitted in Fall 2025.
 
 \subsection{Problem statement}
 
-Organizations routinely collect detailed telemetry from their products that drive critical business decisions. The same granularity that makes telemetry valuable also makes it sensitive. Differential privacy (DP) provides a rigorous mathematical framework for releasing data while bounding the influence of any individual record. Two paradigms have emerged for generating differentially private synthetic data: training-based methods (DP-SGD) that inject noise during model optimization, and training-free methods (Private Evolution) that achieve privacy through black-box API access to foundation models.
+Organizations routinely collect detailed telemetry from their products that drive critical business decisions. The same granularity that makes telemetry valuable also makes it sensitive. Differential privacy (DP) provides a rigorous mathematical framework for releasing data while bounding the influence of any individual record. Two paradigms have emerged for generating differentially private synthetic data. Training-based methods (DP-SGD) inject noise during model optimization, while training-free methods (Private Evolution) achieve privacy through black-box API access to foundation models.
 
 We implement and compare both approaches on Intel's Driver and Client Applications (DCA) telemetry corpus, evaluating against a benchmark of analytical SQL queries representative of production business intelligence workloads. Under matched privacy budgets ($\varepsilon = 4.0$, $\delta = 10^{-5}$), we assess query fidelity, statistical preservation, and computational cost to determine whether training-free methods can match training-based approaches on real multi-table relational data.
 
@@ -468,15 +543,15 @@ For training-based synthesis, we implement a differentially private variational 
 
 \section{Contributions}
 
-\noindent Jason Tran:
+\noindent Jason Tran: Built the 19 reporting tables from raw telemetry data via DuckDB aggregation scripts. Designed and implemented the wide-table construction, DP-VAE architecture, DP-SGD training pipeline, synthetic data generation, and benchmark evaluation framework. Wrote the report.
 
 \medskip
-\noindent Mehak Kapur:
+\noindent Mehak Kapur: Ran and validated DuckDB queries to ingest the Parquet datasets. Helped construct the unified wide training table. Implemented and executed the DP-SGD VAE pipeline to generate synthetic data. Produced evaluation outputs and visualizations comparing real versus synthetic distributions. Wrote the report.
 
 \medskip
-\noindent Hana Tjendrawasi:
+\noindent Hana Tjendrawasi: Ran and validated DuckDB queries to ingest the Parquet datasets. Helped construct the unified wide training table by aligning schemas across sources. Supported the DP-SGD workflow through preprocessing and experiment setup. Assisted with reviewing evaluation metrics and results. Wrote the report.
 
 \medskip
-\noindent Phuc Tran:
+\noindent Phuc Tran: Exploratory data analysis on raw telemetry tables. Schema verification and column mapping between raw and reporting tables.
 
 \end{document}
