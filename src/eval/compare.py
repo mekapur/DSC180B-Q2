@@ -874,3 +874,41 @@ def detailed_results_to_dataframe(results: list[QueryResult]) -> pd.DataFrame:
                 "detail": m.detail,
             })
     return pd.DataFrame(rows)
+
+
+def compare_methods(
+    real_dir: Path,
+    synth_dirs: dict[str, Path],
+    rel_tol: float = 0.25,
+    tv_tol: float = 0.15,
+    rho_tol: float = 0.5,
+) -> pd.DataFrame:
+    all_summaries = {}
+    for method, synth_dir in synth_dirs.items():
+        results = evaluate_all(real_dir, synth_dir, rel_tol, tv_tol, rho_tol)
+        all_summaries[method] = results_to_dataframe(results)
+
+    methods = list(synth_dirs.keys())
+    all_queries = sorted(QUERY_METADATA.keys())
+    infeasible = {
+        "ranked_process_classifications",
+        "top_10_processes_per_user_id_ranked_by_total_power_consumption",
+        "top_20_most_power_consuming_processes_by_avg_power_consumed",
+    }
+    feasible = [q for q in all_queries if q not in infeasible]
+
+    rows = []
+    for q in feasible:
+        row = {"query": q, "type": QUERY_METADATA[q]["type"]}
+        for m in methods:
+            s = all_summaries[m]
+            match = s[s["query"] == q]
+            if len(match) > 0 and pd.isna(match.iloc[0]["error"]):
+                row[f"{m}_score"] = match.iloc[0]["score"]
+                row[f"{m}_passed"] = bool(match.iloc[0]["passed"])
+            else:
+                row[f"{m}_score"] = None
+                row[f"{m}_passed"] = None
+        rows.append(row)
+
+    return pd.DataFrame(rows)
