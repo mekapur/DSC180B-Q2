@@ -333,7 +333,7 @@ The workload-aware distance follows \citeauthor{swanberg2025apiaccessllmsuseful}
 \end{equation}
 where $w_i$ weights categorical features by query frequency (e.g., \texttt{chassistype} appears in 6 queries and receives weight 6, \texttt{countryname} in 4 queries receives weight 4) and numeric features are min-max normalized before computing L1 distance.
 
-For $T = 1$ iteration, the privacy analysis reduces to a single Gaussian mechanism. We calibrate $\sigma$ via the analytic Gaussian mechanism of Balle and Wang (2018) to achieve $\varepsilon = 4.0$ at $\delta = 10^{-5}$, yielding $\sigma \approx 1.08$. The total generation budget requires $N_{\text{synth}} \times L = 150{,}000$ API calls at batch size 20 (7{,}500 batches), submitted through OpenAI's Batch API at 50\% reduced cost.
+For $T = 1$ iteration, the privacy analysis reduces to a single Gaussian mechanism. We calibrate $\sigma$ via the analytic Gaussian mechanism of \citet{balle2018improving} to achieve $\varepsilon = 4.0$ at $\delta = 10^{-5}$, yielding $\sigma \approx 1.08$. The total generation budget requires $N_{\text{synth}} \times L = 150{,}000$ API calls at batch size 20 (7{,}500 batches), submitted through OpenAI's Batch API at 50\% reduced cost.
 
 Given \citeauthor{swanberg2025apiaccessllmsuseful}'s negative result on tabular PE (API access did not improve over marginal-based baselines), we treat this comparison as an empirical test of whether PE's advantages in the image and text domains transfer to heterogeneous, sparse telemetry data.
 
@@ -351,7 +351,17 @@ Per-table synthesis serves as a diagnostic: if it outperforms the wide-table app
 
 \subsection{MST baseline}
 
-As a non-neural baseline, we implement the Maximum Spanning Tree (MST) algorithm for synthetic data generation. MST selects a set of low-dimensional marginals (pairwise column distributions) using the exponential mechanism, estimates them with Gaussian noise, and generates synthetic records consistent with the noisy marginals via probabilistic graphical models. This marginal-based approach represents the current state of the art for tabular DP synthesis and provides the reference point against which both DP-SGD and PE should be measured.
+As a non-neural baseline, we implement the Maximum Spanning Tree (MST) algorithm \citep{mckenna2021winning} using the SmartNoise Synth library \citep{smartnoise2024}. MST is a marginal-based method that operates in three phases:
+
+\begin{enumerate}
+    \item \textit{Marginal selection:} compute all pairwise column marginals and select a spanning tree of high-mutual-information pairs using the exponential mechanism.
+    \item \textit{Noisy measurement:} estimate the selected marginals with calibrated Gaussian noise, splitting the privacy budget across all selected measurements.
+    \item \textit{Synthetic generation:} fit a probabilistic graphical model (Private-PGM) to the noisy marginals and sample synthetic records consistent with the estimated distributions.
+\end{enumerate}
+
+MST requires all columns to have finite cardinality. We discretize continuous columns into 20 quantile bins (computed on the nonzero values only, with a separate zero bin when present) and cap categorical columns at 50 categories (the same top-$k$ binning used for the DP-VAE). After synthesis, continuous values are reconstructed by sampling uniformly within each bin's range.
+
+Like the per-table DP-SGD approach, MST synthesizes each of the 19 reporting tables independently at $\varepsilon = 4.0$ per table, $\delta = 10^{-5}$, with guid assignment proportional to each table's real join rate against the sysinfo anchor. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, identical to the per-table DP-SGD baseline. Marginal-based methods represent the current state of the art for tabular DP synthesis \citep{swanberg2025apiaccessllmsuseful} and provide the reference point against which both DP-SGD and PE should be measured.
 
 \newpage
 
@@ -607,7 +617,7 @@ MST produces dramatically different continuous values from per-table DP-SGD on t
 
 \subsection{Private Evolution: preliminary observations}
 
-At the time of writing, PE generation via the OpenAI Batch API is ongoing (15 of 24 chunks completed, producing 118{,}363 of a target 150{,}000 synthetic records). Preliminary analysis of the completed chunks reveals several patterns.
+At the time of writing, PE generation via the OpenAI Batch API is ongoing (17 of 24 chunks completed, producing approximately 133{,}000 of a target 150{,}000 synthetic records). Preliminary analysis of the completed chunks reveals several patterns.
 
 Categorical distributions show systematic deviations from the real data. The model over-represents Win11 (77.8\% vs.\ 10.4\% real) and under-represents Win10 (9.2\% vs.\ 86.2\% real), likely reflecting the foundation model's training data distribution rather than the DCA telemetry distribution. The model also generates hallucinated categorical values not present in the real data: 132 extra \texttt{chassistype} values (including misspellings like ``Noteboook'', ``DeskTop'', ``NoteBook''), 33 extra countries (leading-whitespace variants like `` Brazil''), and 15 extra OS values (including ``WinServer'', ``n/a''). These hallucinated values always score as maximum mismatch in the workload-aware distance function, wasting a portion of the generation budget.
 
@@ -624,6 +634,8 @@ Research question (1), which method achieves higher benchmark scores, has a nuan
 Research question (2), whether error compounds across multi-table joins, receives a clear affirmative. The 5-way chassis join query requires data from five independently synthesized tables. Both per-table methods score 0.00 because the synthetic tables share no correlated \texttt{guid}s; the inner join produces empty results (per-table DP-SGD) or random associations (MST). The wide-table DP-VAE scores 0.17 on this query, the only method that preserves any cross-table structure, but the values are near-zero due to sparsity. The server exploration query (a 2-way join) similarly suffers: both per-table methods overcount matching rows by 5--7$\times$ and report network byte values with RE $\approx 1.0$, because the independently synthesized network and sysinfo tables produce spurious \texttt{guid} overlaps.
 
 Research question (3), minority class preservation, is partially addressed. The browser ranking query demonstrates that all methods preserve dominant categorical associations: per-table DP-SGD achieves 47/50 correct top browsers per country, matching the wide-table result of 42/50. For rare categories, per-table DP-SGD inflates minority chassis types (``Intel NUC/STK'' at 8.4\% synthetic vs.\ 2.0\% real) due to the top-50 binning and uniform noise in DP-SGD, while MST underrepresents them (generating too few entries for rare combinations). Both methods underperform on queries involving rare process names or application-specific rankings.
+
+Research question (4), classifier comparability, remains unaddressed. The benchmark queries are analytical (aggregate statistics, rankings, distributions), not predictive, so training downstream classifiers on the synthetic data was not a natural fit for this evaluation framework. A direct comparison would require defining a classification task on the DCA data (e.g., predicting chassis type from usage patterns), training models on real versus synthetic data, and comparing test accuracy. We defer this to future work.
 
 Research question (5), wall-clock time, shows clear differences. The wide-table DP-VAE trains in 360 minutes on CPU (20 epochs, 1M rows, 307 features). Per-table synthesis completes in approximately 90 minutes total (two VAEs at $\sim$30 minutes each for sysinfo and cpu\_metadata, plus histogram synthesis for 17 smaller tables). MST runs in under 10 minutes per table using the \texttt{mst} library. PE's cost is dominated by API latency: the 150{,}000-record generation run requires 7{,}500 batch API calls at approximately \$18--37 total, with completion time determined by OpenAI's batch processing queue (typically 1--4 hours).
 
