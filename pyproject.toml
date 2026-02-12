@@ -1,8 +1,15 @@
 [project]
 name = "dsc180-q2"
 version = "0.1.0"
-description = "Add your description here"
+description = "Training-based vs training-free differential privacy for synthetic data generation on Intel DCA telemetry"
 requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "Mehak Kapur", email = "mekapur@ucsd.edu"},
+    {name = "Hana Tjendrawasi", email = "htjendrawasi@ucsd.edu"},
+    {name = "Jason Tran", email = "jat037@ucsd.edu"},
+    {name = "Phuc Tran", email = "pct001@ucsd.edu"},
+]
 dependencies = [
     "duckdb>=1.4.4",
     "ipykernel>=7.2.0",
