@@ -16,25 +16,26 @@
 \contentsline {subsection}{\numberline {3.4}Synthetic data generation and decomposition}{14}{subsection.3.4}%
 \contentsline {subsection}{\numberline {3.5}Private Evolution}{14}{subsection.3.5}%
 \contentsline {subsection}{\numberline {3.6}Per-table DP synthesis}{15}{subsection.3.6}%
-\contentsline {subsection}{\numberline {3.7}MST baseline}{15}{subsection.3.7}%
-\contentsline {section}{\numberline {4}Results}{17}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Evaluation metrics}{17}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Wide-table DP-VAE}{17}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}Browser ranking preservation}{17}{subsection.4.3}%
-\contentsline {subsection}{\numberline {4.4}Browser usage percentages}{17}{subsection.4.4}%
-\contentsline {subsection}{\numberline {4.5}Continuous metric failure}{18}{subsection.4.5}%
-\contentsline {subsection}{\numberline {4.6}Wide-table sparsity}{19}{subsection.4.6}%
-\contentsline {subsection}{\numberline {4.7}Three-method comparison}{21}{subsection.4.7}%
+\contentsline {subsection}{\numberline {3.7}MST baseline}{16}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.8}Privacy budget summary}{16}{subsection.3.8}%
+\contentsline {section}{\numberline {4}Results}{18}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Evaluation metrics}{18}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Wide-table DP-VAE}{18}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Browser ranking preservation}{18}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Browser usage percentages}{18}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Continuous metric failure}{19}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.6}Wide-table sparsity}{20}{subsection.4.6}%
+\contentsline {subsection}{\numberline {4.7}Three-method comparison}{22}{subsection.4.7}%
 \contentsline {subsection}{\numberline {4.8}Method complementarity}{24}{subsection.4.8}%
 \contentsline {subsection}{\numberline {4.9}Private Evolution: preliminary observations}{25}{subsection.4.9}%
-\contentsline {section}{\numberline {5}Discussion}{25}{section.5}%
+\contentsline {section}{\numberline {5}Discussion}{26}{section.5}%
 \contentsline {subsection}{\numberline {5.1}Sensitivity to evaluation thresholds}{27}{subsection.5.1}%
 \contentsline {section}{\numberline {6}Conclusion}{28}{section.6}%
-\contentsline {section}{References}{29}{section*.1}%
-\contentsline {section}{\numberline {A}Project proposal}{30}{appendix.A}%
-\contentsline {subsection}{\numberline {A.1}Problem statement}{30}{subsection.A.1}%
-\contentsline {subsection}{\numberline {A.2}Data}{30}{subsection.A.2}%
-\contentsline {subsection}{\numberline {A.3}Methods}{30}{subsection.A.3}%
-\contentsline {subsection}{\numberline {A.4}Research questions}{31}{subsection.A.4}%
-\contentsline {subsection}{\numberline {A.5}Expected outputs}{31}{subsection.A.5}%
-\contentsline {section}{\numberline {B}Contributions}{32}{appendix.B}%
+\contentsline {section}{References}{30}{section*.1}%
+\contentsline {section}{\numberline {A}Project proposal}{31}{appendix.A}%
+\contentsline {subsection}{\numberline {A.1}Problem statement}{31}{subsection.A.1}%
+\contentsline {subsection}{\numberline {A.2}Data}{31}{subsection.A.2}%
+\contentsline {subsection}{\numberline {A.3}Methods}{31}{subsection.A.3}%
+\contentsline {subsection}{\numberline {A.4}Research questions}{32}{subsection.A.4}%
+\contentsline {subsection}{\numberline {A.5}Expected outputs}{32}{subsection.A.5}%
+\contentsline {section}{\numberline {B}Contributions}{33}{appendix.B}%
