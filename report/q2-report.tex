@@ -638,6 +638,21 @@ Several mitigation strategies warrant investigation:
     \item Post-processing the synthetic data with mode patching and constraint enforcement, as proposed by recent work on model-agnostic DP post-processing.
 \end{itemize}
 
+\subsection{Sensitivity to evaluation thresholds}
+
+Figure~\ref{fig:sensitivity} reports how pass rates change as the relative error, total variation, and Spearman $\rho$ thresholds vary. The analysis confirms that our findings are not artifacts of a particular threshold choice.
+
+The relative error threshold has the largest effect. Per-table DP-SGD's pass rate increases from 14.3\% at RE $\leq 0.05$ to 57.1\% at RE $\leq 1.0$, indicating many queries produce synthetic values in the right order of magnitude but outside the strict 25\% tolerance. MST is more robust to strict thresholds: it starts at 23.8\% at RE $\leq 0.05$ (compared to 14.3\% for per-table), reflecting its strength on categorical distributions where exact values are less important than distributional shape. The wide-table method is flat at 12.5\% until RE $\leq 1.0$, at which point it jumps to 75\%, confirming that the continuous metric failure is total (relative errors exceed 99\%) rather than marginal.
+
+Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates across all methods. TV sensitivity is limited because the distribution queries either match closely (TV $< 0.10$) or fail badly (TV $> 0.5$), with few queries in the boundary region. Rank correlation sensitivity is limited because MST achieves perfect $\rho = 1.0$ on its passing ranking queries while both methods score near zero on failing ones, leaving no queries sensitive to the threshold.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/sensitivity_analysis.pdf}
+\caption{Pass rate sensitivity to evaluation thresholds. Left: relative error threshold (TV = 0.15, $\rho$ = 0.5 fixed). Center: total variation threshold (RE = 0.25, $\rho$ = 0.5 fixed). Right: Spearman $\rho$ threshold (RE = 0.25, TV = 0.15 fixed). Dashed gray lines indicate default thresholds used throughout.}
+\label{fig:sensitivity}
+\end{figure}
+
 \section{Conclusion}
 
 We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing four synthesis approaches: a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, MST marginal-based synthesis, and Private Evolution via foundation model APIs.
