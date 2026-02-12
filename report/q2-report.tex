@@ -359,7 +359,7 @@ $S \gets$ top $N_{\text{synth}}$ candidates ranked by $\tilde{h}_j$\tcp*{rank-ba
 
 To isolate the sparsity artifact of the wide-table approach, we implement an independent per-table synthesis baseline. Each of the 19 reporting tables is synthesized separately at $\varepsilon = 4.0$ per table.
 
-Two tables receive dedicated DP-VAE treatment. The sysinfo anchor table (1{,}000{,}000 rows, 9 categorical and 1 numeric column) uses a VAE with latent dimension 32, hidden size 256, batch size 4{,}096, 15 epochs, KL weight 0.1, trained with Opacus at $\varepsilon = 4.0$, $\delta = 10^{-5}$. Categoricals are top-50 binned and one-hot encoded. The cpu\_metadata table (1{,}000{,}000 rows, 5 categorical and 1 numeric column) uses the same architecture.
+Two tables receive dedicated DP-VAE treatment. The sysinfo anchor table (1{,}000{,}000 rows, 9 categorical and 1 numeric column) uses a VAE with encoder $d_{\text{in}} \to 256 \to 128 \to (32\mu, 32\log\sigma^2)$, batch size 4{,}096, 15 epochs, Adam ($\text{lr} = 10^{-3}$), KL weight 0.1, trained with Opacus at $\varepsilon = 4.0$, $\delta = 10^{-5}$. Categoricals are top-50 binned and one-hot encoded. The cpu\_metadata table (1{,}000{,}000 rows, 5 categorical and 1 numeric column) uses the same architecture.
 
 The remaining 17 tables use DP histogram synthesis. For each table, we compute the join rate (fraction of anchor \texttt{guid}s with data) and generate proportionally many synthetic rows. Continuous columns are discretized into 20 equal-width bins spanning the 1st to 99th percentile, with Laplace noise ($\text{scale} = 1/\varepsilon_c$) added to bin counts and $\varepsilon_c = \varepsilon / k$ split uniformly across $k$ columns. Categorical columns receive analogous noisy histogram sampling.
 
