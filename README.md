@@ -62,6 +62,13 @@ This project uses [uv](https://docs.astral.sh/uv/) for package management.
 
    Now you can select "DSC 180B Q2" as the kernel when opening notebooks.
 
+5. For Private Evolution (notebook 06), copy `.env.example` to `.env` and add your OpenAI API key:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env and set OPENAI_API_KEY=sk-...
+   ```
+
 ### Data acquisition
 
 The DCA telemetry data (~20.7 GiB) is hosted on the HDSI Industry Data Repository and transferred via [Globus](https://www.globus.org/). The data is not included in this repository. See [`data/README.md`](data/README.md) for the complete download list and reproduction instructions.
@@ -94,7 +101,8 @@ dsc180-q2/
 │   ├── 06-private-evolution.ipynb         # PE via OpenAI Batch API (gpt-5-nano)
 │   ├── 07-pe-chunk-analysis.ipynb         # Inspect PE batch generation progress
 │   ├── 08-per-table-dpsgd.ipynb           # Per-table DP histogram synthesis
-│   └── 09-mst-baseline.ipynb             # MST marginal-based baseline
+│   ├── 09-mst-baseline.ipynb              # MST marginal-based baseline
+│   └── 10-consolidated-evaluation.ipynb   # Cross-method comparison and figures
 │
 ├── report/
 │   ├── q2-report.tex                      # Main Q2 report (XeLaTeX)
@@ -116,9 +124,17 @@ dsc180-q2/
 │   └── results/
 │       ├── real/                          # Ground truth query results (24 CSVs)
 │       ├── synthetic/                     # Wide-table DP-SGD results
-│       └── synth_pertable/                # Per-table DP-SGD results
+│       ├── synth_pertable/                # Per-table DP-SGD results
+│       └── synth_mst/                     # MST baseline results
+│
+├── tests/                                 # Unit tests (pytest)
+│   ├── test_privacy.py                    # Gaussian mechanism, sigma calibration
+│   ├── test_distance.py                   # Workload-aware distance function
+│   ├── test_compare.py                    # Evaluation metrics (RE, TV, Spearman)
+│   └── test_decompose.py                  # RAM snapping, decomposition
 │
 ├── dsc-180a-q1/                           # Git submodule: Q1 DP-VAE implementation
+├── .env.example                           # Template for OpenAI API key
 ├── pyproject.toml
 └── uv.lock
 ```
@@ -233,3 +249,15 @@ Three additional queries are permanently infeasible due to missing power consump
 | `scipy` | >=1.17.0 | Spearman correlation, Gaussian mechanism calibration |
 | `matplotlib` | >=3.10.8 | Evaluation visualizations |
 | `jupyter`, `ipykernel` | >=1.1.1, >=7.2.0 | Notebook execution |
+
+---
+
+## Tests
+
+Run the unit test suite with:
+
+```bash
+uv run pytest tests/ -v
+```
+
+41 tests cover the privacy accounting module, workload-aware distance function, evaluation metrics (relative error, total variation, Spearman rho, Jaccard similarity, categorical accuracy), and the decomposition utilities. Tests do not require downloaded data or API keys.
