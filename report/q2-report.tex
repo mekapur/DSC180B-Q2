@@ -317,25 +317,55 @@ The synthetic wide table is then decomposed back into 12 reporting table schemas
 
 We evaluate 8 of the 21 feasible queries whose reporting tables are fully reconstructable from the wide-table columns. The remaining 13 queries require per-row columns not present in the wide table (e.g., per-process breakdowns for userwait, per-application data for foreground apps, per-display data for display devices).
 
-\subsection{Private Evolution (planned)}
+\subsection{Private Evolution}
 
-We plan to implement Private Evolution adapted for tabular data, following the framework of \citet{lin2025differentiallyprivatesyntheticdata} with the workload-aware distance function proposed by \citet{swanberg2025apiaccessllmsuseful}. The algorithm iteratively evolves a population of synthetic records through three steps per iteration:
+We implement Private Evolution adapted for tabular data, following the framework of \citet{lin2025differentiallyprivatesyntheticdata} with the workload-aware distance function proposed by \citet{swanberg2025apiaccessllmsuseful}. The algorithm operates in a single iteration ($T = 1$, the optimal setting for tabular data per \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that subsequent iterations provide marginal gains outweighed by composition cost).
 
 \begin{enumerate}
-    \item \textit{Candidate generation:} prompt a foundation model to produce variations of current synthetic records that conform to the DCA schema.
-    \item \textit{Private selection:} compute a nearest-neighbor histogram in which each real record votes for its closest synthetic candidate under the workload-aware distance. Add Gaussian noise calibrated to the histogram sensitivity (1, since each \texttt{guid} contributes exactly one vote).
-    \item \textit{Resampling:} resample the synthetic population according to the noisy histogram, retaining candidates that best approximate the real data distribution.
+    \item \textit{Population generation:} prompt a foundation model (OpenAI gpt-5-nano via the Batch API) to produce $N_{\text{synth}} \times L$ synthetic records conforming to the DCA wide-table schema (68 fields: 9 categorical as constrained strings, 59 numeric as floats). Each batch request uses Pydantic Structured Outputs to guarantee schema compliance.
+    \item \textit{DP nearest-neighbor histogram:} each of the $n = 1{,}000{,}000$ real records votes for its nearest synthetic candidate under the workload-aware distance. Gaussian noise $\mathcal{N}(0, \sigma^2)$ is added to the vote histogram. The sensitivity is 1, since each \texttt{guid} contributes exactly one vote.
+    \item \textit{Rank-based selection:} the top $N_{\text{synth}}$ candidates by noisy vote count are selected as the final synthetic population.
 \end{enumerate}
 
-Privacy follows from composition of $T$ Gaussian mechanisms, equivalent to a single mechanism with noise multiplier $\sigma / \sqrt{T}$. We will match the DP-SGD budget ($\varepsilon = 4.0$, $\delta = 10^{-5}$) for a controlled comparison.
+The workload-aware distance follows \citeauthor{swanberg2025apiaccessllmsuseful}'s formulation:
+\begin{equation}
+    d_W(x, c) = \sum_{i \in \text{cat}} w_i \cdot \mathbf{1}[x_i \neq c_i] + \sum_{j \in \text{num}} |x_j - c_j|,
+\end{equation}
+where $w_i$ weights categorical features by query frequency (e.g., \texttt{chassistype} appears in 6 queries and receives weight 6, \texttt{countryname} in 4 queries receives weight 4) and numeric features are min-max normalized before computing L1 distance.
+
+For $T = 1$ iteration, the privacy analysis reduces to a single Gaussian mechanism. We calibrate $\sigma$ via the analytic Gaussian mechanism of Balle and Wang (2018) to achieve $\varepsilon = 4.0$ at $\delta = 10^{-5}$, yielding $\sigma \approx 1.08$. The total generation budget requires $N_{\text{synth}} \times L = 150{,}000$ API calls at batch size 20 (7{,}500 batches), submitted through OpenAI's Batch API at 50\% reduced cost.
 
 Given \citeauthor{swanberg2025apiaccessllmsuseful}'s negative result on tabular PE (API access did not improve over marginal-based baselines), we treat this comparison as an empirical test of whether PE's advantages in the image and text domains transfer to heterogeneous, sparse telemetry data.
+
+\subsection{Per-table DP synthesis}
+
+To isolate the sparsity artifact of the wide-table approach, we implement an independent per-table synthesis baseline. Each of the 19 reporting tables is synthesized separately using DP histogram mechanisms calibrated to $\varepsilon = 4.0$ per table. For each table, we aggregate to the \texttt{guid} level, compute join rates (fraction of anchor \texttt{guid}s with data), and generate proportionally sized synthetic tables.
+
+This approach sacrifices cross-table correlations by design. Synthetic \texttt{guid}s in one table bear no relationship to those in another. However, it avoids the zero-inflation problem: each table's model trains only on \texttt{guid}s that have data, so the input distribution is not dominated by zeros. Per-table synthesis serves as a diagnostic: if it outperforms the wide-table approach on single-table queries while failing on multi-table joins, that confirms the sparsity hypothesis.
+
+\subsection{MST baseline}
+
+As a non-neural baseline, we implement the Maximum Spanning Tree (MST) algorithm for synthetic data generation. MST selects a set of low-dimensional marginals (pairwise column distributions) using the exponential mechanism, estimates them with Gaussian noise, and generates synthetic records consistent with the noisy marginals via probabilistic graphical models. This marginal-based approach represents the current state of the art for tabular DP synthesis and provides the reference point against which both DP-SGD and PE should be measured.
 
 \newpage
 
 \section{Results}
 
-We evaluate the DP-VAE synthetic data on 8 of 21 feasible benchmark queries. The remaining 13 queries require per-row reporting table columns (e.g., per-process wait times, per-application focal durations) that are not present in the wide-table representation.
+\subsection{Evaluation metrics}
+
+We evaluate synthetic data quality using three distance metrics matched to query output types. For aggregate queries that produce numeric columns grouped by categorical keys, we compute the median relative error across all overlapping groups:
+\begin{equation}
+    \text{RE}(r, s) = |r - s| / |r|.
+\end{equation}
+For queries that produce categorical distributions or histograms, we compute total variation distance between normalized real and synthetic distributions:
+\begin{equation}
+    \text{TV}(p, q) = \frac{1}{2} \sum_i |p_i - q_i|.
+\end{equation}
+For ranked result sets, we compute Spearman's rank correlation coefficient on the overlapping items. Group coverage is assessed via Jaccard similarity between real and synthetic group keys. A query passes if at least 50\% of its per-column metrics meet their respective thresholds (relative error $\leq 0.25$, total variation $\leq 0.15$, Spearman $\rho \geq 0.5$, Jaccard $\geq 0.5$).
+
+\subsection{Wide-table DP-VAE}
+
+We evaluate the wide-table DP-VAE synthetic data on 8 of 21 feasible benchmark queries. The remaining 13 queries require per-row reporting table columns (e.g., per-process wait times, per-application focal durations) that are not present in the wide-table representation.
 
 \subsection{Browser ranking preservation}
 
@@ -465,30 +495,46 @@ A secondary consequence is system count inflation. The five-way chassis join ret
 
 \newpage
 
+\subsection{Private Evolution: preliminary observations}
+
+At the time of writing, PE generation via the OpenAI Batch API is ongoing (11 of 24 chunks completed, producing 86{,}865 of a target 150{,}000 synthetic records). Preliminary analysis of the completed chunks reveals several patterns.
+
+Categorical distributions show systematic deviations from the real data. The model over-represents Win11 (77.8\% vs.\ 10.4\% real) and under-represents Win10 (9.2\% vs.\ 86.2\% real), likely reflecting the foundation model's training data distribution rather than the DCA telemetry distribution. The model also generates hallucinated categorical values not present in the real data: 132 extra \texttt{chassistype} values (including misspellings like ``Noteboook'', ``DeskTop'', ``NoteBook''), 33 extra countries (leading-whitespace variants like `` Brazil''), and 15 extra OS values (including ``WinServer'', ``n/a''). These hallucinated values always score as maximum mismatch in the workload-aware distance function, wasting a portion of the generation budget.
+
+Numeric columns exhibit the same sparsity problem as DP-SGD. The foundation model generates near-zero values for sparse metrics: network bytes, memory utilization, battery duration, and all hardware metrics have $< 1\%$ nonzero rates in the synthetic data (vs.\ 2--7\% in real data). The model has learned that most fields are zero (the prompt describes the sparsity structure), but it generates too few nonzero records relative to the real distribution.
+
+One notable exception: display device columns. The PE data shows 87.5\% nonzero rate for \texttt{disp\_num\_displays} (vs.\ 20.9\% real), suggesting the model over-generates display data. Browser duration columns show a similar pattern: 13.3\% nonzero rate for chrome (vs.\ 5.3\% real).
+
+Full evaluation of PE against the benchmark requires completing the generation run, computing the DP histogram, and selecting the final population. These steps incur no additional API cost (the histogram and selection operate on local data with the already-calibrated noise $\sigma \approx 1.08$).
+
 \section{Discussion}
 
 The DP-SGD results provide a direct answer to research question (2). Error compounds dramatically across multi-table joins when the synthesis approach introduces structural sparsity artifacts. The wide-table design is correct in principle, as it preserves the joint distribution across tables by construction. In practice, it creates a feature matrix where most columns are nearly degenerate. The VAE collapses these sparse columns to their mode (zero), destroying any signal in the nonzero tail.
 
 The browser ranking result demonstrates that the approach succeeds for well-populated categorical attributes. The joint distribution between country and browser preference is dense (every \texttt{guid} has a country; most have web browsing data), so the model learns a meaningful conditional distribution that preserves top-1 rankings in 84\% of countries.
 
-Several mitigation strategies warrant investigation.
+The preliminary PE results suggest that foundation models are not well-suited to this particular domain. Rather than learning the DCA-specific distribution, the model imports its own priors (e.g., over-representing Win11, a more recent OS that dominates the model's training data rather than the DCA corpus vintage). The hallucinated categorical values further reduce effective sample size by generating records that cannot match any real data point in the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
+
+The per-table DP synthesis approach (notebook 08, in progress) addresses the zero-inflation problem directly by training each table's model only on \texttt{guid}s that have data. This eliminates the degenerate distribution but introduces a different failure mode: cross-table correlations are lost entirely. The tradeoff between these two failure modes is the central diagnostic of our evaluation.
+
+Several additional mitigation strategies warrant investigation:
 
 \begin{itemize}
     \item A two-stage model in which a Bernoulli model predicts zero vs.\ nonzero per column, followed by a conditional model for nonzero values only.
-    \item Per-table independent synthesis (sacrificing cross-table correlations) as a baseline to isolate the sparsity effect.
     \item A zero-inflated loss function replacing plain MSE for numeric columns.
-    \item Restricting the wide table to \texttt{guid}s with sufficient coverage (e.g., present in $\geq 3$ metric tables).
+    \item Restricting the wide table to \texttt{guid}s with sufficient coverage (e.g., present in $\geq 3$ metric tables), reducing sparsity at the cost of population representativeness.
+    \item Post-processing the synthetic data with mode patching and constraint enforcement, as proposed by recent work on model-agnostic DP post-processing.
 \end{itemize}
-
-Private Evolution may be better suited to this setting. Rather than learning a generative model over the full 307-dimensional feature space, PE operates in an embedding space and uses a foundation model as a proposal mechanism. If the foundation model can generate plausible telemetry records with realistic sparsity patterns (i.e., most records have data in only a few metric tables), PE could preserve the heterogeneous coverage structure that the VAE collapses.
 
 \section{Conclusion}
 
-We presented a controlled evaluation of differentially private synthetic data generation on Intel's DCA telemetry corpus. The DP-VAE trained with DP-SGD ($\varepsilon = 3.996$, $\delta = 10^{-5}$) preserves categorical joint distributions (42/50 countries receive the correct top browser) but fails on all continuous metrics due to extreme zero-inflation in the wide-table representation.
+We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing three synthesis approaches: a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, and Private Evolution via foundation model APIs.
 
-This result identifies the sparsity structure of multi-table joins as a critical factor in the success or failure of DP synthetic data generation. When coverage varies across tables (as it does in any real multi-table dataset), a unified representation concentrates nearly all probability mass at zero for sparse columns, and standard generative models learn to reproduce this mode.
+The wide-table DP-VAE ($\varepsilon = 3.996$, $\delta = 10^{-5}$) preserves categorical joint distributions (42/50 countries receive the correct top browser) but fails on all continuous metrics due to extreme zero-inflation. This result identifies the sparsity structure of multi-table joins as a critical factor in the success or failure of DP synthetic data generation. When coverage varies across tables (as it does in any real multi-table dataset), a unified representation concentrates nearly all probability mass at zero for sparse columns, and standard generative models learn to reproduce this mode.
 
-Our evaluation so far covers only the DP-SGD paradigm. The comparison with Private Evolution, using matched privacy budgets and the same 21-query benchmark, will determine whether training-free methods handle the heterogeneous structure of relational telemetry data more effectively.
+Preliminary PE results suggest that foundation models import their own distributional priors rather than learning the target distribution, generating systematic biases in categorical marginals and hallucinating values outside the real vocabulary. The sparsity problem persists: the model generates near-zero values for sparse numeric columns at rates comparable to, or worse than, the DP-VAE.
+
+The complete comparison across all four methods (wide-table DP-SGD, per-table DP-SGD, Private Evolution, and MST baseline), using matched privacy budgets and the same 21-query benchmark, is ongoing. Per-table DP-SGD and MST results will provide the diagnostic baselines needed to disentangle the effect of cross-table correlation loss from the effect of zero-inflation.
 
 \newpage
 
