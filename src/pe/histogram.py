@@ -1,11 +1,3 @@
-"""DP nearest-neighbor histogram, candidate selection, and PE orchestration.
-
-Implements Algorithm 2 from Lin et al. (2024): each real record votes for its
-nearest synthetic candidate, Gaussian noise is added for differential privacy,
-and top-ranked candidates are selected for the next iteration. The
-PECheckpoint class provides fault-tolerant stage-based resume for long runs.
-"""
-
 import json
 import logging
 import time
@@ -29,30 +21,6 @@ def dp_nn_histogram(
     real_chunk: int = 5000,
     synth_chunk: int = 10000,
 ) -> np.ndarray:
-    """Compute a DP nearest-neighbor histogram over synthetic candidates.
-
-    Each real record votes for the synthetic candidate closest to it under
-    the workload-aware distance. Gaussian noise N(0, sigma) is added to the
-    vote counts for (epsilon, delta)-DP. Negative bins are clamped to zero.
-
-    Parameters
-    ----------
-    real_df : pd.DataFrame
-        Private dataset (one row per record).
-    synth_df : pd.DataFrame
-        Current synthetic population to score.
-    dist : WorkloadDistance
-        Pre-fitted distance metric with column weights and normalization.
-    sigma : float
-        Gaussian noise standard deviation (from privacy calibration).
-    real_chunk, synth_chunk : int
-        Chunk sizes for the blocked nearest-neighbor computation.
-
-    Returns
-    -------
-    np.ndarray
-        Noisy vote histogram of length len(synth_df), clamped to >= 0.
-    """
     nn_indices = dist.nearest_neighbors(
         real_df, synth_df, real_chunk=real_chunk, synth_chunk=synth_chunk
     )
@@ -70,31 +38,6 @@ def select_candidates(
     n_select: int,
     method: str = "rank",
 ) -> pd.DataFrame:
-    """Select the top synthetic candidates by noisy vote count.
-
-    Two selection modes are supported:
-    - "rank" (default, from Xie et al. 2024): deterministically pick the
-      n_select candidates with the highest histogram values. Eliminates
-      redundancy from probability-based sampling.
-    - "sample": sample n_select candidates with replacement, weighted by
-      the histogram. Used in the original PE (Lin et al. 2024).
-
-    Parameters
-    ----------
-    synth_df : pd.DataFrame
-        Synthetic population (same length as histogram).
-    histogram : np.ndarray
-        Noisy vote counts from dp_nn_histogram.
-    n_select : int
-        Number of candidates to keep.
-    method : str
-        "rank" for deterministic top-k, "sample" for weighted sampling.
-
-    Returns
-    -------
-    pd.DataFrame
-        Selected candidates, reset-indexed.
-    """
     if method == "rank":
         top_indices = np.argsort(histogram)[::-1][:n_select]
     else:
@@ -110,20 +53,6 @@ def select_candidates(
 
 
 class PECheckpoint:
-    """Stage-based checkpoint system for fault-tolerant PE runs.
-
-    PE generation involves expensive API calls (RANDOM_API for initial
-    population, VARIATION_API for each iteration). If the notebook kernel
-    restarts mid-run, this class allows resuming from the last completed
-    stage rather than re-generating (and re-paying for) data.
-
-    Stages progress linearly:
-        initialized -> population_generated -> histogram_computed -> selected -> done
-
-    Each stage saves its artifacts (parquet, npy, json) to checkpoint_dir.
-    The metadata file tracks the current stage and completed iteration index.
-    """
-
     STAGE_INIT = "initialized"
     STAGE_POPULATION = "population_generated"
     STAGE_HISTOGRAM = "histogram_computed"
@@ -190,55 +119,6 @@ async def private_evolution(
     work_dir: Path = Path("."),
     checkpoint_dir: Path | None = None,
 ) -> tuple[pd.DataFrame, dict]:
-    """Run the full Private Evolution loop (Lin et al. 2024, adapted for tabular).
-
-    1. Generate initial population of N_synth * L records via RANDOM_API.
-    2. For each iteration t = 1..T:
-       a. Compute DP nearest-neighbor histogram (real votes for synth).
-       b. Select top N_synth candidates by rank.
-       c. If not the last iteration, generate L-1 variations per candidate.
-    3. Return the final selected population with synthetic guid identifiers.
-
-    For tabular data, T=1 is optimal (Swanberg et al. 2025; confirmed by
-    Gonzalez et al. NeurIPS 2025 convergence theory). With T=1, no
-    VARIATION_API calls are made and privacy cost is a single Gaussian
-    mechanism application.
-
-    Parameters
-    ----------
-    real_df : pd.DataFrame
-        Private dataset with categorical and numeric columns.
-    api : PEApi
-        Configured API client for RANDOM_API and VARIATION_API calls.
-    n_synth : int
-        Target synthetic dataset size.
-    T : int
-        Number of PE iterations (1 recommended for tabular).
-    L : int
-        Overgeneration factor: generate L * n_synth candidates per iteration.
-    epsilon, delta : float
-        Privacy parameters for the overall PE run.
-    real_chunk, synth_chunk : int
-        Chunk sizes for nearest-neighbor computation.
-    batch_size : int
-        Records per API call for RANDOM_API.
-    variation_batch_size : int
-        Source records per API call for VARIATION_API.
-    real_subsample : int or None
-        If set, subsample the real dataset for voting (reduces NN cost).
-    use_batch : bool
-        If True, use OpenAI Batch API (50% cheaper, async 24h window).
-    work_dir : Path
-        Directory for batch job files and temporary artifacts.
-    checkpoint_dir : Path or None
-        Directory for checkpoint files. Defaults to work_dir/pe_checkpoints.
-
-    Returns
-    -------
-    (pd.DataFrame, dict)
-        Synthetic dataset with guid column, and history dict with timing
-        and privacy accounting information.
-    """
     ckpt = PECheckpoint(checkpoint_dir or (work_dir / "pe_checkpoints"))
     existing_meta = ckpt.load_meta()
 

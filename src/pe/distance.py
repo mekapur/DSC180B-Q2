@@ -1,12 +1,3 @@
-"""Workload-aware distance function for tabular Private Evolution.
-
-Implements the weighted L1 distance from Swanberg et al. (2025), where
-categorical columns are scored by mismatch (0/1) weighted by how many
-benchmark queries reference each attribute, and numeric columns use L1
-on min-max normalized values. The combined distance determines which
-synthetic candidate each real record votes for in the DP histogram.
-"""
-
 import numpy as np
 import pandas as pd
 
@@ -99,20 +90,6 @@ CAT_QUERY_WEIGHTS = {
 
 
 class WorkloadDistance:
-    """Workload-aware distance metric for tabular DP nearest-neighbor voting.
-
-    Fits normalization parameters (min/range for numerics, query-frequency
-    weights for categoricals) from the real dataset. The combined distance
-    is a weighted L1 over all columns, normalized so that each column
-    contributes proportionally to its query importance.
-
-    Parameters
-    ----------
-    real_df : pd.DataFrame
-        Real dataset used to compute normalization bounds and identify
-        which columns are present.
-    """
-
     def __init__(self, real_df: pd.DataFrame):
         self.cat_cols = [c for c in CAT_COLS if c in real_df.columns]
         self.num_cols = [c for c in NUMERIC_COLS if c in real_df.columns]
@@ -154,21 +131,6 @@ class WorkloadDistance:
         synth_chunk: int = 10000,
         n_workers: int | None = None,
     ) -> np.ndarray:
-        """Find the nearest synthetic neighbor for each real record.
-
-        Uses blocked computation (real_chunk x synth_chunk) to avoid
-        materializing the full N_real x N_synth distance matrix. Numeric
-        distances are computed via scipy.cdist with cityblock metric;
-        categorical mismatches are added per-column with query weights.
-
-        Threading provides true parallelism because scipy.cdist and numpy
-        operations release the GIL during their C-level computations.
-
-        Returns
-        -------
-        np.ndarray of shape (n_real,)
-            Index into synth_df of the nearest neighbor for each real record.
-        """
         import os
         from concurrent.futures import ThreadPoolExecutor, as_completed
         from scipy.spatial.distance import cdist

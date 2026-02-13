@@ -1,18 +1,3 @@
-"""
-Evaluate synthetic data quality by comparing benchmark query results.
-
-Usage:
-    uv run python -m src.pipeline.evaluate \
-        --real-dir data/results/real \
-        --synth-dir data/results/synthetic \
-        --output data/results/evaluation_widetable.csv
-
-    uv run python -m src.pipeline.evaluate \
-        --real-dir data/results/real \
-        --synth-dir data/results/synth_pertable \
-        --output data/results/evaluation_pertable.csv
-"""
-
 from __future__ import annotations
 
 import argparse

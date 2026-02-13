@@ -64,3 +64,6 @@ data/**/*.pt
 *.xdv
 .claude/
 .env
+_minted/
+*.thm
+*.toc

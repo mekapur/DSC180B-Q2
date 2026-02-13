@@ -1,15 +1,3 @@
-"""
-Build reporting tables from raw DCA Parquet/CSV data.
-
-Usage:
-    uv run python -m src.pipeline.build_reporting --raw-dir data/raw --out-dir data/reporting
-
-Reads raw Parquet files and gzipped CSVs from the DCA dataset,
-applies the transformations documented in Intel's ETL SQL, and
-writes per-table Parquet files matching the `reporting.system_*`
-schema that the 24 benchmark queries expect.
-"""
-
 from __future__ import annotations
 
 import argparse

@@ -1,8 +1,3 @@
-"""Generate report figures data from all evaluation CSVs.
-
-Reads evaluation CSVs for all methods and outputs the numbers
-needed for the report's tikz figures and longtable.
-"""
 import sys
 from pathlib import Path
 

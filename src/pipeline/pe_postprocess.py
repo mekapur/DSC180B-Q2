@@ -1,22 +1,3 @@
-"""
-Post-process PE batch generation results into evaluated synthetic data.
-
-Usage (from chunks):
-    uv run python -m src.pipeline.pe_postprocess \
-        --chunks-dir data/batch_jobs \
-        --wide-table data/reporting/wide_training_table.parquet \
-        --n-synth 50000 --epsilon 4.0 --delta 1e-5
-
-Usage (from checkpoint, skips NN histogram if selection already done):
-    uv run python -m src.pipeline.pe_postprocess \
-        --from-checkpoint data/pe_checkpoints
-
-Concatenates batch_random_chunk*.parquet files from PE generation,
-runs the DP nearest-neighbor histogram and rank-based selection,
-decomposes the selected candidates into reporting tables, executes
-the 21 benchmark queries, and evaluates against ground truth.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -157,7 +138,6 @@ def _evaluate_selected(
     queries_dir: Path,
     output_dir: Path,
 ) -> None:
-    """Run decompose -> benchmark -> evaluate on already-selected PE data."""
     synth_reporting_dir = output_dir / "reporting"
     counts = decompose_wide_table(selected, synth_reporting_dir)
     print(f"Decomposed into {len(counts)} reporting tables:")

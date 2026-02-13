@@ -1,15 +1,3 @@
-"""
-Private Evolution API interface for generating synthetic telemetry records.
-
-Provides RANDOM_API and VARIATION_API via OpenAI's Responses API with Pydantic
-Structured Outputs for guaranteed schema compliance. Supports both real-time
-(async) and Batch API (50% cheaper, 24h window) modes.
-
-The Batch API mode splits large generation runs into chunks of up to 800
-requests, saves intermediate results to parquet, and can resume from
-interruptions by reading saved batch state files.
-"""
-
 import asyncio
 import json
 import logging
@@ -131,7 +119,6 @@ _NUMERIC_GROUPS = {
 
 
 def _compute_group_sparsity(real_df: pd.DataFrame) -> dict[str, int]:
-    """Compute the percentage of rows with nonzero data per numeric group."""
     n = len(real_df)
     result = {}
     for gname, cols in _NUMERIC_GROUPS.items():
@@ -145,11 +132,6 @@ def _compute_group_sparsity(real_df: pd.DataFrame) -> dict[str, int]:
 
 
 def _build_schema_description(real_df: pd.DataFrame) -> str:
-    """Build a natural-language schema description for the LLM prompt.
-
-    Includes top-10 categorical values and per-group sparsity percentages
-    computed dynamically from the real data.
-    """
     cat_info = []
     for c in CAT_COLS:
         if c not in real_df.columns:
@@ -224,29 +206,6 @@ def _make_strict_schema() -> dict:
 
 
 class PEApi:
-    """Interface to OpenAI for generating and varying synthetic telemetry records.
-
-    Supports two modes:
-      - Real-time (async): ``random_api`` / ``variation_api`` for smoke tests.
-      - Batch API: ``random_api_batch`` / ``variation_api_batch`` for full runs
-        at 50% reduced cost, with checkpoint/resume support.
-
-    All API calls use Pydantic Structured Outputs (``RecordsBatch`` schema)
-    to guarantee 100% schema compliance. For reasoning models (gpt-5 family),
-    ``reasoning.effort`` is set to ``"minimal"`` to suppress hidden reasoning
-    tokens.
-
-    Parameters
-    ----------
-    real_df : pd.DataFrame
-        Real wide-table data used to compute sparsity percentages and
-        categorical value distributions for the generation prompt.
-    model : str
-        OpenAI model identifier (default ``"gpt-5-nano"``).
-    max_concurrent : int
-        Semaphore limit for async real-time calls (default 50).
-    """
-
     def __init__(
         self,
         real_df: pd.DataFrame,

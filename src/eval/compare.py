@@ -1,16 +1,3 @@
-"""
-Query discrepancy metrics for comparing real vs synthetic benchmark results.
-
-Implements the evaluation framework from the Q2 proposal:
-  - Relative error for scalar/aggregate columns
-  - Spearman rank correlation for ranked result sets
-  - Total variation distance for categorical distributions
-  - Aggregate pass/fail scoring with configurable tolerances
-
-Each query result pair (real, synthetic) is evaluated column-by-column,
-producing per-column metrics and an overall query score.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field

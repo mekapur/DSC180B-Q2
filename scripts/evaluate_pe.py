@@ -1,16 +1,3 @@
-"""Evaluate PE synthetic data from a pre-saved wide table.
-
-Reads the PE wide table (output of notebook 06 or pe_postprocess),
-decomposes into reporting tables, runs all 21 benchmark queries,
-evaluates against ground truth, and saves evaluation CSVs.
-
-Usage:
-    uv run python scripts/evaluate_pe.py
-
-Skips the expensive NN histogram computation (already done in the
-notebook). Only handles decompose -> benchmark -> evaluate.
-"""
-
 import shutil
 from pathlib import Path
 

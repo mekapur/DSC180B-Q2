@@ -1,26 +1,4 @@
 #!/usr/bin/env python3
-"""
-dp_vae_train_hurdle.py
-
-Improved DP-VAE for sparse + heavy-tailed tabular telemetry.
-
-Key fixes vs v1:
-1) Bucket categoricals to top-K + Other
-2) Hurdle representation for sparse numerics:
-   - x_is_zero (Bernoulli)
-   - x_log = log1p(x) for x>0 else 0
-3) Scale numeric (including indicators) to [0,1]
-4) Decode categoricals by sampling from block probabilities (not argmax)
-5) Decode zeros via Bernoulli sampling, then decode positive values (expm1)
-
-Outputs:
-- dpvae_train_guid.parquet
-- dpvae_preprocess.joblib
-- dpvae_model.pt
-- dpvae_synth.parquet
-- dpvae_synth.csv
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -203,12 +181,6 @@ def build_training_table(con: duckdb.DuckDBPyConnection, cfg: Config) -> pd.Data
 # ---------------------------
 
 def add_hurdle_features(df: pd.DataFrame, cols: list[str]) -> tuple[pd.DataFrame, list[str], list[str]]:
-    """
-    For each x in cols:
-      - x_is_zero in {0,1}
-      - x_log = log1p(x) for x>0 else 0
-    Returns updated df + lists (indicator_cols, log_cols).
-    """
     out = df.copy()
     indicator_cols = []
     log_cols = []
@@ -279,10 +251,6 @@ class VAE(nn.Module):
 
 
 def vae_loss(x, x_hat, mu, logvar, beta: float = 0.5):
-    """
-    beta < 1 encourages better reconstruction; beta > 1 encourages more latent usage.
-    For your collapse issue, beta=0.5 often helps keep recon decent under DP.
-    """
     recon = F.binary_cross_entropy(x_hat, x, reduction="mean")
     kl = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
     return recon + beta * kl, recon.detach(), kl.detach()
@@ -359,9 +327,6 @@ def train_dp_vae(X_train: np.ndarray, cfg: Config):
 # ---------------------------
 
 def sample_categorical_block(block: np.ndarray, cats: np.ndarray) -> np.ndarray:
-    """
-    Sample categories from a one-hot block by treating values as unnormalized probs.
-    """
     p = np.clip(block, 1e-8, None)
     p = p / p.sum(axis=1, keepdims=True)
     idx = np.array([np.random.choice(len(cats), p=row) for row in p])
@@ -369,9 +334,6 @@ def sample_categorical_block(block: np.ndarray, cats: np.ndarray) -> np.ndarray:
 
 
 def sample_bernoulli(prob_one: np.ndarray) -> np.ndarray:
-    """
-    prob_one in [0,1], returns 0/1 samples.
-    """
     return (np.random.rand(len(prob_one)) < prob_one).astype(int)
 
 
@@ -392,12 +354,6 @@ def decode_synth(
     num_cols: list[str],
     hurdle_map: dict[str, tuple[str, str]],  # base -> (is_zero_col, log_col)
 ) -> pd.DataFrame:
-    """
-    Convert transformed [0,1] features back into columns:
-    - Categoricals sampled
-    - Numeric scaler inverse_transform
-    - Hurdle: sample is_zero, then expm1(log) for positives, else 0
-    """
     ohe: OneHotEncoder = pre.named_transformers_["cat"].named_steps["ohe"]
     scaler: MinMaxScaler = pre.named_transformers_["num"].named_steps["scaler"]
 

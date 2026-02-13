@@ -1,18 +1,3 @@
-"""
-Run the SQL benchmark queries against reporting tables.
-
-Usage:
-    uv run python -m src.pipeline.run_benchmark \
-        --reporting-dir data/reporting \
-        --queries-dir docs/queries \
-        --output-dir data/results/real
-
-    uv run python -m src.pipeline.run_benchmark \
-        --reporting-dir data/reporting/synth_pertable \
-        --queries-dir docs/queries \
-        --output-dir data/results/synth_pertable
-"""
-
 from __future__ import annotations
 
 import argparse
