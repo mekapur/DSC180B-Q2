@@ -96,7 +96,7 @@ Table~\ref{tab:reporting-tables} lists the 19 reporting tables we construct, org
 
 \begin{footnotesize}
 \begin{longtable}{>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.15\linewidth}>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.14\linewidth}>{\raggedright\arraybackslash}p{0.10\linewidth}}
-\caption{The 19 reporting tables constructed from raw DCA telemetry data. ``Guids'' reports the number of anchor \texttt{guid}s with nonzero data in our sample. ``Raw source'' identifies the \texttt{university\_prod} table or December 2024 update file from which each reporting table is derived.}
+\caption{The 19 reporting tables constructed from raw DCA telemetry data.}
 \label{tab:reporting-tables} \\
 \toprule
 \textbf{Reporting table} & \textbf{Category} & \textbf{Raw source} & \textbf{Rows} & \textbf{Guids} \\
@@ -379,13 +379,13 @@ $S \gets$ top $N_{\text{synth}}$ candidates ranked by $\tilde{h}_j$\tcp*{rank-ba
 
 To isolate the sparsity artifact of the wide-table approach, we implement an independent per-table synthesis baseline. Each of the 19 reporting tables is synthesized separately at $\varepsilon = 4.0$ per table.
 
-Two tables receive dedicated DP-VAE treatment. The sysinfo anchor table (1{,}000{,}000 rows, 9 categorical and 1 numeric column) uses a VAE with encoder $d_{\text{in}} \to 256 \to 128 \to (32\mu, 32\log\sigma^2)$, batch size 4{,}096, 15 epochs, Adam ($\text{lr} = 10^{-3}$), KL weight 0.1, trained with Opacus at $\varepsilon = 4.0$, $\delta = 10^{-5}$. Categoricals are top-50 binned and one-hot encoded. The cpu\_metadata table (1{,}000{,}000 rows, 5 categorical and 1 numeric column) uses the same architecture.
+Two tables receive dedicated DP-VAE treatment. The \texttt{system\_sysinfo\_unique\_normalized} table (1{,}000{,}000 rows, 9 categorical and 1 numeric column) uses a VAE with encoder $d_{\text{in}} \to 256 \to 128 \to (32\mu, 32\log\sigma^2)$, batch size 4{,}096, 15 epochs, Adam ($\text{lr} = 10^{-3}$), KL weight 0.1, trained with Opacus at $\varepsilon = 4.0$, $\delta = 10^{-5}$. Categoricals are top-50 binned and one-hot encoded. The \texttt{system\_cpu\_metadata} table (1{,}000{,}000 rows, 5 categorical and 1 numeric column) uses the same architecture.
 
 The remaining 17 tables use DP histogram synthesis. For each table, we compute the join rate (fraction of anchor \texttt{guid}s with data) and generate proportionally many synthetic rows. Continuous columns are discretized into 20 equal-width bins spanning the 1st to 99th percentile, with Laplace noise ($\text{scale} = 1/\varepsilon_c$) added to bin counts and $\varepsilon_c = \varepsilon / k$ split uniformly across $k$ columns. Categorical columns receive analogous noisy histogram sampling.
 
-This approach sacrifices cross-table correlations by design. Synthetic \texttt{guid}s in one table bear no relationship to those in another. However, it avoids the zero-inflation problem: each table's model trains only on \texttt{guid}s that have data, so the input distribution is not dominated by zeros. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, substantially weaker than the wide-table guarantee of $\varepsilon = 4.0$. This is a known limitation of per-table synthesis; tighter accounting (e.g., via parallel composition for disjoint subsets or R\'{e}nyi composition) could reduce the effective budget but remains future work.
+This approach sacrifices cross-table correlations by design. Synthetic \texttt{guid}s in one table bear no relationship to those in another. It does avoid the zero-inflation problem because each table-level model trains only on \texttt{guid}s with observed data, so zeros do not dominate the input distribution. Under basic composition, the total privacy budget is $19 \times 4.0 = 76.0$, which is substantially weaker than the wide-table guarantee of $\varepsilon = 4.0$. This is a known limitation of per-table synthesis. Tighter accounting may reduce the effective budget and is left for future work.
 
-Per-table synthesis serves as a diagnostic: if it outperforms the wide-table approach on single-table queries while failing on multi-table joins, that confirms the sparsity hypothesis.
+Per-table synthesis also serves as a diagnostic. If it outperforms the wide-table approach on single-table queries but fails on multi-table joins, that supports the sparsity hypothesis.
 
 \subsubsection{MST baseline}
 \label{sec:methods-mst}
@@ -404,7 +404,7 @@ Like the per-table DP-SGD approach, MST synthesizes each of the 19 reporting tab
 
 \subsection{Privacy budget summary}
 
-Table~\ref{tab:privacy-params} compares the privacy parameters across all four synthesis methods. The wide-table DP-VAE and PE operate on a single model or mechanism, yielding a total budget equal to the per-unit budget. The per-table methods apply independent synthesis to each of the 19 reporting tables, so their total budget under basic composition is $19 \times \varepsilon = 76.0$. Tighter accounting via parallel composition (for tables with disjoint column sets) or R\'{e}nyi composition could reduce this, but we use basic composition as a conservative bound.
+Table~\ref{tab:privacy-params} compares the privacy parameters across all four synthesis methods. The wide-table DP-VAE and PE operate on a single model or mechanism, yielding a total budget equal to the per-unit budget. The per-table methods apply independent synthesis to each of the 19 reporting tables, so their total budget under basic composition is $19 \times \varepsilon = 76.0$ (we use this as a conservative bound, in the sense that it is optimizable in future work).
 
 \begin{table}[H]
 \centering
@@ -419,7 +419,7 @@ MST & 4.0 & $10^{-5}$ & Gaussian + Exp.\ mech. & $19\times$ basic & 76.0 \\
 Private Evolution & 4.0 & $10^{-5}$ & Gaussian (analytic) & $T{=}1$, single & 4.0 \\
 \bottomrule
 \end{tabular*}
-\caption{Privacy parameters across synthesis methods. ``Per-unit $\varepsilon$'' is the budget allocated to each model or table. ``Total $\varepsilon$'' is the effective privacy guarantee under the stated composition. The wide-table and PE methods offer strictly stronger privacy than the per-table methods at matched per-unit budgets.}
+\caption{Privacy parameters across synthesis methods.}
 \label{tab:privacy-params}
 \end{table}
 
@@ -446,7 +446,11 @@ For queries that produce categorical distributions or histograms, we compute tot
 \begin{equation}
     \text{TV}(p, q) = \frac{1}{2} \sum_i |p_i - q_i|.
 \end{equation}
-For ranked result sets, we compute Spearman's rank correlation coefficient on overlapping items. Group coverage is assessed via Jaccard similarity between real and synthetic group keys. We route Agg+Join and Geo/Demo queries to RE, Histogram and Pivot queries to TV, and Top-k queries to Spearman $\rho$. The default pass thresholds are $\text{RE} \leq 0.25$, $\text{TV} \leq 0.15$, and $\rho \geq 0.5$. These are benchmark policy thresholds chosen to enforce moderate fidelity across metric types while remaining realistic under differential privacy noise. The query score is the fraction of metric columns that pass, and a query is marked as passing when its score is at least 0.5, with query-specific overlap thresholds defined in the evaluation metadata. We also test threshold sensitivity in Section~\ref{fig:sensitivity} to verify that comparative conclusions are not driven by a single cutoff choice.
+For ranked result sets, we compute Spearman's rank correlation coefficient on overlapping items. Group coverage is assessed via Jaccard similarity between real and synthetic group keys.
+
+We route Agg+Join and Geo/Demo queries to RE, Histogram and Pivot queries to TV, and Top-k queries to Spearman $\rho$. The default pass thresholds are $\text{RE} \leq 0.25$, $\text{TV} \leq 0.15$, and $\rho \geq 0.5$. These are benchmark policy thresholds chosen to enforce moderate fidelity across metric types while remaining realistic under differential privacy noise.
+
+The query score is the fraction of metric columns that pass. A query is marked as passing when its score is at least 0.5, with query-specific overlap thresholds defined in the evaluation metadata. We also test threshold sensitivity in Section~\ref{fig:sensitivity} to verify that comparative conclusions are not driven by a single cutoff choice.
 
 \begin{figure}[H]
 \centering
@@ -571,8 +575,7 @@ This failure follows from the combination of sparse data and the VAE objective. 
 
 A secondary effect is inflated counts in join-heavy queries. In \texttt{ChassisAgg}, the real data returns 104 \texttt{guid}s that appear in all five metric tables. The synthetic data returns more than 163{,}000 matches. This happens because many rows receive small positive values, so INNER JOIN conditions that should filter heavily become much less selective. This is a structural mismatch, and it reduces fidelity for multi-table aggregates.
 
-Overall, the wide-table DP-VAE preserves one useful signal, rank ordering among frequent categorical groups. It does not preserve continuous magnitudes or strict join behavior, because rare nonzero support is not learned well. This motivates the per-table strategy in the next subsection. Per-table synthesis does not preserve cross-table coupling, but it aims to improve within-table support and continuous-value realism.
-As a side note, a cross-method calibration view is provided later in Figure~\ref{fig:calibration-scatter}.
+Overall, the wide-table DP-VAE preserves one useful signal, rank ordering among frequent categorical groups. It does not preserve continuous magnitudes or strict join behavior, because rare nonzero support is not learned well (see the calibration scatter in Figure~\ref{fig:calibration-scatter}). This motivates the per-table strategy in the next subsection. Per-table synthesis does not preserve cross-table coupling, but it aims to improve continuous distributions.
 
 \subsection{Per-table DP-SGD results}
 
@@ -919,7 +922,7 @@ The calibration patterns differ by method. Wide-table DP-SGD shows strong collap
 
 \subsection{Additive experiments}
 
-We ran a second round of additive experiments to test whether lightweight interventions can improve utility without changing any of the original methods. All runs were isolated in new notebooks and new output paths.
+We ran a second round of additive experiments to test whether lightweight interventions can improve utility without changing any of the original methods.
 
 The first intervention was post-processing on top of existing synthetic reporting tables. We enforced numeric constraints and canonicalized selected categorical values to real-data vocabularies. This intervention produced no measurable gain. Per-table DP-SGD, MST, and PE all had unchanged pass counts and unchanged average scores.
 
