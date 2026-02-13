@@ -6,7 +6,7 @@ Unit tests for `src/` library code. Run with:
 uv run pytest tests/ -v
 ```
 
-All 41 tests run without downloaded data or API keys.
+All 46 tests run without downloaded data or API keys.
 
 ## Test files
 

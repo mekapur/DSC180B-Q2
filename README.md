@@ -2,7 +2,7 @@
 
 # Training-based versus training-free differential privacy for data synthesis
 
-[Mehak Kapur](https://github.com/mekapur), [Hana Tjendrawasi](https://github.com/hanajuliatj), [Jason Tran](https://github.com/jktrn), [Phuc Tran](https://github.com/21phuctran), Yu-Xiang Wang
+[Mehak Kapur](https://github.com/mekapur), [Hana Tjendrawasi](https://github.com/hanajuliatj), [Jason Tran](https://github.com/jktrns), [Phuc Tran](https://github.com/21phuctran), Yu-Xiang Wang
 `{mekapur,htjendrawasi,jat037,pct001,yuxiangw}@ucsd.edu`
 
 </div>
@@ -70,11 +70,11 @@ This project uses [uv](https://docs.astral.sh/uv/) for package management.
 
 | Directory | Description | Details |
 |---|---|---|
-| [`src/`](src/README.md) | Library code: Private Evolution, evaluation framework, and CLI pipeline stages. | Three packages (`pe/`, `eval/`, `pipeline/`) used by notebooks 06-10 and standalone scripts. |
+| [`src/`](src/README.md) | Library code: Private Evolution, evaluation framework, CLI pipeline stages, and additive experiment utilities. | Four packages (`pe/`, `eval/`, `pipeline/`, `experiments/`) used by notebooks 06-15 and standalone scripts. |
 | [`data/`](data/README.md) | Raw telemetry, reporting tables, model checkpoints, and evaluation results. | ~32 GiB total, all gitignored except `README.md` and manifests. |
-| [`tests/`](tests/README.md) | Unit tests for `src/` modules. | 41 tests; no data or API keys required. |
+| [`tests/`](tests/README.md) | Unit tests for `src/` modules. | 46 tests; no data or API keys required. |
 | [`scripts/`](scripts/README.md) | Standalone evaluation and report-data utilities. | `evaluate_pe.py` and `generate_report_data.py`. |
-| `notebooks/` | Numbered workflow notebooks (01-10). | Data exploration, reporting table construction, four synthesis methods, and cross-method evaluation. |
+| `notebooks/` | Numbered workflow notebooks (01-15). | Data exploration, reporting table construction, four synthesis methods, cross-method evaluation, and additive follow-up experiments. |
 | `docs/queries/` | 24 benchmark SQL queries in JSON format. | 21 feasible, 3 infeasible (stub data). |
 | `report/` | LaTeX report source (XeLaTeX + BibTeX). | `q2-report.tex`, `q1-report.tex`, `q2-proposal.tex`, custom style file. |
 | `dsc-180a-q1/` | Git submodule containing the Q1 DP-VAE implementation. | |
@@ -135,7 +135,7 @@ uv run python -m src.pipeline.evaluate --real-dir data/results/real --synth-dir 
 uv run python -m src.pipeline.pe_postprocess --from-checkpoint data/pe_checkpoints
 ```
 
-Notebooks 01-05 contain all logic inline. Notebooks 06-10 import from `src/` for shared evaluation and PE functionality.
+Notebooks 01-05 contain all logic inline. Notebooks 06-15 import from `src/` for shared evaluation, PE functionality, and additive follow-up utilities.
 
 ---
 
@@ -151,4 +151,4 @@ The DCA telemetry data (~20.7 GiB) is hosted on the HDSI Industry Data Repositor
 uv run pytest tests/ -v
 ```
 
-41 tests covering privacy accounting, workload-aware distance, evaluation metrics, decomposition utilities, and SQL adaptation. Tests do not require downloaded data or API keys.
+46 tests covering privacy accounting, workload-aware distance, evaluation metrics, decomposition utilities, and SQL adaptation. Tests do not require downloaded data or API keys.

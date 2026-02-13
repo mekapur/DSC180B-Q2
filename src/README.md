@@ -1,6 +1,6 @@
 # src/
 
-Three packages: `src.pe` (Private Evolution), `src.eval` (evaluation), and `src.pipeline` (CLI stages). Notebooks 06-10 import from these packages. Notebooks 01-05 use inline logic and do not depend on `src/`.
+Four packages: `src.pe` (Private Evolution), `src.eval` (evaluation), `src.pipeline` (CLI stages), and `src.experiments` (additive follow-up utilities). Notebooks 06-15 import from these packages. Notebooks 01-05 use inline logic and do not depend on `src/`.
 
 ## pe/ — Private Evolution
 
@@ -33,3 +33,15 @@ Each module has a `main()` function and can be invoked via `uv run python -m src
 `evaluate.py` compares real and synthetic query result CSVs and outputs summary and detail evaluation CSVs.
 
 `pe_postprocess.py` runs the full PE post-processing pipeline end to end. It loads the PE population from batch chunks or a checkpoint, runs the DP nearest-neighbor histogram, selects candidates, decomposes the result into reporting tables, executes the benchmark queries, and evaluates against ground truth. Passing `--from-checkpoint` skips the histogram computation if selection has already been completed.
+
+## experiments/ — Additive follow-up utilities
+
+`wide_filter.py` filters the wide table by nonzero numeric coverage and reports sparsity summaries for zero-inflation diagnostics.
+
+`wide_dpsgd_model.py` defines the wide-table DP-VAE model and loss utilities used by additive DP-SGD follow-up runs.
+
+`postprocess_reporting.py` applies postprocessing rules to synthetic reporting tables, including category canonicalization and numeric constraints.
+
+`run_postprocess_eval.py` executes postprocess + benchmark + evaluate for additive experiments and writes summary outputs.
+
+`hybrid_router.py` implements rule-based routing that selects query outputs from different methods by query type.

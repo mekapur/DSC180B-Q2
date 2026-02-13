@@ -1,6 +1,6 @@
 # data/
 
-All data files in this directory are gitignored (~32 GiB total). Only this README and manifest JSON files are tracked. The directory is populated by downloading raw data from Globus, then running the pipeline stages described below.
+All data files in this directory are gitignored. Raw download size is ~20.7 GiB, and the full populated `data/` directory is ~32 GiB after running synthesis/evaluation stages. Only this README and manifest JSON files are tracked. The directory is populated by downloading raw data from Globus, then running the pipeline stages described below.
 
 ## How to reproduce
 
@@ -47,6 +47,7 @@ After running the full pipeline, the following directories are populated. All da
 | `synthetic/` (12 parquets) | Notebook 05 (wide-table DP-SGD decomposition) |
 | `synth_pertable/` (19 parquets) | Notebook 08 (per-table DP-SGD) |
 | `synth_mst/` (19 parquets) | Notebook 09 (MST baseline) |
+| `pe_wide_table.parquet` | Notebook 06 (Private Evolution selected wide table) |
 | `pe/` (up to 12 parquets) | Notebook 06 / `scripts/evaluate_pe.py` |
 
 ### `models/` — Model checkpoints
@@ -91,11 +92,12 @@ Up to ~24 `batch_random_chunk*.parquet` files (150K PE records total). Produced 
 | Notebook 03 / `build_reporting.py` | `raw/` | `reporting/*.parquet` (19 tables) |
 | Notebook 04 / `run_benchmark.py` | `reporting/`, `docs/queries/` | `results/real/*.csv` (24 CSVs) |
 | Notebook 05 (wide-table DP-SGD) | `reporting/` | `reporting/wide_training_table.parquet`, `reporting/synth_wide_training_table.parquet`, `reporting/synthetic/*.parquet`, `results/synthetic/*.csv`, `results/evaluation_widetable.csv`, `models/dp_vae_checkpoint.pt` |
-| Notebook 06 (Private Evolution) | `reporting/wide_training_table.parquet`, `.env` (API key) | `batch_jobs/batch_random_chunk*.parquet`, `pe_checkpoints/`, `reporting/pe/*.parquet`, `results/synth_pe/*.csv` |
+| Notebook 06 (Private Evolution) | `reporting/wide_training_table.parquet`, `.env` (API key) | `batch_jobs/batch_random_chunk*.parquet`, `pe_checkpoints/`, `reporting/pe_wide_table.parquet`, `reporting/pe/*.parquet`, `results/synth_pe/*.csv` |
 | Notebook 07 (PE chunk analysis) | `batch_jobs/` | (analysis only, no output files) |
 | Notebook 08 (per-table DP-SGD) | `reporting/` | `reporting/synth_pertable/*.parquet`, `results/synth_pertable/*.csv`, `results/evaluation_pertable.csv`, `models/pertable/*.pt` |
 | Notebook 09 (MST baseline) | `reporting/` | `reporting/synth_mst/*.parquet`, `results/synth_mst/*.csv`, `results/evaluation_mst.csv` |
 | Notebook 10 (evaluation) | `results/evaluation_*.csv` | (analysis only, no output files) |
+| `src.pipeline.pe_postprocess` | `reporting/wide_training_table.parquet` and/or `pe_checkpoints/` | `reporting/pe_wide_table.parquet`, `reporting/pe/*.parquet`, `results/synth_pe/*.csv`, `results/evaluation_pe.csv` |
 | `scripts/evaluate_pe.py` | `reporting/pe_wide_table.parquet` or `pe_checkpoints/` | `reporting/pe/*.parquet`, `results/synth_pe/*.csv`, `results/evaluation_pe.csv` |
 | `scripts/generate_report_data.py` | `results/evaluation_*.csv` | (stdout: TikZ data for report figures) |
 
