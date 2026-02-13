@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from pathlib import Path
 
@@ -8,6 +9,8 @@ import pandas as pd
 from .api import PEApi
 from .distance import WorkloadDistance
 from .privacy import calibrate_sigma, compute_epsilon
+
+logger = logging.getLogger(__name__)
 
 
 def dp_nn_histogram(

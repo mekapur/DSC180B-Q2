@@ -2,10 +2,24 @@
 % !BIB TS-program = bibtex
 \documentclass[12pt,letterpaper]{article}
 \usepackage{style/dsc180reportstyle}
+\usepackage{minted}
+\usepgfplotslibrary{groupplots}
 \definecolor{RoyalBlue}{RGB}{65,105,225}
 \definecolor{BrickRed}{RGB}{203,65,84}
 \renewcommand{\_}{\textunderscore\allowbreak}
 \emergencystretch=2em
+\usepackage{colortbl}
+\usepackage{tabularx}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\definecolor{scorehi}{HTML}{C8E6C9}
+\definecolor{scoremid}{HTML}{FFF9C4}
+\definecolor{scorelo}{HTML}{FFCDD2}
+\definecolor{scorena}{HTML}{EEEEEE}
+\newcommand{\tightlegendbox}[2]{\begingroup\setlength{\fboxsep}{1pt}\colorbox{#1}{#2}\endgroup}
+\definecolor{ForestGreen}{RGB}{34,139,34}
+\definecolor{Goldenrod}{RGB}{218,165,32}
+\setlength\LTleft{0pt}
+\setlength\LTright{0pt}
 
 \title{Training-based versus training-free \\ differential privacy for data synthesis}
 
@@ -28,7 +42,7 @@ Differentially private synthetic data generation promises to resolve the tension
 \end{abstract}
 
 \begin{center}
-Code: \url{https://github.com/jktrns/DSC180B-Q2}
+Code: \url{https://github.com/mekapur/DSC180B-Q2}
 \end{center}
 
 \clearpage
@@ -80,7 +94,7 @@ We work with a sample of the full corpus. Each raw table in the repository is sp
 Table~\ref{tab:reporting-tables} lists the 19 reporting tables we construct, organized by category. The \texttt{guid} coverage column reports how many of the 1{,}000{,}000 anchor \texttt{guid}s have at least one nonzero entry in each table. Coverage varies by two orders of magnitude. The web browsing pivot table covers 512{,}077 \texttt{guid}s (51.2\%), while the PSYS RAP power metric covers only 816 (0.08\%). This heterogeneous coverage is a defining characteristic of the dataset and, as we show in Section~4, a primary source of difficulty for synthesis.
 
 \begin{footnotesize}
-\begin{longtable}{>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}p{0.14\linewidth}>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.12\linewidth}>{\raggedright\arraybackslash}p{0.11\linewidth}}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.15\linewidth}>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.14\linewidth}>{\raggedright\arraybackslash}p{0.10\linewidth}}
 \caption{The 19 reporting tables constructed from raw DCA telemetry data. ``Guids'' reports the number of anchor \texttt{guid}s with nonzero data in our sample. ``Raw source'' identifies the \texttt{university\_prod} table or December 2024 update file from which each reporting table is derived.}
 \label{tab:reporting-tables} \\
 \toprule
@@ -148,52 +162,54 @@ The practical utility of synthetic telemetry data is determined by its ability t
 
 \subsection{Query inventory}
 
-Table~\ref{tab:query-inventory} lists all 21 feasible queries in the benchmark. Three additional queries are permanently infeasible because they require the \texttt{system\_mods\_power\_consumption} table, for which no viable data source exists in the DCA corpus available to us.\footnote{The three infeasible queries are \texttt{ranked\_process\_classifications}, \texttt{top\_10\_processes\_per\_user\_id\_ranked\_by\_total\_power\_consumption}, and \texttt{top\_20\_most\_power\_consuming\_processes\_by\_avg\_power\_consumed}.}
+Table~\ref{tab:query-inventory} lists all 21 feasible queries in the benchmark. Although the original query list contains 24 queries, three additional queries are permanently infeasible because they require the \texttt{system\_mods\_power\_consumption} table, for which no viable data source exists in the DCA corpus available to us.\footnote{The three infeasible queries are \texttt{ranked\_process\_classifications}, \texttt{top\_10\_processes\_per\_user\_id\_ranked\_by\_total\_power\_consumption}, and \texttt{top\_20\_most\_power\_consuming\_processes\_by\_avg\_power\_consumed}.}
 
 \begin{small}
-\begin{longtable}{>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}p{0.12\linewidth}>{\raggedright\arraybackslash}p{0.44\linewidth}}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.25\linewidth}>{\raggedright\arraybackslash}p{0.20\linewidth}>{\raggedright\arraybackslash}p{0.10\linewidth}>{\raggedright\arraybackslash}p{0.35\linewidth}}
 \caption{Complete inventory of the 21 feasible benchmark queries, grouped by query type. ``Agg+Join'' denotes aggregate statistics with multi-table joins; ``Top-$k$'' denotes ranked lists produced by window functions; ``Geo/Demo'' denotes geographic or demographic breakdowns; ``Histogram'' denotes binned distributions; ``Pivot'' denotes complex multi-way pivots.}
 \label{tab:query-inventory} \\
 \toprule
-\textbf{Query} & \textbf{Type} & \textbf{Description} \\
+\textbf{Query} & \textbf{Codename} & \textbf{Type} & \textbf{Description} \\
 \midrule
 \endfirsthead
 \toprule
-\textbf{Query} & \textbf{Type} & \textbf{Description} \\
+\textbf{Query} & \textbf{Codename} & \textbf{Type} & \textbf{Description} \\
 \midrule
 \endhead
 \midrule
-\multicolumn{3}{r}{\textit{Continued on next page}} \\
+\multicolumn{4}{r}{\textit{Continued on next page}} \\
 \endfoot
 \bottomrule
 \endlastfoot
-\texttt{avg\_platform\_power\_c0\_freq\_temp\_by\_chassis} & Agg+Join & Average power, C0 residency, frequency, and temperature by chassis type (5-way join). \\
-\texttt{server\_exploration\_1} & Agg+Join & Identify client machines sending more data than they receive, joined with sysinfo for OS and chassis. \\
-\texttt{mods\_blockers\_by\_osname\_and\_codename} & Agg+Join & Count distribution of modern sleep study blockers by Windows OS name and codename. \\
-\texttt{top\_mods\_blocker\_types\_durations\_by\_osname\_and\_codename} & Agg+Join & Blocker entry counts and average durations by OS name, codename, blocker type, and activity level. \\
-\texttt{display\_devices\_connection\_type\_resolution\_durations\_ac\_dc} & Agg+Join & Display connection types with resolution and average AC/DC durations. \\
-\texttt{display\_devices\_vendors\_percentage} & Agg+Join & Percentage of systems by display vendor. \\
+\texttt{avg\_platform\_power\_c0\_freq\_temp\_by\_chassis} & \texttt{ChassisAgg} & Agg+Join & Average power, C0 residency, frequency, and temperature by chassis type (5-way join). \\
+\texttt{server\_exploration\_1} & \texttt{NetAsymAgg} & Agg+Join & Identify client machines sending more data than they receive, joined with sysinfo for OS and chassis. \\
+\texttt{mods\_blockers\_by\_osname\_and\_codename} & \texttt{BlockerAgg} & Agg+Join & Count distribution of modern sleep study blockers by Windows OS name and codename. \\
+\texttt{top\_mods\_blocker\_types\_durations\_by\_osname\_and\_codename} & \texttt{BlockerDurAgg} & Agg+Join & Blocker entry counts and average durations by OS name, codename, blocker type, and activity level. \\
+\texttt{display\_devices\_connection\_type\_resolution\_durations\_ac\_dc} & \texttt{DisplayAgg} & Agg+Join & Display connection types with resolution and average AC/DC durations. \\
+\texttt{display\_devices\_vendors\_percentage} & \texttt{VendorAgg} & Agg+Join & Percentage of systems by display vendor. \\
 \midrule
-\texttt{most\_popular\_browser\_in\_each\_country\_by\_system\_count} & Top-$k$ & Most popular browser per country by system count. \\
-\texttt{userwait\_top\_10\_wait\_processes} & Top-$k$ & Top 10 applications by average wait time. \\
-\texttt{userwait\_top\_10\_wait\_processes\_wait\_type\_ac\_dc} & Top-$k$ & Top 10 wait-time applications by wait type (app start vs.\ in-app) and power state. \\
-\texttt{userwait\_top\_20\_wait\_processes\_compare\_ac\_dc\_unknown\_durations} & Top-$k$ & Top 20 wait-time applications with durations pivoted by power state (AC/DC/Unknown). \\
-\texttt{top\_10\_applications\_by\_app\_type\_ranked\_by\_focal\_time} & Top-$k$ & Top 10 applications per app type by average daily focal screen time. \\
-\texttt{top\_10\_applications\_by\_app\_type\_ranked\_by\_system\_count} & Top-$k$ & Top 10 applications per app type by distinct client count. \\
-\texttt{top\_10\_applications\_by\_app\_type\_ranked\_by\_total\_detections} & Top-$k$ & Top 10 applications per app type by total daily detection count. \\
+\texttt{most\_popular\_browser\_in\_each\_country\_by\_system\_count} & \texttt{BrowserRank} & Top-$k$ & Most popular browser per country by system count. \\
+\texttt{userwait\_top\_10\_wait\_processes} & \texttt{WaitRank} & Top-$k$ & Top 10 applications by average wait time. \\
+\texttt{userwait\_top\_10\_wait\_processes\_wait\_type\_ac\_dc} & \texttt{WaitModeRank} & Top-$k$ & Top 10 wait-time applications by wait type (app start vs.\ in-app) and power state. \\
+\texttt{userwait\_top\_20\_wait\_processes\_compare\_ac\_dc\_unknown\_durations} & \texttt{WaitStateRank} & Top-$k$ & Top 20 wait-time applications with durations pivoted by power state (AC/DC/Unknown). \\
+\texttt{top\_10\_applications\_by\_app\_type\_ranked\_by\_focal\_time} & \texttt{FocalRank} & Top-$k$ & Top 10 applications per app type by average daily focal screen time. \\
+\texttt{top\_10\_applications\_by\_app\_type\_ranked\_by\_system\_count} & \texttt{SystemRank} & Top-$k$ & Top 10 applications per app type by distinct client count. \\
+\texttt{top\_10\_applications\_by\_app\_type\_ranked\_by\_total\_detections} & \texttt{DetectionRank} & Top-$k$ & Top 10 applications per app type by total daily detection count. \\
 \midrule
-\texttt{Xeon\_network\_consumption} & Geo/Demo & Network consumption summary for Xeon vs.\ non-Xeon systems, by OS. \\
-\texttt{pkg\_power\_by\_country} & Geo/Demo & Average CPU package power by country. \\
-\texttt{battery\_power\_on\_geographic\_summary} & Geo/Demo & Battery power-on count and duration by country (min.\ 100 clients). \\
-\texttt{battery\_on\_duration\_cpu\_family\_gen} & Geo/Demo & Battery duration by CPU family and generation (min.\ 100 clients). \\
+\texttt{Xeon\_network\_consumption} & \texttt{XeonGeo} & Geo/Demo & Network consumption summary for Xeon vs.\ non-Xeon systems, by OS. \\
+\texttt{pkg\_power\_by\_country} & \texttt{PowerGeo} & Geo/Demo & Average CPU package power by country. \\
+\texttt{battery\_power\_on\_geographic\_summary} & \texttt{BatteryGeo} & Geo/Demo & Battery power-on count and duration by country (min.\ 100 clients). \\
+\texttt{battery\_on\_duration\_cpu\_family\_gen} & \texttt{BatteryDemo} & Geo/Demo & Battery duration by CPU family and generation (min.\ 100 clients). \\
 \midrule
-\texttt{ram\_utilization\_histogram} & Histogram & Average RAM utilization percentage by memory capacity. \\
-\texttt{popular\_browsers\_by\_count\_usage\_percentage} & Histogram & Percentage of systems, instances, and duration by browser. \\
+\texttt{ram\_utilization\_histogram} & \texttt{RamHist} & Histogram & Average RAM utilization percentage by memory capacity. \\
+\texttt{popular\_browsers\_by\_count\_usage\_percentage} & \texttt{BrowserHist} & Histogram & Percentage of systems, instances, and duration by browser. \\
 \midrule
-\texttt{persona\_web\_cat\_usage\_analysis} & Pivot & Web browsing category duration as weighted percentages, by persona. \\
-\texttt{on\_off\_mods\_sleep\_summary\_by\_cpu\_marketcodename\_gen} & Pivot & On/off/sleep/MODS time percentages by CPU generation and market codename. \\
+\texttt{persona\_web\_cat\_usage\_analysis} & \texttt{PersonaPivot} & Pivot & Web browsing category duration as weighted percentages, by persona. \\
+\texttt{on\_off\_mods\_sleep\_summary\_by\_cpu\_marketcodename\_gen} & \texttt{SleepPivot} & Pivot & On/off/sleep/MODS time percentages by CPU generation and market codename. \\
 \end{longtable}
 \end{small}
+
+For the sake of brevity, we will henceforth refer to each query by its codename instead of its full name.
 
 \subsection{Formal benchmark definition}
 
@@ -223,7 +239,8 @@ Given the 21-query benchmark and matched privacy budgets, we investigate the fol
 
 \section{Methods}
 
-\subsection{Wide-table construction}
+\subsection{Training-based synthesis, DP-SGD and VAE}
+\label{sec:methods-wide-dpsgd}
 
 The unit of synthesis is the \texttt{guid}. Each \texttt{guid} represents one client system, and the privacy guarantee is per-\texttt{guid}, meaning neighboring databases differ by adding or removing all rows associated with a single device.
 
@@ -233,7 +250,7 @@ We therefore construct a single wide table with one row per \texttt{guid} contai
 
 The resulting wide table has 1{,}000{,}000 rows and 70 columns, comprising 9 categorical attributes and 59 numeric metrics plus \texttt{guid}. We encode categoricals via top-$k$ binning ($k = 50$, with remaining values grouped into ``Other'') and one-hot encoding. Numeric columns are clipped at the 99.9th percentile, transformed via $\log(1 + x)$ to reduce skew, and standardized with zero mean and unit variance. The final feature matrix has $1{,}000{,}000 \times 307$ entries (248 one-hot indicators plus 59 scaled numerics).
 
-\subsection{DP-VAE architecture}
+\subsubsection{DP-VAE architecture}
 
 We train a differentially private variational autoencoder (DP-VAE) on the wide table. Let $x \in \mathbb{R}^{307}$ denote a \texttt{guid}-level feature vector. The encoder maps $x$ through two hidden layers of 512 units each to produce a 64-dimensional mean $\mu$ and log-variance $\log \sigma^2$. We sample $z = \mu + \sigma \odot \epsilon$ where $\epsilon \sim \mathcal{N}(0, I)$.
 
@@ -272,7 +289,7 @@ Wrap optimizer with Opacus: $\sigma \gets \texttt{make\_private\_with\_epsilon}(
 $\varepsilon \gets \texttt{PrivacyAccountant.get\_epsilon}(\delta)$\;
 \end{algorithm}
 
-\subsection{DP-SGD training and privacy accounting}
+\subsubsection{DP-SGD training and privacy accounting}
 
 We use the Opacus library to apply DP-SGD. Rather than manually selecting a noise multiplier, we use Opacus's \texttt{make\_private\_with\_epsilon} to automatically calibrate $\sigma$ for a target budget of $\varepsilon = 4.0$ at $\delta = 10^{-5}$. Privacy loss is tracked via the R\'{e}nyi differential privacy (RDP) accountant, which yields tighter bounds than basic composition.
 
@@ -280,7 +297,7 @@ Table~\ref{tab:hyperparams} reports the training configuration. The final privac
 
 \begin{table}[H]
 \centering
-\begin{tabular}{lc}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lc}
 \toprule
 \textbf{Hyperparameter} & \textbf{Value} \\
 \midrule
@@ -297,12 +314,12 @@ $\delta$ & $10^{-5}$ \\
 Final $\varepsilon$ & 3.996 \\
 Training time & 359.7 min (CPU) \\
 \bottomrule
-\end{tabular}
+\end{tabular*}
 \caption{DP-VAE training configuration.}
 \label{tab:hyperparams}
 \end{table}
 
-\subsection{Synthetic data generation and decomposition}
+\subsubsection{Synthetic data generation and decomposition}
 
 After training, we generate 1{,}000{,}000 synthetic \texttt{guid} records:
 
@@ -317,178 +334,722 @@ The synthetic wide table is then decomposed back into 12 reporting table schemas
 
 We evaluate 8 of the 21 feasible queries whose reporting tables are fully reconstructable from the wide-table columns. The remaining 13 queries require per-row columns not present in the wide table (e.g., per-process breakdowns for userwait, per-application data for foreground apps, per-display data for display devices).
 
-\subsection{Private Evolution (planned)}
+\subsection{Training-free synthesis, Private Evolution}
+\label{sec:methods-pe}
 
-We plan to implement Private Evolution adapted for tabular data, following the framework of \citet{lin2025differentiallyprivatesyntheticdata} with the workload-aware distance function proposed by \citet{swanberg2025apiaccessllmsuseful}. The algorithm iteratively evolves a population of synthetic records through three steps per iteration:
+We implement Private Evolution adapted for tabular data, following the framework of \citet{lin2025differentiallyprivatesyntheticdata} with the workload-aware distance function proposed by \citet{swanberg2025apiaccessllmsuseful}. The algorithm operates in a single iteration ($T = 1$, the optimal setting for tabular data per \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that subsequent iterations provide marginal gains outweighed by composition cost).
 
 \begin{enumerate}
-    \item \textit{Candidate generation:} prompt a foundation model to produce variations of current synthetic records that conform to the DCA schema.
-    \item \textit{Private selection:} compute a nearest-neighbor histogram in which each real record votes for its closest synthetic candidate under the workload-aware distance. Add Gaussian noise calibrated to the histogram sensitivity (1, since each \texttt{guid} contributes exactly one vote).
-    \item \textit{Resampling:} resample the synthetic population according to the noisy histogram, retaining candidates that best approximate the real data distribution.
+    \item \textit{Population generation:} prompt a foundation model (OpenAI gpt-5-nano via the Batch API) to produce $N_{\text{synth}} \times L$ synthetic records conforming to the DCA wide-table schema (68 fields: 9 categorical as constrained strings, 59 numeric as floats). Each batch request uses Pydantic Structured Outputs to guarantee schema compliance.
+    \item \textit{DP nearest-neighbor histogram:} each of the $n = 1{,}000{,}000$ real records votes for its nearest synthetic candidate under the workload-aware distance. Gaussian noise $\mathcal{N}(0, \sigma^2)$ is added to the vote histogram. The sensitivity is 1, since each \texttt{guid} contributes exactly one vote.
+    \item \textit{Rank-based selection:} the top $N_{\text{synth}}$ candidates by noisy vote count are selected as the final synthetic population.
 \end{enumerate}
 
-Privacy follows from composition of $T$ Gaussian mechanisms, equivalent to a single mechanism with noise multiplier $\sigma / \sqrt{T}$. We will match the DP-SGD budget ($\varepsilon = 4.0$, $\delta = 10^{-5}$) for a controlled comparison.
+The workload-aware distance follows \citeauthor{swanberg2025apiaccessllmsuseful}'s formulation:
+\begin{equation}
+    d_W(x, c) = \sum_{i \in \text{cat}} w_i \cdot \mathbf{1}[x_i \neq c_i] + \sum_{j \in \text{num}} |x_j - c_j|,
+\end{equation}
+where $w_i$ weights categorical features by query frequency (e.g., \texttt{chassistype} appears in 6 queries and receives weight 6, \texttt{countryname} in 4 queries receives weight 4) and numeric features are min-max normalized before computing L1 distance.
+
+For $T = 1$ iteration, the privacy analysis reduces to a single Gaussian mechanism. We calibrate $\sigma$ via the analytic Gaussian mechanism of \citet{balle2018improving} to achieve $\varepsilon = 4.0$ at $\delta = 10^{-5}$, yielding $\sigma \approx 1.08$. The total generation budget requires $N_{\text{synth}} \times L = 150{,}000$ API calls at batch size 20 (7{,}500 batches), submitted through OpenAI's Batch API at 50\% reduced cost.
 
 Given \citeauthor{swanberg2025apiaccessllmsuseful}'s negative result on tabular PE (API access did not improve over marginal-based baselines), we treat this comparison as an empirical test of whether PE's advantages in the image and text domains transfer to heterogeneous, sparse telemetry data.
+
+\begin{algorithm}[ht]
+\caption{Private Evolution for tabular data ($T = 1$)}
+\label{alg:pe}
+\SetKwInOut{KwInput}{Input}
+\SetKwInOut{KwOutput}{Output}
+\KwInput{Real table $X \in \mathbb{R}^{n \times d}$, target $\varepsilon^\star$, $\delta$, population size $N_{\text{synth}}$, variation factor $L$}
+\KwOutput{Synthetic dataset $S$ of size $N_{\text{synth}}$}
+Calibrate $\sigma$ via analytic Gaussian mechanism \citep{balle2018improving} for $(\varepsilon^\star, \delta, T{=}1)$\;
+$S_0 \gets \texttt{RANDOM\_API}(N_{\text{synth}} \times L)$\tcp*{generate candidates via LLM}
+\For{$i = 1, \ldots, n$}{
+    $j^\star_i \gets \arg\min_{j} \; d_W(x_i, S_0^{(j)})$\tcp*{nearest neighbor under workload distance}
+}
+$h_j \gets |\{i : j^\star_i = j\}|$ for each candidate $j$\tcp*{vote histogram}
+$\tilde{h}_j \gets h_j + \mathcal{N}(0, \sigma^2)$ for each $j$\tcp*{add calibrated Gaussian noise}
+$S \gets$ top $N_{\text{synth}}$ candidates ranked by $\tilde{h}_j$\tcp*{rank-based selection}
+\Return{$S$}
+\end{algorithm}
+
+\subsection{Per-table baselines}
+\label{sec:methods-pertable}
+
+To isolate the sparsity artifact of the wide-table approach, we implement an independent per-table synthesis baseline. Each of the 19 reporting tables is synthesized separately at $\varepsilon = 4.0$ per table.
+
+Two tables receive dedicated DP-VAE treatment. The sysinfo anchor table (1{,}000{,}000 rows, 9 categorical and 1 numeric column) uses a VAE with encoder $d_{\text{in}} \to 256 \to 128 \to (32\mu, 32\log\sigma^2)$, batch size 4{,}096, 15 epochs, Adam ($\text{lr} = 10^{-3}$), KL weight 0.1, trained with Opacus at $\varepsilon = 4.0$, $\delta = 10^{-5}$. Categoricals are top-50 binned and one-hot encoded. The cpu\_metadata table (1{,}000{,}000 rows, 5 categorical and 1 numeric column) uses the same architecture.
+
+The remaining 17 tables use DP histogram synthesis. For each table, we compute the join rate (fraction of anchor \texttt{guid}s with data) and generate proportionally many synthetic rows. Continuous columns are discretized into 20 equal-width bins spanning the 1st to 99th percentile, with Laplace noise ($\text{scale} = 1/\varepsilon_c$) added to bin counts and $\varepsilon_c = \varepsilon / k$ split uniformly across $k$ columns. Categorical columns receive analogous noisy histogram sampling.
+
+This approach sacrifices cross-table correlations by design. Synthetic \texttt{guid}s in one table bear no relationship to those in another. However, it avoids the zero-inflation problem: each table's model trains only on \texttt{guid}s that have data, so the input distribution is not dominated by zeros. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, substantially weaker than the wide-table guarantee of $\varepsilon = 4.0$. This is a known limitation of per-table synthesis; tighter accounting (e.g., via parallel composition for disjoint subsets or R\'{e}nyi composition) could reduce the effective budget but remains future work.
+
+Per-table synthesis serves as a diagnostic: if it outperforms the wide-table approach on single-table queries while failing on multi-table joins, that confirms the sparsity hypothesis.
+
+\subsubsection{MST baseline}
+\label{sec:methods-mst}
+
+As a non-neural baseline, we implement the Maximum Spanning Tree (MST) algorithm \citep{mckenna2021winning} using the SmartNoise Synth library \citep{smartnoise2024}. MST is a marginal-based method that operates in three phases:
+
+\begin{enumerate}
+    \item \textit{Marginal selection:} compute all pairwise column marginals and select a spanning tree of high-mutual-information pairs using the exponential mechanism.
+    \item \textit{Noisy measurement:} estimate the selected marginals with calibrated Gaussian noise, splitting the privacy budget across all selected measurements.
+    \item \textit{Synthetic generation:} fit a probabilistic graphical model (Private-PGM) to the noisy marginals and sample synthetic records consistent with the estimated distributions.
+\end{enumerate}
+
+MST requires all columns to have finite cardinality. We discretize continuous columns into 20 quantile bins (computed on the nonzero values only, with a separate zero bin when present) and cap categorical columns at 50 categories (the same top-$k$ binning used for the DP-VAE). After synthesis, continuous values are reconstructed by sampling uniformly within each bin's range.
+
+Like the per-table DP-SGD approach, MST synthesizes each of the 19 reporting tables independently at $\varepsilon = 4.0$ per table, $\delta = 10^{-5}$, with guid assignment proportional to each table's real join rate against the sysinfo anchor. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, identical to the per-table DP-SGD baseline. Marginal-based methods represent the current state of the art for tabular DP synthesis \citep{swanberg2025apiaccessllmsuseful} and provide the reference point against which both DP-SGD and PE should be measured.
+
+\subsection{Privacy budget summary}
+
+Table~\ref{tab:privacy-params} compares the privacy parameters across all four synthesis methods. The wide-table DP-VAE and PE operate on a single model or mechanism, yielding a total budget equal to the per-unit budget. The per-table methods apply independent synthesis to each of the 19 reporting tables, so their total budget under basic composition is $19 \times \varepsilon = 76.0$. Tighter accounting via parallel composition (for tables with disjoint column sets) or R\'{e}nyi composition could reduce this, but we use basic composition as a conservative bound.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccc}
+\toprule
+\textbf{Method} & \textbf{Per-unit $\varepsilon$} & $\boldsymbol{\delta}$ & \textbf{Mechanism} & \textbf{Composition} & \textbf{Total $\varepsilon$} \\
+\midrule
+Wide-table DP-VAE & 4.0 & $10^{-5}$ & DP-SGD (RDP) & single model & 3.996 \\
+Per-table DP-SGD & 4.0 & $10^{-5}$ & DP-SGD + Laplace & $19\times$ basic & 76.0 \\
+MST & 4.0 & $10^{-5}$ & Gaussian + Exp.\ mech. & $19\times$ basic & 76.0 \\
+Private Evolution & 4.0 & $10^{-5}$ & Gaussian (analytic) & $T{=}1$, single & 4.0 \\
+\bottomrule
+\end{tabular*}
+\caption{Privacy parameters across synthesis methods. ``Per-unit $\varepsilon$'' is the budget allocated to each model or table. ``Total $\varepsilon$'' is the effective privacy guarantee under the stated composition. The wide-table and PE methods offer strictly stronger privacy than the per-table methods at matched per-unit budgets.}
+\label{tab:privacy-params}
+\end{table}
 
 \newpage
 
 \section{Results}
 
-We evaluate the DP-VAE synthetic data on 8 of 21 feasible benchmark queries. The remaining 13 queries require per-row reporting table columns (e.g., per-process wait times, per-application focal durations) that are not present in the wide-table representation.
+\subsection{Evaluation metrics}
 
-\subsection{Browser ranking preservation}
+We evaluate synthetic data quality using three distance metrics matched to query output types. For aggregate queries that produce numeric columns grouped by categorical keys, we compute the median relative error across all overlapping groups:
+\begin{equation}
+    \text{RE}(r, s) = |r - s| / |r|.
+\end{equation}
+For queries that produce categorical distributions or histograms, we compute total variation distance between normalized real and synthetic distributions:
+\begin{equation}
+    \text{TV}(p, q) = \frac{1}{2} \sum_i |p_i - q_i|.
+\end{equation}
+For ranked result sets, we compute Spearman's rank correlation coefficient on the overlapping items. Group coverage is assessed via Jaccard similarity between real and synthetic group keys. Each metric is evaluated against its query-type threshold, then query score is computed as the fraction of per-column metrics that pass. A query is marked as passing when this score is at least 0.5. The default thresholds are relative error $\leq 0.25$, total variation $\leq 0.15$, and Spearman $\rho \geq 0.5$, with query-specific overlap thresholds defined in the evaluation metadata.
 
-The \texttt{most\_popular\_browser\_in\_each\_country} query identifies the dominant browser in each country by system count. The real data produces rankings for 51 countries; the synthetic data covers 50 (the United Arab Emirates is absent). Of the 50 shared countries, the DP-VAE correctly identifies the most popular browser in 42 (84\% accuracy). All 8 mismatches involve a swap between chrome and edge in countries where these two browsers are close in prevalence (e.g., the United States, the United Kingdom, Australia, Canada), making the ranking sensitive to small perturbations. This result demonstrates that the DP-VAE preserves the joint distribution between country and browser preference well enough to maintain top-1 rankings in the majority of cases.
+\subsection{DP-SGD and VAE results}
 
-\subsection{Browser usage percentages}
+We evaluate the wide-table DP-VAE synthetic data on 8 of 21 feasible benchmark queries. The remaining 13 queries require per-row reporting columns that are not represented in the wide table. The model passes 1 of 8 queries with average score 0.258 (Table~\ref{tab:method-comparison}).
 
-The \texttt{popular\_browsers} query computes the percentage of systems, instances, and total duration attributable to each of the three major browsers. Figure~\ref{fig:browser-usage} compares real and synthetic results.
+To foreground per-query fidelity, Table~\ref{tab:wide-dpsgd-scores} reports the 0--1 scores for the wide-table DP-VAE subset. Scores are fractions of metric-level passes. A score of 0.5 means that half of the evaluated metrics for that query satisfy threshold.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llc}
+\toprule
+\textbf{Query codename} & \textbf{Type} & \textbf{Wide DP-VAE score} \\
+\midrule
+\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
+\texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 \\
+\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
+\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
+\texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.167 \\
+\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.065 \\
+\texttt{BrowserHist} & Histogram & \cellcolor{scorelo}0.000 \\
+\texttt{RamHist} & Histogram & \cellcolor{scorelo}0.000 \\
+\bottomrule
+\end{tabular*}
+\caption{Wide-table DP-VAE query scores on a 0--1 fidelity scale, color-coded as in Table~\ref{tab:per-query-scores}: \tightlegendbox{scorehi}{$\geq 0.5$}, \tightlegendbox{scoremid}{$0.25$--$0.49$}, \tightlegendbox{scorelo}{$< 0.25$}.}
+\label{tab:wide-dpsgd-scores}
+\end{table}
+
+The strongest behavior is top-$k$ categorical ranking. On \texttt{BrowserRank}, the model reaches score 1.000 and recovers 42 of 50 top-browser assignments on overlapping countries (84\% categorical accuracy).
+
+Mediocre behavior appears in several geographic queries with scores in the 0.250--0.333 range (\texttt{PowerGeo}, \texttt{XeonGeo}, and \texttt{BatteryGeo}). These are partial matches where some groups and metrics are correct, but not enough to pass.
+
+The weakest behavior is on continuous-value workloads and join-heavy queries. In \texttt{ChassisAgg}, group overlap is moderate (Jaccard 0.571), but numeric accuracy is poor (median relative error 1161.44 for system counts, and relative error near 1.0 for the four hardware metrics). This indicates two failures at once, mismatched groups and incorrect values within overlapping groups.
+
+Across aggregate and distribution workloads that depend on continuous magnitudes (power, temperature, frequency, network bytes, memory utilization, battery duration), relative errors commonly exceed 99\%. Table~\ref{tab:continuous-failure} summarizes representative metric columns from this failure mode.
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccc}
+\toprule
+\textbf{Metric} & \textbf{Real} & \textbf{Synthetic} & \textbf{Rel.\ error} \\
+\midrule
+Platform power (\texttt{avg\_psys\_rap\_watts}) & 4.2914 & 0.0020 & $> 99\%$ \\
+Package C0 (\texttt{avg\_pkg\_c0}, \%) & 42.6308 & 0.0222 & $> 99\%$ \\
+Average frequency (\texttt{avg\_freq\_mhz}) & 2{,}692.871 & 0.0070 & $> 99\%$ \\
+Temperature (\texttt{avg\_temp\_centigrade}) & 44.7122 & 0.0029 & $> 99\%$ \\
+Network bytes received (\texttt{avg\_bytes\_received}) & $7.359645 \times 10^{16}$ & 1.1304 & $> 99\%$ \\
+Memory used (\texttt{avg\_percentage\_used}, \%) & 42.5682 & 0.0000 & $100\%$ \\
+Battery duration (\texttt{avg\_duration}, min) & 143.9710 & 0.1121 & $> 99\%$ \\
+\bottomrule
+\end{tabular*}
+\caption{Real vs.\ synthetic values for representative continuous metrics across evaluated workloads. All synthetic values are near zero.}
+\label{tab:continuous-failure}
+\end{table}
+
+This collapse is driven by extreme zero-inflation in the wide table. Most metric columns are nonzero for only a small fraction of the 1{,}000{,}000 \texttt{guid}s, because each event table covers a different subset of devices:
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrr}
+\toprule
+\textbf{Metric} & \textbf{Nonzero guids} & \textbf{Sparsity} \\
+\midrule
+Platform power (\texttt{avg\_psys\_rap\_watts}) & 816 & 99.9\% \\
+Average frequency (\texttt{avg\_freq\_mhz}) & 613 & 99.9\% \\
+Temperature (\texttt{avg\_temp\_centigrade}) & 622 & 99.9\% \\
+Package C0 (\texttt{avg\_pkg\_c0}) & 8{,}943 & 99.1\% \\
+Network bytes received (\texttt{avg\_bytes\_received}) & 37{,}224 & 96.3\% \\
+Memory used (\texttt{avg\_percentage\_used}) & 69{,}552 & 93.0\% \\
+\bottomrule
+\end{tabular*}
+\caption{Nonzero coverage per metric in the wide table. The PSYS RAP, frequency, and temperature metrics have data for fewer than 0.1\% of \texttt{guid}s.}
+\label{tab:sparsity}
+\end{table}
+
+This failure follows from the combination of sparse data and the VAE objective. The model is trained with mean squared error on continuous columns. When 93--99.9\% of values are zero, the easiest way to reduce loss is to predict values close to zero for most rows. The KL regularization term then pushes latent representations toward the prior, which makes it harder to preserve rare nonzero patterns. As a result, columns that depend on uncommon nonzero values are poorly reconstructed.
+
+A secondary effect is inflated counts in join-heavy queries. In \texttt{ChassisAgg}, the real data returns 104 \texttt{guid}s that appear in all five metric tables. The synthetic data returns more than 163{,}000 matches. This happens because many rows receive small positive values, so INNER JOIN conditions that should filter heavily become much less selective. This is a structural mismatch, and it reduces fidelity for multi-table aggregates.
+
+Overall, the wide-table DP-VAE preserves one useful signal, rank ordering among frequent categorical groups. It does not preserve continuous magnitudes or strict join behavior, because rare nonzero support is not learned well. This motivates the per-table strategy in the next subsection. Per-table synthesis does not preserve cross-table coupling, but it aims to improve within-table support and continuous-value realism.
+As a side note, a cross-method calibration view is provided later in Figure~\ref{fig:calibration-scatter}.
+
+\subsection{Per-table DP-SGD results}
+
+As described in Section~\ref{sec:methods-pertable}, this baseline synthesizes each reporting table independently at the same per-table privacy budget, using DP-VAE for anchor tables and DP histogram synthesis for the remaining tables. The goal is to improve within-table fidelity under sparse supports, at the cost of cross-table consistency.
+
+Per-table DP-SGD passes 6 of 21 queries, with average score 0.303 and median score 0.250. Unlike wide-table DP-VAE and PE, which are evaluated on 8 queries due to wide-table reconstruction limits, per-table DP-SGD is evaluated on the full 21-query benchmark. Table~\ref{tab:pertable-fidelity} reports all 21 per-query scores.
+
+\begin{longtable}{@{\extracolsep{\fill}}>{\raggedright\arraybackslash}p{0.54\linewidth}>{\raggedright\arraybackslash}p{0.20\linewidth}c}
+\caption{Per-table DP-SGD fidelity on all 21 benchmark queries.}
+\label{tab:pertable-fidelity} \\
+\toprule
+\textbf{Query codename} & \textbf{Type} & \textbf{Per-table score} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Query codename} & \textbf{Type} & \textbf{Per-table score} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{VendorAgg} & Agg+Join & \cellcolor{scorehi}1.000 \\
+\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scorehi}1.000 \\
+\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
+\texttt{SleepPivot} & Pivot & \cellcolor{scorehi}0.636 \\
+\texttt{RamHist} & Histogram & \cellcolor{scorehi}0.500 \\
+\texttt{DetectionRank} & Top-$k$ & \cellcolor{scorehi}0.500 \\
+\texttt{PersonaPivot} & Pivot & \cellcolor{scoremid}0.419 \\
+\texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 \\
+\texttt{BrowserHist} & Histogram & \cellcolor{scoremid}0.333 \\
+\texttt{BlockerAgg} & Agg+Join & \cellcolor{scoremid}0.250 \\
+\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
+\texttt{NetAsymAgg} & Agg+Join & \cellcolor{scorelo}0.143 \\
+\texttt{BlockerDurAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
+\texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
+\texttt{DisplayAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
+\texttt{BatteryDemo} & Geo/Demo & \cellcolor{scorelo}0.000 \\
+\texttt{FocalRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\texttt{SystemRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\texttt{WaitModeRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\texttt{WaitRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\texttt{WaitStateRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\end{longtable}
+
+This method performs best on several continuous-valued summaries. For example, in \texttt{SleepPivot}, on-time and off-time remain close to real values (RE 0.13 and 0.15). It remains weak on join-heavy queries because independently synthesized tables do not preserve cross-table correlations by \texttt{guid}.
+
+\subsection{MST results}
+
+As described in Section~\ref{sec:methods-mst}, MST is a marginal-based baseline that discretizes continuous columns, fits a private maximum-spanning-tree graphical model per table, and then samples synthetic rows from that model. Like per-table DP-SGD, it preserves table-level structure better than cross-table joins.
+
+MST passes 6 of 21 queries, with average score 0.328 and median score 0.250. Like per-table DP-SGD, MST is evaluated on the full 21-query benchmark, while wide-table DP-VAE and PE remain limited to 8 queries. Table~\ref{tab:mst-fidelity} reports all 21 per-query scores.
+
+\begin{longtable}{@{\extracolsep{\fill}}>{\raggedright\arraybackslash}p{0.54\linewidth}>{\raggedright\arraybackslash}p{0.20\linewidth}c}
+\caption{MST fidelity on all 21 benchmark queries.}
+\label{tab:mst-fidelity} \\
+\toprule
+\textbf{Query codename} & \textbf{Type} & \textbf{MST score} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Query codename} & \textbf{Type} & \textbf{MST score} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{VendorAgg} & Agg+Join & \cellcolor{scorehi}1.000 \\
+\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
+\texttt{DetectionRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
+\texttt{SystemRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
+\texttt{BrowserHist} & Histogram & \cellcolor{scorehi}0.667 \\
+\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scorehi}0.500 \\
+\texttt{NetAsymAgg} & Agg+Join & \cellcolor{scoremid}0.429 \\
+\texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 \\
+\texttt{SleepPivot} & Pivot & \cellcolor{scoremid}0.273 \\
+\texttt{BlockerAgg} & Agg+Join & \cellcolor{scoremid}0.250 \\
+\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
+\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.194 \\
+\texttt{BlockerDurAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
+\texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
+\texttt{DisplayAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
+\texttt{BatteryDemo} & Geo/Demo & \cellcolor{scorelo}0.000 \\
+\texttt{RamHist} & Histogram & \cellcolor{scorelo}0.000 \\
+\texttt{FocalRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\texttt{WaitModeRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\texttt{WaitRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\texttt{WaitStateRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\end{longtable}
+
+MST is strongest (albeit inconsistently) on ranking-style behavior. It attains perfect ranking agreement on several application ranking queries in the full 21-query workload. It is weaker on some continuous-value aggregates, where discretization can distort magnitudes even when category-level structure is preserved.
+
+\subsection{Private Evolution results}
+
+As described in Section~\ref{sec:methods-pe}, PE is a training-free pipeline. It generates candidate records with a foundation model API, applies a differentially private nearest-neighbor histogram over real records, and keeps the highest-ranked candidates.
+
+PE passes 2 of 8 evaluated queries, with average score 0.150 and median score 0.000. Table~\ref{tab:pe-fidelity} reports PE fidelity.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llc}
+\toprule
+\textbf{Query} & \textbf{Type} & \textbf{PE score} \\
+\midrule
+\texttt{BrowserHist} & Histogram & \cellcolor{scorehi}0.667 \\
+\texttt{RamHist} & Histogram & \cellcolor{scorehi}0.500 \\
+\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.032 \\
+\texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
+\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scorelo}0.000 \\
+\texttt{XeonGeo} & Geo/Demo & \cellcolor{scorelo}0.000 \\
+\texttt{PowerGeo} & Geo/Demo & \cellcolor{scorelo}0.000 \\
+\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\bottomrule
+\end{tabular*}
+\caption{Private Evolution fidelity on the shared 8-query subset.}
+\label{tab:pe-fidelity}
+\end{table}
+
+PE completes generation of 150{,}000 candidates via the OpenAI Batch API (gpt-5-nano), followed by DP nearest-neighbor histogram selection ($\sigma \approx 1.08$) to produce 50{,}000 records. The final privacy expenditure is $\varepsilon = 4.0$ at $\delta = 10^{-5}$.
+
+PE remains weak on aggregate and geographic queries. In \texttt{BrowserRank}, PE generates only 15 of 51 real countries and gets 13 correct among those 15, which leads to poor overall score despite good local matches. \texttt{PersonaPivot} also remains low (0.032).
+
+Category support mismatch is a key reason for this behavior. Country support is the largest gap. PE covers 18 of 51 real countries (35.3\% coverage), and hallucinates extra categories not present in real telemetry data; this issue is discussed further in Section~\ref{sec:discussion}.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.31\textwidth}YYYYY}
+\toprule
+\textbf{Column} & \textbf{Real unique} & \textbf{PE unique} & \textbf{Overlap} & \textbf{Coverage of real} & \textbf{Extra in PE} \\
+\midrule
+\texttt{countryname\_normalized} & 51 & 30 & 18 & 35.3\% & 12 \\
+\texttt{chassistype} & 7 & 88 & 7 & 100.0\% & 81 \\
+\texttt{os} & 7 & 19 & 7 & 100.0\% & 12 \\
+\texttt{persona} & 11 & 60 & 10 & 90.9\% & 50 \\
+\bottomrule
+\end{tabularx}
+\caption{Category support overlap between real data and PE synthetic data.}
+\label{tab:pe-support}
+\end{table}
+
+\subsection{Cross-method comparison}
+
+Across methods, pass counts are similar for per-table DP-SGD and MST, while wide-table DP-SGD and PE evaluate fewer queries because of schema coverage limits (Table~\ref{tab:method-comparison}).
+
+\begin{table}[H]
+\centering
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccc}
+\toprule
+\textbf{Method} & \textbf{Evaluated} & \textbf{Passed} & \textbf{Pass rate} & \textbf{Avg score} & \textbf{Median score} \\
+\midrule
+Wide-table DP-SGD & 8 & 1 & 12.5\% & 0.258 & 0.208 \\
+Per-table DP-SGD & 21 & 6 & 28.6\% & 0.303 & 0.250 \\
+MST baseline & 21 & 6 & 28.6\% & 0.328 & 0.250 \\
+Private Evolution & 8 & 2 & 25.0\% & 0.150 & 0.000 \\
+\bottomrule
+\end{tabular*}
+\caption{Benchmark performance across synthesis methods. ``Passed'' counts queries with score $\geq 0.5$.}
+\label{tab:method-comparison}
+\end{table}
+
+Figure~\ref{fig:method-comparison} complements this table with pass-count and average-score bars, and Figure~\ref{fig:method-by-type} breaks average score down by query type.
+
+% \begin{footnotesize}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.28\linewidth}>{\raggedright\arraybackslash}p{0.12\linewidth}*{4}{>{\centering\arraybackslash}p{0.11\linewidth}}}
+\caption{Per-query scores for all four synthesis methods, color-coded by fidelity: \tightlegendbox{scorehi}{$\geq 0.5$} (pass), \tightlegendbox{scoremid}{$0.25$--$0.49$}, \tightlegendbox{scorelo}{$< 0.25$}, \tightlegendbox{scorena}{N/A}.}
+\label{tab:per-query-scores} \\
+\toprule
+\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} & \textbf{PE} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} & \textbf{PE} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{BlockerAgg} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scorena}--- \\
+\texttt{BlockerDurAgg} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.167 & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 \\
+\texttt{DisplayAgg} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{NetAsymAgg} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.143 & \cellcolor{scoremid}0.429 & \cellcolor{scorena}--- \\
+\texttt{VendorAgg} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorehi}1.000 & \cellcolor{scorehi}1.000 & \cellcolor{scorena}--- \\
+\texttt{BatteryDemo} & Geo/Demo & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scorehi}1.000 & \cellcolor{scorehi}0.500 & \cellcolor{scorelo}0.000 \\
+\texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scorelo}0.000 \\
+\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scorelo}0.000 \\
+\texttt{BrowserHist} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.333 & \cellcolor{scorehi}0.667 & \cellcolor{scorehi}0.667 \\
+\texttt{RamHist} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}0.500 & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}0.500 \\
+\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.065 & \cellcolor{scoremid}0.419 & \cellcolor{scorelo}0.194 & \cellcolor{scorelo}0.032 \\
+\texttt{SleepPivot} & Pivot & \cellcolor{scorena}--- & \cellcolor{scorehi}0.636 & \cellcolor{scoremid}0.273 & \cellcolor{scorena}--- \\
+\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 & \cellcolor{scorehi}1.000 & \cellcolor{scorehi}1.000 & \cellcolor{scorelo}0.000 \\
+\texttt{DetectionRank} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorehi}0.500 & \cellcolor{scorehi}1.000 & \cellcolor{scorena}--- \\
+\texttt{FocalRank} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{SystemRank} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}1.000 & \cellcolor{scorena}--- \\
+\texttt{WaitModeRank} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{WaitRank} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\texttt{WaitStateRank} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
+\end{longtable}
+% \end{footnotesize}
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.48\linewidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    bar width=18pt,
+    width=\linewidth,
+    height=6cm,
+    ylabel={Queries passed},
+    symbolic x coords={Wide,Per-table,MST,PE},
+    xtick={Wide,Per-table,MST,PE},
+    ymin=0, ymax=9,
+    ytick={0,2,4,6,8},
+    nodes near coords,
+    every node near coord/.append style={font=\small},
+    enlarge x limits=0.25,
+]
+\addplot[fill=RoyalBlue!40, draw=RoyalBlue, bar shift=0pt] coordinates {(Wide,1)};
+\addplot[fill=BrickRed!40, draw=BrickRed, bar shift=0pt] coordinates {(Per-table,6)};
+\addplot[fill=ForestGreen!40, draw=ForestGreen, bar shift=0pt] coordinates {(MST,6)};
+\addplot[fill=Goldenrod!60, draw=Goldenrod, bar shift=0pt] coordinates {(PE,2)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\linewidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    bar width=18pt,
+    width=\linewidth,
+    height=6cm,
+    ylabel={Average score},
+    symbolic x coords={Wide,Per-table,MST,PE},
+    xtick={Wide,Per-table,MST,PE},
+    ymin=0, ymax=0.5,
+    nodes near coords,
+    every node near coord/.append style={font=\small, /pgf/number format/.cd, fixed, precision=3},
+    enlarge x limits=0.25,
+]
+\addplot[fill=RoyalBlue!40, draw=RoyalBlue, bar shift=0pt] coordinates {(Wide,0.258)};
+\addplot[fill=BrickRed!40, draw=BrickRed, bar shift=0pt] coordinates {(Per-table,0.303)};
+\addplot[fill=ForestGreen!40, draw=ForestGreen, bar shift=0pt] coordinates {(MST,0.328)};
+\addplot[fill=Goldenrod!60, draw=Goldenrod, bar shift=0pt] coordinates {(PE,0.150)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}
+\caption{Left: number of queries passing (score $\geq 0.5$) for each method. Right: average score across all evaluated queries. The per-table methods evaluate all 21 queries; the wide-table and PE methods evaluate 8.}
+\label{fig:method-comparison}
+\end{figure}
+
+The per-query scores in Table~\ref{tab:per-query-scores} show that no method achieves high scores on aggregate queries involving continuous metrics, while categorical and ranking queries show more variation across methods.
+
+Figure~\ref{fig:method-by-type} breaks down average scores by query type. The per-table methods achieve their strongest results on pivot and histogram queries, where the independent per-table approach avoids the zero-inflation that cripples the wide-table method. Aggregate queries involving multi-table joins remain the hardest category for all methods, with average scores below 0.3.
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
     ybar,
-    bar width=6pt,
+    bar width=7pt,
     width=\linewidth,
-    height=7cm,
-    ylabel={Percentage},
-    symbolic x coords={chrome-sys,edge-sys,firefox-sys,chrome-inst,edge-inst,firefox-inst,chrome-dur,edge-dur,firefox-dur},
+    height=6cm,
+    ylabel={Average score},
+    symbolic x coords={Agg+Join,Top-$k$,Geo/Demo,Histogram,Pivot},
     xtick=data,
-    x tick label style={rotate=45, anchor=east, font=\scriptsize},
-    legend style={at={(0.02,0.96)}, anchor=north west},
-    ymin=0, ymax=95,
-    xticklabels={\% sys (chr), \% sys (edge), \% sys (ffx), \% inst (chr), \% inst (edge), \% inst (ffx), \% dur (chr), \% dur (edge), \% dur (ffx)},
+    ymin=0, ymax=1.15,
+    ytick={0,0.2,0.4,0.6,0.8,1.0},
+    legend style={at={(0.02,0.96)}, anchor=north west, font=\small},
+    enlarge x limits=0.15,
+    x tick label style={font=\small},
+    grid=major,
+    major grid style={gray!30},
 ]
-\addplot coordinates {
-    (chrome-sys,82.05) (edge-sys,55.16) (firefox-sys,18.36)
-    (chrome-inst,80.30) (edge-inst,8.91) (firefox-inst,10.79)
-    (chrome-dur,82.89) (edge-dur,8.88) (firefox-dur,8.23)
+\addplot[fill=RoyalBlue!40, draw=RoyalBlue] coordinates {
+    (Agg+Join,0.167) (Top-$k$,1.000) (Geo/Demo,0.278) (Histogram,0.000) (Pivot,0.065)
 };
-\addplot coordinates {
-    (chrome-sys,79.97) (edge-sys,73.90) (firefox-sys,66.78)
-    (chrome-inst,36.24) (edge-inst,33.49) (firefox-inst,30.27)
-    (chrome-dur,61.57) (edge-dur,25.73) (firefox-dur,12.70)
+\addplot[fill=BrickRed!40, draw=BrickRed] coordinates {
+    (Agg+Join,0.232) (Top-$k$,0.214) (Geo/Demo,0.396) (Histogram,0.417) (Pivot,0.528)
 };
-\legend{Real, Synthetic}
+\addplot[fill=ForestGreen!40, draw=ForestGreen] coordinates {
+    (Agg+Join,0.280) (Top-$k$,0.429) (Geo/Demo,0.271) (Histogram,0.334) (Pivot,0.234)
+};
+\addplot[fill=Goldenrod!60, draw=Goldenrod] coordinates {
+    (Agg+Join,0.000) (Top-$k$,0.000) (Geo/Demo,0.000) (Histogram,0.584) (Pivot,0.032)
+};
+\legend{Wide DP-SGD, Per-table DP-SGD, MST, PE}
 \end{axis}
 \end{tikzpicture}
-\caption{Browser usage metrics: percentage of systems, instances, and duration for chrome, edge, and firefox. The synthetic data preserves the relative ordering for duration but collapses the instance-level distribution toward uniformity ($\approx 33\%$ each), an artifact of the decomposition process assigning one row per \texttt{guid} per browser.}
-\label{fig:browser-usage}
+\caption{Average query score by query type across synthesis methods.}
+\label{fig:method-by-type}
 \end{figure}
 
-The percent-systems metric is roughly preserved for chrome ($82.1\% \to 80.0\%$) but inflated for edge ($55.2\% \to 73.9\%$) and firefox ($18.4\% \to 66.8\%$). The percent-instances metric collapses to near-uniform ($\approx 33\%$ per browser) because the wide-table decomposition creates exactly one row per \texttt{guid} per browser, losing real instance-count variation.
-
-\subsection{Continuous metric failure}
-
-All queries involving continuous metrics (power, temperature, frequency, network bytes, memory utilization, battery duration) produce synthetic values near zero, with relative errors exceeding 99\%. Table~\ref{tab:continuous-failure} reports representative values for the five-way chassis join query and other continuous queries.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Metric} & \textbf{Real} & \textbf{Synthetic} & \textbf{Rel.\ error} \\
-\midrule
-avg\_psys\_rap\_watts & 4.42 & 0.002 & $> 99\%$ \\
-avg\_pkg\_c0 (\%) & 37.4 & 0.022 & $> 99\%$ \\
-avg\_freq\_mhz & 1{,}582 & 0.009 & $> 99\%$ \\
-avg\_temp\_centigrade & 44.5 & 0.003 & $> 99\%$ \\
-avg\_bytes\_received & $7.4 \times 10^{16}$ & 1.12 & $> 99\%$ \\
-avg\_percentage\_used (\%) & 42.6 & 0.0 & $100\%$ \\
-avg\_duration (battery, min) & 144 & 0.11 & $> 99\%$ \\
-\bottomrule
-\end{tabular}
-\caption{Real vs.\ synthetic values for continuous metrics (notebook chassis type where applicable). All synthetic values are near zero.}
-\label{tab:continuous-failure}
-\end{table}
-
-Figure~\ref{fig:ram-utilization} illustrates the failure on the RAM utilization histogram. Real data shows a clear inverse relationship between RAM capacity and utilization percentage. The synthetic data reports 0\% utilization across all capacities.
+Figure~\ref{fig:calibration-scatter} provides a cross-method calibration view. Each point is a matched group-level value from query outputs, transformed as $\log_{10}(1+x)$. Points near the diagonal indicate better calibration.
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}
-\begin{axis}[
-    width=\linewidth,
-    height=6cm,
-    xlabel={RAM capacity (GB)},
-    ylabel={Average \% utilized},
-    xmode=log,
-    log basis x=2,
-    xtick={2,4,8,16,32,64,128},
-    xticklabels={2,4,8,16,32,64,128},
-    legend style={at={(0.98,0.96)}, anchor=north east},
-    ymin=-5, ymax=85,
-    grid=both,
-    minor grid style={gray!20},
-    major grid style={gray!40},
+\begin{groupplot}[
+group style={group size=2 by 2, horizontal sep=1.8cm, vertical sep=1.3cm},
+width=0.485\linewidth,
+height=0.18\textheight,
+xlabel={$\log_{10}(1+\mathrm{real})$},
+ylabel={$\log_{10}(1+\mathrm{synth})$},
+xmin=0, xmax=18,
+ymin=0, ymax=18,
+grid=major,
+major grid style={gray!20},
+tick label style={font=\scriptsize},
+title style={font=\small},
 ]
-\addplot+[mark=*, thick, RoyalBlue] coordinates {
-    (2,67) (4,71) (8,60) (16,47) (32,37) (64,30) (128,30)
-};
-\addlegendentry{Real}
-\addplot+[mark=square*, thick, BrickRed] coordinates {
-    (2,0) (4,0) (8,0) (16,0) (32,0) (64,0) (128,0)
-};
-\addlegendentry{Synthetic}
-\end{axis}
+\nextgroupplot[title={Wide-table DP-SGD}, xlabel={}]
+\addplot[only marks, mark=*, mark size=1.3pt, RoyalBlue] table[x=real_log,y=synth_log,col sep=comma] {figures/data/figC_scatter_wide.csv};
+\addplot[dashed, black] coordinates {(0,0) (18,18)};
+
+\nextgroupplot[title={Per-table DP-SGD}, xlabel={}]
+\addplot[only marks, mark=*, mark size=1.3pt, BrickRed] table[x=real_log,y=synth_log,col sep=comma] {figures/data/figC_scatter_pertable.csv};
+\addplot[dashed, black] coordinates {(0,0) (18,18)};
+
+\nextgroupplot[title={MST baseline}]
+\addplot[only marks, mark=*, mark size=1.3pt, ForestGreen] table[x=real_log,y=synth_log,col sep=comma] {figures/data/figC_scatter_mst.csv};
+\addplot[dashed, black] coordinates {(0,0) (18,18)};
+
+\nextgroupplot[title={Private Evolution}]
+\addplot[only marks, mark=*, mark size=1.3pt, violet] table[x=real_log,y=synth_log,col sep=comma] {figures/data/figC_scatter_pe.csv};
+\addplot[dashed, black] coordinates {(0,0) (18,18)};
+\end{groupplot}
 \end{tikzpicture}
-\caption{RAM utilization by capacity. Real data exhibits the expected inverse trend: devices with less RAM operate at higher utilization. The synthetic data produces 0\% utilization universally, as the memory columns in the wide table are zero for 93\% of \texttt{guid}s.}
-\label{fig:ram-utilization}
+\caption{Calibration scatter by method using matched group-level query outputs. The dashed line is perfect calibration.}
+\label{fig:calibration-scatter}
 \end{figure}
 
-\subsection{Wide-table sparsity}
+The calibration patterns differ by method. Wide-table DP-SGD shows strong collapse toward near-zero synthetic outputs, with many points concentrated at low $\log_{10}(1+\mathrm{synth})$ even when real values are large. Per-table DP-SGD and PE both show underestimation with horizontal banding, where outputs plateau at a few repeated synthetic levels rather than tracking continuous increases in the real values. MST has wider spread and several outliers, including high-value deviations, but its points follow the diagonal more closely across a broader range. This is consistent with MST being noisier pointwise while remaining relatively calibrated overall.
 
-The continuous metric failure stems from extreme zero-inflation in the wide table. Most metric columns are nonzero for only a small fraction of the 1{,}000{,}000 \texttt{guid}s, because each event table covers a different subset of devices:
+\subsection{Additive experiments}
+
+We ran a second round of additive experiments to test whether lightweight interventions can improve utility without changing any of the original methods. All runs were isolated in new notebooks and new output paths.
+
+The first intervention was post-processing on top of existing synthetic reporting tables. We enforced numeric constraints and canonicalized selected categorical values to real-data vocabularies. This intervention produced no measurable gain. Per-table DP-SGD, MST, and PE all had unchanged pass counts and unchanged average scores.
+
+The second intervention was workload routing. This intervention does not generate new synthetic data. It selects query outputs from the method that performs better for that query type. We routed aggregate and histogram queries to per-table DP-SGD, then routed distribution and ranking queries to MST. This lifted the benchmark from 6 of 21 passed queries to 8 of 21 with an average score of 0.404.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{lrr}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.42\textwidth}YYYY}
 \toprule
-\textbf{Metric source} & \textbf{Nonzero guids} & \textbf{Sparsity} \\
+\textbf{Run} & \textbf{Evaluated} & \textbf{Passed} & \textbf{Pass rate} & \textbf{Avg score} \\
 \midrule
-PSYS RAP watts & 816 & 99.9\% \\
-Average frequency & 613 & 99.9\% \\
-Temperature & 622 & 99.9\% \\
-C0 residency & 8{,}943 & 99.1\% \\
-Network consumption & 37{,}224 & 96.3\% \\
-Memory utilization & 69{,}552 & 93.0\% \\
+Per-table DP-SGD baseline & 21 & 6 & 28.6\% & 0.303 \\
+MST baseline & 21 & 6 & 28.6\% & 0.328 \\
+Postprocessed per-table DP-SGD & 21 & 6 & 28.6\% & 0.303 \\
+Postprocessed MST & 21 & 6 & 28.6\% & 0.328 \\
+Hybrid routed outputs & 21 & 8 & 38.1\% & 0.404 \\
 \bottomrule
-\end{tabular}
-\caption{Nonzero coverage per metric in the wide table. The PSYS RAP, frequency, and temperature metrics have data for fewer than 0.1\% of \texttt{guid}s.}
-\label{tab:sparsity}
+\end{tabularx}
+\caption{Additive follow-up experiment results. The routing policy combines existing query outputs by query type and improves overall benchmark utility.}
+\label{tab:additive-followup}
 \end{table}
-
-The VAE optimizes mean squared error on these columns. When 93--99.9\% of values are zero, the loss-minimizing strategy is to generate near-zero values for all \texttt{guid}s. The KL divergence term further regularizes the latent space toward the standard normal, discouraging the model from learning a thin nonzero mode that accounts for less than 1\% of the data.
-
-A secondary consequence is system count inflation. The five-way chassis join returns 104 real \texttt{guid}s (those with data in all five metric tables simultaneously). The synthetic data returns over 163{,}000 matches because the model generates small positive residuals for all \texttt{guid}s, causing the INNER JOIN to match far more rows than it should.
 
 \newpage
 
 \section{Discussion}
+\label{sec:discussion}
 
-The DP-SGD results provide a direct answer to research question (2). Error compounds dramatically across multi-table joins when the synthesis approach introduces structural sparsity artifacts. The wide-table design is correct in principle, as it preserves the joint distribution across tables by construction. In practice, it creates a feature matrix where most columns are nearly degenerate. The VAE collapses these sparse columns to their mode (zero), destroying any signal in the nonzero tail.
+The four-method comparison provides answers to several of our research questions.
 
-The browser ranking result demonstrates that the approach succeeds for well-populated categorical attributes. The joint distribution between country and browser preference is dense (every \texttt{guid} has a country; most have web browsing data), so the model learns a meaningful conditional distribution that preserves top-1 rankings in 84\% of countries.
+Research question (1), which method achieves higher benchmark scores, has a nuanced answer. Per-table DP-SGD and MST both pass 6 of 21 queries (28.6\%), with MST achieving a slightly higher average score (0.328 vs.\ 0.303). The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%). PE passes 2 of 8 (25.0\%), outperforming the wide-table DP-VAE on the same query set but with a lower average score (0.150 vs.\ 0.258). No method comes close to passing all queries. The two per-table methods pass different query subsets: per-table DP-SGD passes \texttt{SleepPivot} (score 0.64) and \texttt{RamHist} (0.50), while MST passes \texttt{BrowserHist} (0.67) and two application ranking queries (1.00 each). PE's two passing queries (\texttt{BrowserHist} at 0.667 and \texttt{RamHist} at 0.500) overlap with the per-table methods, indicating that the DP histogram selection can correct distributional biases in the LLM output for histogram-type queries. This complementarity reflects fundamental algorithmic differences. DP histogram synthesis preserves continuous distributions by sampling from noisy bin counts, yielding low relative error on time-based metrics (on-time RE = 0.13, sleep-time RE = 0.04). MST preserves pairwise marginals between categorical keys and count columns, maintaining rankings (Spearman $\rho$ = 1.00 on application system counts) even when absolute values are distorted. Neither algorithm achieves both properties simultaneously.
 
-Several mitigation strategies warrant investigation.
+Research question (2), whether error compounds across multi-table joins, receives a clear affirmative. \texttt{ChassisAgg} requires data from five independently synthesized tables. Both per-table methods score 0.00 because the synthetic tables share no correlated \texttt{guid}s; the inner join produces empty results (per-table DP-SGD) or random associations (MST). The wide-table DP-VAE scores 0.17 on this query, the only method that preserves any cross-table structure, but the values are near-zero due to sparsity. \texttt{NetAsymAgg} (a 2-way join) similarly suffers: both per-table methods overcount matching rows by 5--7$\times$ and report network byte values with RE $\approx 1.0$, because the independently synthesized network and sysinfo tables produce spurious \texttt{guid} overlaps.
+
+Research question (3), minority class preservation, is partially addressed. \texttt{BrowserRank} demonstrates that all methods preserve dominant categorical associations: per-table DP-SGD achieves 47 of 50 correct top browsers per country, and the wide-table DP-VAE achieves 42 of 50. For rare categories, per-table DP-SGD inflates minority chassis types (``Intel NUC/STK'' at 8.4\% synthetic vs.\ 2.0\% real) due to the top-50 binning and uniform noise in DP-SGD, while MST underrepresents them (generating too few entries for rare combinations). Both methods underperform on queries involving rare process names or application-specific rankings.
+
+Research question (4), classifier comparability, remains unaddressed. The benchmark queries are analytical (aggregate statistics, rankings, distributions), not predictive, so training downstream classifiers on the synthetic data was not a natural fit for this evaluation framework. A direct comparison would require defining a classification task on the DCA data (e.g., predicting chassis type from usage patterns), training models on real versus synthetic data, and comparing test accuracy. We defer this to future work.
+
+Research question (5), wall-clock time, shows clear differences. The wide-table DP-VAE trains in 360 minutes on CPU (20 epochs, 1M rows, 307 features). Per-table synthesis completes in approximately 90 minutes total (two VAEs at $\sim$30 minutes each for sysinfo and cpu\_metadata, plus histogram synthesis for 17 smaller tables). MST runs in under 10 minutes per table using the \texttt{mst} library. PE completes in 59 minutes total: the OpenAI Batch API generates 150{,}000 candidate records (7{,}500 batch calls at approximately \$20 USD), and the DP nearest-neighbor histogram over 1{,}000{,}000 real $\times$ 150{,}000 synthetic records accounts for the remaining computation.
+
+The PE results confirm that foundation models import their own distributional priors rather than learning the target distribution (Win11 at 77.8\% vs.\ 10.4\% real). The DP nearest-neighbor histogram partially corrects these biases for histogram-type queries (PE matches MST on browser usage at 0.667 and outperforms the wide-table DP-VAE on RAM utilization at 0.500 vs.\ 0.000), but cannot compensate for the near-total absence of nonzero continuous metrics in the LLM output. The hallucinated categorical values further reduce effective sample size by generating records that cannot match any real data point in the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
+
+Several mitigation strategies warrant investigation:
 
 \begin{itemize}
     \item A two-stage model in which a Bernoulli model predicts zero vs.\ nonzero per column, followed by a conditional model for nonzero values only.
-    \item Per-table independent synthesis (sacrificing cross-table correlations) as a baseline to isolate the sparsity effect.
-    \item A zero-inflated loss function replacing plain MSE for numeric columns.
-    \item Restricting the wide table to \texttt{guid}s with sufficient coverage (e.g., present in $\geq 3$ metric tables).
+    \item Relational DP synthesis methods that handle multi-table structure directly, eliminating the zero-inflation problem while preserving cross-table correlations.
+    \item Method ensembling: using per-table DP-SGD for queries requiring continuous accuracy and MST for queries requiring ranking preservation, selecting per query type.
+    \item Post-processing the synthetic data with mode patching and constraint enforcement, as proposed by recent work on model-agnostic DP post-processing.
 \end{itemize}
 
-Private Evolution may be better suited to this setting. Rather than learning a generative model over the full 307-dimensional feature space, PE operates in an embedding space and uses a foundation model as a proposal mechanism. If the foundation model can generate plausible telemetry records with realistic sparsity patterns (i.e., most records have data in only a few metric tables), PE could preserve the heterogeneous coverage structure that the VAE collapses.
+\subsection{Sensitivity to evaluation thresholds}
+
+Figure~\ref{fig:sensitivity} reports how pass rates change as the relative error, total variation, and Spearman $\rho$ thresholds vary. The analysis confirms that our findings are not artifacts of a particular threshold choice.
+
+The relative error threshold has the largest effect. Per-table DP-SGD's pass rate increases from 14.3\% at RE $\leq 0.05$ to 57.1\% at RE $\leq 1.0$, indicating many queries produce synthetic values in the right order of magnitude but outside the strict 25\% tolerance. MST is more robust to strict thresholds: it starts at 23.8\% at RE $\leq 0.05$ (compared to 14.3\% for per-table), reflecting its strength on categorical distributions where exact values are less important than distributional shape. The wide-table method is flat at 12.5\% until RE $\leq 1.0$, at which point it jumps to 75\%, confirming that the continuous metric failure is total (relative errors exceed 99\%) rather than marginal.
+
+Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates across all methods. TV sensitivity is limited because the distribution queries either match closely (TV $< 0.10$) or fail badly (TV $> 0.5$), with few queries in the boundary region. Rank correlation sensitivity is limited because MST achieves perfect $\rho = 1.0$ on its passing ranking queries while both methods score near zero on failing ones, leaving no queries sensitive to the threshold.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.32\linewidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=\linewidth,
+    height=5.5cm,
+    xlabel={\small RE threshold},
+    ylabel={\small Pass rate (\%)},
+    xmin=0, xmax=1.05,
+    ymin=0, ymax=85,
+    legend style={at={(0.03,0.97)}, anchor=north west, font=\tiny},
+    grid=major,
+    major grid style={gray!25},
+    mark size=1.5pt,
+    line width=0.8pt,
+    tick label style={font=\scriptsize},
+]
+\addplot[RoyalBlue, mark=*] coordinates {
+    (0.05,12.5) (0.10,12.5) (0.15,12.5) (0.20,12.5)
+    (0.25,12.5) (0.50,12.5) (0.75,12.5) (1.00,75.0)
+};
+\addplot[BrickRed, mark=square*] coordinates {
+    (0.05,14.3) (0.10,14.3) (0.15,23.8) (0.20,23.8)
+    (0.25,28.6) (0.50,33.3) (0.75,38.1) (1.00,57.1)
+};
+\addplot[ForestGreen, mark=triangle*] coordinates {
+    (0.05,23.8) (0.10,23.8) (0.15,23.8) (0.20,28.6)
+    (0.25,28.6) (0.50,38.1) (0.75,38.1) (1.00,52.4)
+};
+\addplot[Goldenrod, mark=diamond*] coordinates {
+    (0.05,12.5) (0.10,12.5) (0.15,12.5) (0.20,12.5)
+    (0.25,25.0) (0.50,25.0) (0.75,25.0) (1.00,62.5)
+};
+\draw[gray, dashed, thin] (axis cs:0.25,0) -- (axis cs:0.25,85);
+\legend{Wide, PT, MST, PE}
+\end{axis}
+\end{tikzpicture}
+\end{minipage}
+\hfill
+\begin{minipage}{0.32\linewidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=\linewidth,
+    height=5.5cm,
+    xlabel={\small TV threshold},
+    xmin=0, xmax=0.55,
+    ymin=0, ymax=45,
+    grid=major,
+    major grid style={gray!25},
+    mark size=1.5pt,
+    line width=0.8pt,
+    tick label style={font=\scriptsize},
+]
+\addplot[RoyalBlue, mark=*] coordinates {
+    (0.05,12.5) (0.10,12.5) (0.15,12.5) (0.20,12.5)
+    (0.25,25.0) (0.30,25.0) (0.40,25.0) (0.50,37.5)
+};
+\addplot[BrickRed, mark=square*] coordinates {
+    (0.05,23.8) (0.10,23.8) (0.15,28.6) (0.20,28.6)
+    (0.25,28.6) (0.30,28.6) (0.40,33.3) (0.50,33.3)
+};
+\addplot[ForestGreen, mark=triangle*] coordinates {
+    (0.05,23.8) (0.10,28.6) (0.15,28.6) (0.20,28.6)
+    (0.25,28.6) (0.30,28.6) (0.40,28.6) (0.50,28.6)
+};
+\addplot[Goldenrod, mark=diamond*] coordinates {
+    (0.05,12.5) (0.10,12.5) (0.15,25.0) (0.20,25.0)
+    (0.25,25.0) (0.30,25.0) (0.40,25.0) (0.50,25.0)
+};
+\draw[gray, dashed, thin] (axis cs:0.15,0) -- (axis cs:0.15,45);
+\end{axis}
+\end{tikzpicture}
+\end{minipage}
+\hfill
+\begin{minipage}{0.32\linewidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=\linewidth,
+    height=5.5cm,
+    xlabel={\small Spearman $\rho$ threshold},
+    xmin=-0.05, xmax=0.95,
+    ymin=0, ymax=45,
+    grid=major,
+    major grid style={gray!25},
+    mark size=1.5pt,
+    line width=0.8pt,
+    tick label style={font=\scriptsize},
+]
+\addplot[RoyalBlue, mark=*] coordinates {
+    (0.0,12.5) (0.1,12.5) (0.2,12.5) (0.3,12.5) (0.4,12.5)
+    (0.5,12.5) (0.6,12.5) (0.7,12.5) (0.8,12.5) (0.9,12.5)
+};
+\addplot[BrickRed, mark=square*] coordinates {
+    (0.0,33.3) (0.1,33.3) (0.2,33.3) (0.3,33.3) (0.4,33.3)
+    (0.5,28.6) (0.6,28.6) (0.7,28.6) (0.8,28.6) (0.9,28.6)
+};
+\addplot[ForestGreen, mark=triangle*] coordinates {
+    (0.0,28.6) (0.1,28.6) (0.2,28.6) (0.3,28.6) (0.4,28.6)
+    (0.5,28.6) (0.6,28.6) (0.7,28.6) (0.8,28.6) (0.9,28.6)
+};
+\addplot[Goldenrod, mark=diamond*] coordinates {
+    (0.0,25.0) (0.1,25.0) (0.2,25.0) (0.3,25.0) (0.4,25.0)
+    (0.5,25.0) (0.6,25.0) (0.7,25.0) (0.8,25.0) (0.9,25.0)
+};
+\draw[gray, dashed, thin] (axis cs:0.5,0) -- (axis cs:0.5,45);
+\end{axis}
+\end{tikzpicture}
+\end{minipage}
+\caption{Pass rate sensitivity to evaluation thresholds. Left: relative error threshold (TV = 0.15, $\rho$ = 0.5 fixed). Center: total variation threshold (RE = 0.25, $\rho$ = 0.5 fixed). Right: Spearman $\rho$ threshold (RE = 0.25, TV = 0.15 fixed). Dashed gray lines indicate the default thresholds.}
+\label{fig:sensitivity}
+\end{figure}
 
 \section{Conclusion}
 
-We presented a controlled evaluation of differentially private synthetic data generation on Intel's DCA telemetry corpus. The DP-VAE trained with DP-SGD ($\varepsilon = 3.996$, $\delta = 10^{-5}$) preserves categorical joint distributions (42/50 countries receive the correct top browser) but fails on all continuous metrics due to extreme zero-inflation in the wide-table representation.
+We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing four synthesis approaches: a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, MST marginal-based synthesis, and Private Evolution via foundation model APIs.
 
-This result identifies the sparsity structure of multi-table joins as a critical factor in the success or failure of DP synthetic data generation. When coverage varies across tables (as it does in any real multi-table dataset), a unified representation concentrates nearly all probability mass at zero for sparse columns, and standard generative models learn to reproduce this mode.
+All four methods have completed evaluation against the 21-query benchmark. Per-table DP-SGD and MST each pass 6 of 21 queries (28.6\% pass rate), passing different subsets that reflect their algorithmic strengths: DP histogram synthesis preserves continuous distributions (on-time RE = 0.13) while MST preserves rankings (Spearman $\rho$ = 1.00 on application counts). The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%), with all continuous metrics near zero due to extreme sparsity in the wide-table representation. PE passes 2 of 8 (25.0\%), outperforming the wide-table DP-VAE in pass count but with a lower average score (0.150 vs.\ 0.258). PE's two passing queries (\texttt{BrowserHist} and \texttt{RamHist}) are histogram-type queries where the DP nearest-neighbor selection can correct the foundation model's distributional biases.
 
-Our evaluation so far covers only the DP-SGD paradigm. The comparison with Private Evolution, using matched privacy budgets and the same 21-query benchmark, will determine whether training-free methods handle the heterogeneous structure of relational telemetry data more effectively.
+Two structural findings emerge. First, wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide table has 93--99.9\% zero values in metric columns, and both the VAE and the foundation model collapse these to their mode. Second, per-table independence destroys cross-table correlations: the 5-way chassis join produces empty or random results under both per-table methods, while the wide-table approaches (DP-VAE and PE) at least preserve some cross-table structure.
+
+PE confirms the negative result of \citet{swanberg2025apiaccessllmsuseful}: API access to foundation models does not improve DP tabular synthesis beyond established baselines on the DCA corpus. The foundation model imports its own distributional priors (Win11 at 77.8\% vs.\ 10.4\% real), hallucinates categorical values outside the real vocabulary, and generates near-zero continuous metrics. The DP histogram partially corrects distributional queries but cannot compensate for the absence of signal in aggregate and geographic queries.
+
+These results point toward relational DP synthesis as the most promising direction: methods that handle multi-table structure directly could eliminate zero-inflation while preserving cross-table correlations. A secondary direction is method ensembling, selecting per-table DP-SGD for continuous-valued queries and MST for ranking queries, capitalizing on their complementary strengths.
 
 \newpage
 
@@ -503,40 +1064,210 @@ Our evaluation so far covers only the DP-SGD paradigm. The comparison with Priva
 
 \section{Project proposal}
 
-The following is reproduced from the Q2 project proposal submitted in Fall 2025.
+\subsection{Abstract}
 
-\subsection{Problem statement}
+Differentially private synthetic data generation enables the release of realistic datasets without exposing individual records. Two paradigms dominate current research: \textit{training-based} methods such as differentially private stochastic gradient descent (DP-SGD), which inject noise during model optimization, and \textit{training-free} methods such as Private Evolution (PE), which achieve privacy guarantees through inference-only access to pre-trained foundation models.
 
-Organizations routinely collect detailed telemetry from their products that drive critical business decisions. The same granularity that makes telemetry valuable also makes it sensitive. Differential privacy (DP) provides a rigorous mathematical framework for releasing data while bounding the influence of any individual record. Two paradigms have emerged for generating differentially private synthetic data. Training-based methods (DP-SGD) inject noise during model optimization, while training-free methods (Private Evolution) achieve privacy through black-box API access to foundation models.
+We propose to implement and rigorously compare both approaches on Intel's Driver and Client Applications (DCA) telemetry corpus, a multi-table dataset comprising system metadata, power consumption, application usage, and browsing behavior across thousands of Windows clients. Our evaluation centers on a benchmark of 22 analytical SQL queries representative of real business intelligence workloads, measuring whether synthetic data can substitute for real data in production analytics pipelines. Under matched privacy budgets, we assess query fidelity, statistical preservation, downstream utility, and computational cost to determine whether training-free methods can match training-based approaches while offering reduced implementation complexity.
 
-We implement and compare both approaches on Intel's Driver and Client Applications (DCA) telemetry corpus, evaluating against a benchmark of analytical SQL queries representative of production business intelligence workloads. Under matched privacy budgets ($\varepsilon = 4.0$, $\delta = 10^{-5}$), we assess query fidelity, statistical preservation, and computational cost to determine whether training-free methods can match training-based approaches on real multi-table relational data.
 
-\subsection{Data}
+\subsection{Motivation}
 
-The DCA telemetry corpus comprises approximately 30 interrelated tables organized around a globally unique client identifier (\texttt{guid}). Tables span system metadata, power and thermal instrumentation, battery usage, application behavior, web browsing, network consumption, and display devices. We construct 19 reporting tables from the raw data, each aggregated to the \texttt{guid} level, and define a benchmark of 21 feasible SQL queries covering aggregate statistics with joins, ranked top-$k$ lists, geographic and demographic breakdowns, histograms, and complex multi-way pivots.
+Organizations routinely collect detailed telemetry from their products that drive critical business decisions. Engineers use it to diagnose failures, product teams analyze usage trends, and analysts extract insights that shape product roadmaps. However, the same granularity that makes telemetry valuable also makes it sensitive. Browsing patterns, work schedules, and device fingerprints can re-identify specific individuals even after conventional anonymization.
 
-\subsection{Methods}
+Privacy regulations such as GDPR and CCPA, along with institutional policies, increasingly restrict how such data can be stored, shared, and analyzed. The resulting tension between data utility and privacy protection motivates the development of \textit{synthetic data generation}, which produces artificial datasets that preserve the statistical properties necessary for analysis while providing formal guarantees that no individual's information can be recovered.
 
-For training-based synthesis, we implement a differentially private variational autoencoder (DP-VAE) using PyTorch and the Opacus library, with privacy guarantees via DP-SGD (per-sample gradient clipping and calibrated noise injection). For training-free synthesis, we implement Private Evolution using black-box API access to foundation models, achieving privacy through differentially private nearest-neighbor histograms. Both methods are evaluated under matched privacy budgets on the 21-query SQL benchmark.
+Two paradigms have emerged for generating synthetic data with rigorous privacy guarantees. \textit{Training-based methods} optimize generative models under constraints that guarantee privacy (by adding noise during the training process to effectively ``anonymize''). \textit{Training-free methods} leverage pre-trained foundation models (e.g., ChatGPT, Claude, Gemini), achieving privacy through carefully designed queries rather than private optimization. Both approaches have demonstrated success in isolation, yet no comprehensive comparison exists under controlled experimental conditions with realistic analytical workloads.
 
-\subsection{Research questions}
+This project provides that comparison. We implement both paradigms and evaluate them on a real telemetry corpus using a benchmark of 22 SQL queries representative of production analytics, measuring which approach better preserves query fidelity under equivalent privacy budgets.
+
+\subsubsection{Technical context}
+
+\textit{Differential privacy} (DP) provides the mathematical foundation for our privacy guarantees. Informally, a mechanism is differentially private if its output looks nearly the same whether or not any single individual's data is included. Formally, a mechanism $M$ satisfies $(\varepsilon, \delta)$-DP if for neighboring datasets $D \sim D'$ differing by one record:
+\begin{equation}
+    \Pr[M(D) \in S] \leq e^{\varepsilon} \Pr[M(D') \in S] + \delta.
+\end{equation}
+The parameter $\varepsilon$ controls the privacy-utility tradeoff, as smaller values mean stronger privacy but noisier outputs.
+
+Two methodologies dominate differentially private synthetic data generation:
 
 \begin{enumerate}
-    \item Under matched $(\varepsilon, \delta)$, which method achieves higher scores on the SQL query benchmark?
-    \item Does error compound across multi-table joins?
-    \item Which method better preserves minority class frequencies?
+    \item \textit{Training-based (DP-SGD):} Train a generative model while adding noise to gradients at each step \citep{abadi2016deep}. This is effective, but is computationally expensive and requires careful hyperparameter tuning.
+    
+    \item \textit{Training-free (Private Evolution):} Usw API access to pre-trained foundation models and treat them as black boxes, iteratively selecting and mutating candidates via differentially private histograms \citep{lin2025differentiallyprivatesyntheticdata}. This is much easier to deploy, but is theoretically more abstract.
+\end{enumerate}
+
+Our central research question: \textit{can training-free methods match the statistical fidelity of training-based approaches on real analytical workloads?}
+
+\newpage
+
+\subsection{Data and problem statement}
+
+\subsubsection{Intel DCA telemetry data}
+
+Our investigation involves the Intel Driver and Client Applications (DCA) telemetry dataset, a large-scale collection of system-level signals from Windows client machines. Telemetry data is invaluable for product monitoring, performance optimization, and failure detection, yet contains sensitive behavioral patterns that could re-identify individual users. We describe the dataset structure and the analytical workload that synthetic data must preserve.
+
+\paragraph{Schema overview}
+
+The DCA telemetry corpus comprises of $\approx 30$ interrelated tables, organized around a globally unique identifier (\texttt{guid}) assigned to each client system. Tables are indexed by \texttt{guid} and, where applicable, a date column (\texttt{dt}), The schema spans several categories:
+
+\begin{itemize}
+    \item \textit{Client metadata:} The \texttt{system\_sysinfo\_unique\_normalized} table provides static attributes, like chassis type (notebook, desktop, 2-in-1, tablet), country, OEM, RAM capacity, processor family/generation, graphics card, screen size, and a derived \textit{persona} classification (Gamer, Office/Productivity, Content Creator, etc.).
+    
+    \item \textit{Power and thermal:} Multiple tables capture physical instrumentation:
+    \begin{itemize}
+        \item \texttt{system\_hw\_pkg\_power}: Processor power draw (mean, max) in Watts
+        \item \texttt{system\_psys\_rap\_watts}: Total system power across AC/DC states
+        \item \texttt{system\_pkg\_temp\_centigrade}: Processor temp. distributions by power state
+        \item \texttt{system\_pkg\_c0}: C0 state residency (percentage of time fully active)
+        \item \texttt{system\_pkg\_avg\_freq\_mhz}: Clock frequency statistics
+    \end{itemize}
+    
+    \item \textit{Battery and mobility:} The \texttt{system\_batt\_dc\_events} table summarizes battery utilization (duration on DC, battery percentage, power cycle frequency). Daily durations for the on/off/sleep states are also recorded.
+    
+    \item \textit{Application behavior:} Foreground usage in \texttt{system\_frgnd\_apps\_types} and a daily summary (process names, categories, focal time). The \texttt{system\_userwait} table measures wait times for application starts.
+    
+    \item \textit{Web browsing:} The \texttt{system\_web\_cat\_pivot\_*} family decomposes browsing across 28 categories (social, productivity, entertainment, gaming, etc.) by duration, page loads, and domain counts.
+    
+    \item \textit{Network and memory:} The \texttt{system\_network\_consumption} table summarizes bytes sent/received; \texttt{system\_memory\_utilization} provides RAM usage statistics.
+    
+    \item \textit{Display:} The \texttt{system\_display\_devices} table records connected displays (connection type, resolution, refresh rate, duration by AC/DC state).
+\end{itemize}
+
+\newpage
+
+\paragraph{Analytical query workload}
+
+The practical utility of synthetic telemetry data is determined by its ability to support \textit{real analytical workloads}. We operationalize this through a benchmark suite of 22 SQL queries representative of business intelligence tasks performed on the DCA corpus. These queries, developed by Intel analysts, span several classes, where the following are examples of such:
+
+\begin{enumerate}
+    \item \textit{Aggregate statistics with joins} involve weighted statistics across multiple tables joined on \texttt{guid}:
+
+\begin{minted}[breaklines]{sql}
+-- Average platform power, C0 residency, frequency, and temperature by chassis type
+SELECT chassistype, COUNT(DISTINCT guid) AS n_systems,
+       SUM(nrs * avg_psys_rap_watts) / SUM(nrs) AS avg_power,
+       SUM(nrs * avg_pkg_c0) / SUM(nrs) AS avg_c0, ...
+FROM system_sysinfo_unique_normalized a
+INNER JOIN system_psys_rap_watts b ON a.guid = b.guid
+INNER JOIN system_pkg_c0 c ON a.guid = c.guid ...
+GROUP BY chassistype;
+\end{minted}
+
+    \item \textit{Ranked top-$k$ queries} involve window functions for ranked lists:
+\begin{minted}{sql}
+-- Top 10 applications per category by focal screen time
+SELECT app_type, exe_name, avg_focal_sec_per_day,
+       RANK() OVER (PARTITION BY app_type 
+                    ORDER BY avg_focal_sec_per_day DESC) AS rank
+FROM (...) WHERE rank <= 10;
+\end{minted}
+
+    \item \textit{Geographic/demographic breakdowns} involve segmentation by country, processor generation, OEM, or persona:
+
+\begin{minted}{sql}
+-- Battery usage by country
+SELECT countryname_normalized, COUNT(DISTINCT guid),
+       AVG(num_power_ons), AVG(duration_mins)
+FROM system_batt_dc_events a
+INNER JOIN system_sysinfo_unique_normalized b ON a.guid = b.guid
+GROUP BY countryname_normalized HAVING COUNT(DISTINCT guid) > 100;
+\end{minted}
+
+    \item \textit{Histograms and distributions} involve binned aggregations testing distributional shape preservation:
+
+\begin{minted}{sql}
+-- RAM utilization by memory capacity
+SELECT sysinfo_ram / 1024 AS ram_gb, COUNT(DISTINCT guid),
+       ROUND(SUM(nrs * avg_percentage_used) / SUM(nrs)) AS avg_pct
+FROM system_memory_utilization
+WHERE avg_percentage_used > 0
+GROUP BY sysinfo_ram ORDER BY sysinfo_ram;
+\end{minted}
+
+    \item \textit{Complex multi-way pivots} involve high-dimensional joint distributions, e.g., web category usage percentages by persona across 28 browsing categories.
+\end{enumerate}
+
+\paragraph{Formal benchmark definition}
+
+Let $\mathcal{Q} = \{q_1, \ldots, q_{22}\}$ denote our SQL query benchmark. Each query $q_j$ maps a database instance to a result set $q_j(D) \in \mathcal{R}_j$, where $\mathcal{R}_j$ may be a scalar, vector, or table. The \textit{query discrepancy} for synthetic data $\tilde{D}$ is:
+\begin{equation}
+    \Delta_j(D, \tilde{D}) = d_j(q_j(D), q_j(\tilde{D})),
+\end{equation}
+where $d_j$ is a distance metric appropriate to the result type (relative error for scalars, Spearman's $\rho$ for rankings, total variation for histograms). The aggregate benchmark score is:
+\begin{equation}
+    \text{Score}(\tilde{D}) = \frac{1}{22} \sum_{j=1}^{22} \mathbf{1}[\Delta_j(D, \tilde{D}) \leq \tau_j],
+\end{equation}
+where $\tau_j$ is a query-specific tolerance. A synthetic dataset ``passes'' the benchmark if it achieves high scores, indicating analysts could substitute $\tilde{D}$ for $D$ without materially affecting conclusions.
+
+\newpage
+
+\subsubsection{Problem statement}
+
+\paragraph{Formal setup}
+
+Let $D = \{x_1, \ldots, x_n\}$ be a private dataset. Two datasets $D, D'$ are \textit{neighbors} if they differ by one record. A mechanism $M$ satisfies $(\varepsilon, \delta)$-differential privacy if for all neighbors $D \sim D'$ and all outputs $S$:
+\begin{equation}
+    \Pr[M(D) \in S] \leq e^{\varepsilon} \Pr[M(D') \in S] + \delta.
+\end{equation}
+
+Our objective is to construct a synthetic data mechanism $M$ producing $\tilde{D} = M(D)$ that satisfies $(\varepsilon, \delta)$-DP while preserving utility (i.e., the synthetic distribution should approximate the real distribution sufficiently for downstream analytics).
+
+\paragraph{Limitations of existing approaches}
+
+Both paradigms exhibit known limitations:
+
+\begin{itemize}
+    \item \textit{DP-SGD limitations:}
+    \begin{itemize}
+        \item Gradient clipping bias disproportionately affects rare classes
+        \item Noise accumulation degrades convergence over many iterations
+        \item Complex hyperparameter tuning (batch size, learning rate, clip norm, noise multiplier)
+        \item High computational cost (see \citet{ghalebikesabi2023differentially})
+    \end{itemize}
+    
+    \item \textit{Private Evolution limitations:}
+    \begin{itemize}
+        \item Utility depends on foundation model quality, and somes may underperform on specialized tabular data
+        \item Nearest-neighbor histograms assume embedding similarity correlates with distributional similarity
+        \item Limited theoretical understanding compared to optimization-based methods
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Research questions}
+
+Given these limitations and our 22-query SQL benchmark, we investigate:
+
+\begin{enumerate}
+    \item Under matched $(\varepsilon, \delta)$, which method achieves higher scores on the SQL query benchmark? Which query types exhibit the largest discrepancy?
+    
+    \item Does error compound across multi-table joins, or do synthetic data preserve joint distributions adequately?
+    
+    \item Which method better preserves minority class frequencies ($< 5\%$ prevalence)?
+    
     \item Do classifiers trained on synthetic data achieve comparable accuracy to those trained on real data?
+    
     \item What are the wall-clock time and resource requirements for each method?
 \end{enumerate}
 
-\subsection{Expected outputs}
+These questions remain open because prior work evaluates methods in isolation, on different datasets, under incomparable conditions. Our contribution is a controlled comparison on a concrete analytical workload.
+
+\subsubsection{Approach}
+
+For training-based synthesis, we will implement a differentially private generative model using PyTorch and the Opacus library, with privacy guarantees via DP-SGD (per-sample gradient clipping and calibrated noise injection). For training-free synthesis, we will implement Private Evolution using black-box API access to foundation models, achieving privacy through differentially private nearest-neighbor histograms. Both methods will be evaluated under matched privacy budgets on our 22-query SQL benchmark, comparing query fidelity, statistical preservation, downstream utility, and computational cost.
+
+\subsubsection{Expected outputs}
 
 \begin{enumerate}
-    \item Technical report with implementation details, privacy analysis, and query-by-query benchmark results.
-    \item SQL benchmark suite (21 queries with natural language specifications, SQL code, and evaluation scripts).
-    \item Two differentially private synthetic DCA datasets (one DP-SGD, one PE) with documented privacy guarantees.
-    \item Project website with visualizations and deployment guidelines.
-    \item Open-source implementations for preprocessing, training, generation, and evaluation.
+    \item \textit{Technical report:} Implementation details, privacy analysis, query-by-query benchmark results, statistical fidelity analysis, and practical recommendations.
+    
+    \item \textit{SQL benchmark suite:} The 22-query benchmark with natural language specifications, SQL code, tolerance thresholds, evaluation scripts, and baseline results.
+    
+    \item \textit{Differentially private synthetic datasets:} Two synthetic versions of the DCA corpus under matched $(\varepsilon, \delta)$ (one from DP-SGD, one from PE) with documented privacy guarantees.
+    
+    \item \textit{Project website:} Public-facing summary with visualizations, query-level comparisons, and deployment guidelines.
+    
+    \item \textit{Open-source implementations:} Reproducible code for preprocessing, training, generation, and evaluation.
 \end{enumerate}
 
 \newpage

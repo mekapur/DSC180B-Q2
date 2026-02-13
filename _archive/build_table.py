@@ -1,21 +1,4 @@
 #!/usr/bin/env python3
-"""
-build_real_data.py
-
-Build a single unified DuckDB table named `real_data` from multiple parquet folders,
-then export it to `real_data.csv` in the same directory as this script.
-
-How to run:
-  cd /path/to/your/root_folder   # the folder that contains the parquet directories
-  python build_real_data.py
-
-Expected folders (relative to this script):
-  os_network_consumption_v2/*.parquet
-  frgnd_system_usage_by_app/*.parquet
-  userwait_v2/*.parquet
-  system_sysinfo_unique_normalized/*.parquet
-"""
-
 from __future__ import annotations
 
 import sys

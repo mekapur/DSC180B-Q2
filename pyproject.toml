@@ -1,20 +1,36 @@
 [project]
 name = "dsc180-q2"
 version = "0.1.0"
-description = "Add your description here"
+description = "Training-based vs training-free differential privacy for synthetic data generation on Intel DCA telemetry"
 requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "Mehak Kapur", email = "mekapur@ucsd.edu"},
+    {name = "Hana Tjendrawasi", email = "htjendrawasi@ucsd.edu"},
+    {name = "Jason Tran", email = "jat037@ucsd.edu"},
+    {name = "Phuc Tran", email = "pct001@ucsd.edu"},
+]
 dependencies = [
     "duckdb>=1.4.4",
     "ipykernel>=7.2.0",
     "jupyter>=1.1.1",
     "matplotlib>=3.10.8",
     "opacus>=1.5.4",
-    "openai>=1.82.0",
+    "openai>=2.20.0",
     "pandas>=3.0.0",
     "pyarrow>=23.0.0",
     "pymupdf>=1.26.7",
     "python-dotenv>=1.1.0",
     "scikit-learn>=1.8.0",
-    "scipy>=1.15.0",
+    "scipy>=1.17.0",
     "torch>=2.10.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

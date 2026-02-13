@@ -22,6 +22,9 @@ def run_query(
     con: duckdb.DuckDBPyConnection | None = None,
 ) -> pd.DataFrame | None:
     qfile = queries_dir / f"{name}.json"
+    if not qfile.exists():
+        print(f"Query {name}: file not found at {qfile}")
+        return None
     with open(qfile) as f:
         data = json.load(f)
         if isinstance(data, list):

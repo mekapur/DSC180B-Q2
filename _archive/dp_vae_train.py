@@ -1,24 +1,4 @@
 #!/usr/bin/env python3
-"""
-dp_vae_train_v2.py
-
-DP-VAE (with DP-SGD via Opacus) for Intel telemetry.
-
-Pipeline:
-1) Read event-level `real_data` + device-level `sysinfo` from real_data.duckdb
-2) Aggregate to one-row-per-guid (`train_guid`)
-3) Preprocess: OneHot categorical + MinMax scale numerics
-4) Train VAE under DP-SGD using Opacus (epsilon accountant)
-5) Sample synthetic device rows and decode back to original feature space
-
-Outputs (in same directory as this script):
-- dpvae_train_guid.parquet
-- dpvae_preprocess.joblib
-- dpvae_model.pt
-- dpvae_synth.parquet
-- dpvae_synth.csv
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -85,11 +65,6 @@ class Config:
 # ---------------------------
 
 def unwrap_model(m: nn.Module) -> nn.Module:
-    """
-    Unwrap Opacus (GradSampleModule) and other wrappers until we reach the original model.
-    Opacus typically stores wrapped model in `._module`.
-    Some wrappers store in `.module`.
-    """
     seen = set()
     while True:
         mid = id(m)
@@ -340,10 +315,6 @@ def train_dp_vae(X_train: np.ndarray, cfg: Config):
 # ---------------------------
 
 def sample_synthetic(model: nn.Module, n: int, cfg: Config) -> np.ndarray:
-    """
-    Sample in latent space and decode using the UNWRAPPED VAE.
-    This avoids calling .decode on Opacus wrappers.
-    """
     model.eval()
     inner = unwrap_model(model).to(cfg.device)
     inner.eval()

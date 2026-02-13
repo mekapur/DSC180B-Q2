@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import time
 from pathlib import Path
@@ -10,6 +11,8 @@ from openai import APITimeoutError, AsyncOpenAI, LengthFinishReasonError, OpenAI
 from pydantic import BaseModel
 
 from .distance import CAT_COLS, NUMERIC_COLS
+
+logger = logging.getLogger(__name__)
 
 
 class TelemetryRecord(BaseModel):
@@ -93,6 +96,41 @@ INSTRUCTIONS = (
 )
 
 
+_NUMERIC_GROUPS = {
+    "net": ["net_nrs", "net_received_bytes", "net_sent_bytes"],
+    "mem": ["mem_nrs", "mem_avg_pct_used", "mem_sysinfo_ram"],
+    "batt": ["batt_num_power_ons", "batt_duration_mins"],
+    "browser": [
+        "web_chrome_duration",
+        "web_edge_duration",
+        "web_firefox_duration",
+        "web_total_duration",
+        "web_num_instances",
+    ],
+    "webcat": [c for c in NUMERIC_COLS if c.startswith("webcat_")],
+    "onoff": ["onoff_on_time", "onoff_off_time", "onoff_mods_time", "onoff_sleep_time"],
+    "disp": ["disp_num_displays", "disp_total_duration_ac", "disp_total_duration_dc"],
+    "hw": [
+        "psys_rap_nrs", "psys_rap_avg", "pkg_c0_nrs", "pkg_c0_avg",
+        "avg_freq_nrs", "avg_freq_avg", "temp_nrs", "temp_avg",
+        "pkg_power_nrs", "pkg_power_avg",
+    ],
+}
+
+
+def _compute_group_sparsity(real_df: pd.DataFrame) -> dict[str, int]:
+    n = len(real_df)
+    result = {}
+    for gname, cols in _NUMERIC_GROUPS.items():
+        present = [c for c in cols if c in real_df.columns]
+        if not present:
+            continue
+        nonzero_mask = real_df[present].abs().sum(axis=1) > 0
+        pct = int(round(100 * nonzero_mask.sum() / n))
+        result[gname] = max(pct, 1)
+    return result
+
+
 def _build_schema_description(real_df: pd.DataFrame) -> str:
     cat_info = []
     for c in CAT_COLS:
@@ -101,54 +139,12 @@ def _build_schema_description(real_df: pd.DataFrame) -> str:
         top_vals = real_df[c].value_counts().head(10).index.tolist()
         cat_info.append(f"{c}: {json.dumps(top_vals)}")
 
+    group_sparsity = _compute_group_sparsity(real_df)
     num_groups = []
-    groups = {
-        "net": (["net_nrs", "net_received_bytes", "net_sent_bytes"], 4),
-        "mem": (["mem_nrs", "mem_avg_pct_used", "mem_sysinfo_ram"], 7),
-        "batt": (["batt_num_power_ons", "batt_duration_mins"], 2),
-        "browser": (
-            [
-                "web_chrome_duration",
-                "web_edge_duration",
-                "web_firefox_duration",
-                "web_total_duration",
-                "web_num_instances",
-            ],
-            6,
-        ),
-        "webcat": ([c for c in NUMERIC_COLS if c.startswith("webcat_")], 5),
-        "onoff": (
-            [
-                "onoff_on_time",
-                "onoff_off_time",
-                "onoff_mods_time",
-                "onoff_sleep_time",
-            ],
-            4,
-        ),
-        "disp": (
-            ["disp_num_displays", "disp_total_duration_ac", "disp_total_duration_dc"],
-            21,
-        ),
-        "hw": (
-            [
-                "psys_rap_nrs",
-                "psys_rap_avg",
-                "pkg_c0_nrs",
-                "pkg_c0_avg",
-                "avg_freq_nrs",
-                "avg_freq_avg",
-                "temp_nrs",
-                "temp_avg",
-                "pkg_power_nrs",
-                "pkg_power_avg",
-            ],
-            1,
-        ),
-    }
-    for gname, (cols, pct) in groups.items():
+    for gname, cols in _NUMERIC_GROUPS.items():
         present = [c for c in cols if c in real_df.columns]
-        if present:
+        if present and gname in group_sparsity:
+            pct = group_sparsity[gname]
             num_groups.append(f"{gname} ({pct}% of systems): {', '.join(present)}")
 
     return (
@@ -248,9 +244,9 @@ class PEApi:
             if response.output_parsed and response.output_parsed.records:
                 return [r.model_dump() for r in response.output_parsed.records]
         except LengthFinishReasonError:
-            pass
+            logger.warning("Response truncated (max_output_tokens exceeded), dropping batch")
         except Exception as e:
-            print(f"  API error: {e}")
+            logger.warning("API error: %s", e)
         return []
 
     async def _batch_calls(
@@ -506,19 +502,25 @@ class PEApi:
             path.unlink()
 
     def _run_multi_batch(
-        self, prompts: list[str], tag: str, work_dir: Path
+        self, prompts: list[str], tag: str, work_dir: Path,
+        n_target: int | None = None,
     ) -> list[list[dict]]:
         n_chunks = (len(prompts) + self.MAX_REQUESTS_PER_BATCH - 1) // self.MAX_REQUESTS_PER_BATCH
         print(f"  {n_chunks} sequential chunk(s) of up to {self.MAX_REQUESTS_PER_BATCH} requests")
 
         active_state = self._load_batch_state(tag, work_dir)
         all_results: list[list[dict]] = []
+        total_records = 0
 
         for ci in range(n_chunks):
             cached = self._load_chunk_results(ci, tag, work_dir)
             if cached is not None:
                 print(f"  {tag.upper()} chunk {ci+1}/{n_chunks}: loaded {len(cached)} cached records")
                 all_results.append(cached.to_dict(orient="records"))
+                total_records += len(cached)
+                if n_target and total_records >= n_target:
+                    print(f"  Target reached ({total_records:,} >= {n_target:,}), skipping remaining chunks")
+                    break
                 continue
 
             if active_state and active_state["chunk"] == ci:
@@ -550,7 +552,12 @@ class PEApi:
             self._save_chunk_results(chunk_records, ci, tag, work_dir)
             self._clear_batch_state(tag, work_dir)
             all_results.append(chunk_records)
+            total_records += len(chunk_records)
             print(f"  Chunk {ci+1}/{n_chunks}: {len(chunk_records)} records saved")
+
+            if n_target and total_records >= n_target:
+                print(f"  Target reached ({total_records:,} >= {n_target:,}), skipping remaining chunks")
+                break
 
         return all_results
 
@@ -571,7 +578,7 @@ class PEApi:
             f"RANDOM_API_BATCH: {n_records} records "
             f"({n_calls} calls across {n_chunks} batch(es), 25% buffer)"
         )
-        all_chunk_results = self._run_multi_batch(prompts, "random", work_dir)
+        all_chunk_results = self._run_multi_batch(prompts, "random", work_dir, n_target=n_records)
         all_records = [r for chunk in all_chunk_results for r in chunk]
         raw = len(all_records)
         df = self._records_to_df(all_records[:n_records])

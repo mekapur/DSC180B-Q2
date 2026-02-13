@@ -49,6 +49,9 @@ _archive/**/*.csv
 *.swp
 *.swo
 
+# Model checkpoints
+data/**/*.pt
+
 # LaTeX build artifacts
 *.aux
 *.bbl
@@ -58,5 +61,9 @@ _archive/**/*.csv
 *.log
 *.out
 *.synctex.gz
-
+*.xdv
+.claude/
 .env
+_minted/
+*.thm
+*.toc
