@@ -20,29 +20,29 @@
 \contentsline {subsection}{\numberline {3.4}Privacy budget summary}{15}{subsection.3.4}%
 \contentsline {section}{\numberline {4}Results}{17}{section.4}%
 \contentsline {subsection}{\numberline {4.1}Evaluation metrics}{17}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}DP-SGD and VAE results}{17}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}Per-table DP-SGD results}{19}{subsection.4.3}%
-\contentsline {subsection}{\numberline {4.4}MST results}{20}{subsection.4.4}%
-\contentsline {subsection}{\numberline {4.5}Private Evolution results}{21}{subsection.4.5}%
-\contentsline {subsection}{\numberline {4.6}Cross-method comparison}{22}{subsection.4.6}%
-\contentsline {subsection}{\numberline {4.7}Additive experiments}{25}{subsection.4.7}%
-\contentsline {section}{\numberline {5}Discussion}{26}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Sensitivity to evaluation thresholds}{27}{subsection.5.1}%
-\contentsline {section}{\numberline {6}Conclusion}{28}{section.6}%
-\contentsline {section}{References}{30}{section*.1}%
-\contentsline {section}{\numberline {A}Project proposal}{31}{appendix.A}%
-\contentsline {subsection}{\numberline {A.1}Abstract}{31}{subsection.A.1}%
-\contentsline {subsection}{\numberline {A.2}Motivation}{31}{subsection.A.2}%
-\contentsline {subsubsection}{\numberline {A.2.1}Technical context}{32}{subsubsection.A.2.1}%
-\contentsline {subsection}{\numberline {A.3}Data and problem statement}{33}{subsection.A.3}%
-\contentsline {subsubsection}{\numberline {A.3.1}Intel DCA telemetry data}{33}{subsubsection.A.3.1}%
-\contentsline {paragraph}{Schema overview}{33}{section*.3}%
-\contentsline {paragraph}{Analytical query workload}{34}{section*.4}%
-\contentsline {paragraph}{Formal benchmark definition}{35}{section*.5}%
-\contentsline {subsubsection}{\numberline {A.3.2}Problem statement}{36}{subsubsection.A.3.2}%
-\contentsline {paragraph}{Formal setup}{36}{section*.6}%
-\contentsline {paragraph}{Limitations of existing approaches}{36}{section*.7}%
-\contentsline {paragraph}{Research questions}{36}{section*.8}%
-\contentsline {subsubsection}{\numberline {A.3.3}Approach}{37}{subsubsection.A.3.3}%
-\contentsline {subsubsection}{\numberline {A.3.4}Expected outputs}{37}{subsubsection.A.3.4}%
-\contentsline {section}{\numberline {B}Contributions}{38}{appendix.B}%
+\contentsline {subsection}{\numberline {4.2}DP-SGD and VAE results}{18}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Per-table DP-SGD results}{20}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}MST results}{21}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Private Evolution results}{22}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.6}Cross-method comparison}{23}{subsection.4.6}%
+\contentsline {subsection}{\numberline {4.7}Additive experiments}{26}{subsection.4.7}%
+\contentsline {section}{\numberline {5}Discussion}{27}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Sensitivity to evaluation thresholds}{28}{subsection.5.1}%
+\contentsline {section}{\numberline {6}Conclusion}{29}{section.6}%
+\contentsline {section}{References}{31}{section*.1}%
+\contentsline {section}{\numberline {A}Project proposal}{32}{appendix.A}%
+\contentsline {subsection}{\numberline {A.1}Abstract}{32}{subsection.A.1}%
+\contentsline {subsection}{\numberline {A.2}Motivation}{32}{subsection.A.2}%
+\contentsline {subsubsection}{\numberline {A.2.1}Technical context}{33}{subsubsection.A.2.1}%
+\contentsline {subsection}{\numberline {A.3}Data and problem statement}{34}{subsection.A.3}%
+\contentsline {subsubsection}{\numberline {A.3.1}Intel DCA telemetry data}{34}{subsubsection.A.3.1}%
+\contentsline {paragraph}{Schema overview}{34}{section*.3}%
+\contentsline {paragraph}{Analytical query workload}{35}{section*.4}%
+\contentsline {paragraph}{Formal benchmark definition}{36}{section*.5}%
+\contentsline {subsubsection}{\numberline {A.3.2}Problem statement}{37}{subsubsection.A.3.2}%
+\contentsline {paragraph}{Formal setup}{37}{section*.6}%
+\contentsline {paragraph}{Limitations of existing approaches}{37}{section*.7}%
+\contentsline {paragraph}{Research questions}{37}{section*.8}%
+\contentsline {subsubsection}{\numberline {A.3.3}Approach}{38}{subsubsection.A.3.3}%
+\contentsline {subsubsection}{\numberline {A.3.4}Expected outputs}{38}{subsubsection.A.3.4}%
+\contentsline {section}{\numberline {B}Contributions}{39}{appendix.B}%

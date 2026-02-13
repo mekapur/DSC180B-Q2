@@ -4,6 +4,7 @@
 \usepackage{style/dsc180reportstyle}
 \usepackage{minted}
 \usepgfplotslibrary{groupplots}
+\usetikzlibrary{shapes.geometric,arrows.meta}
 \definecolor{RoyalBlue}{RGB}{65,105,225}
 \definecolor{BrickRed}{RGB}{203,65,84}
 \renewcommand{\_}{\textunderscore\allowbreak}
@@ -428,7 +429,16 @@ Private Evolution & 4.0 & $10^{-5}$ & Gaussian (analytic) & $T{=}1$, single & 4.
 
 \subsection{Evaluation metrics}
 
-We evaluate synthetic data quality using three distance metrics matched to query output types. For aggregate queries that produce numeric columns grouped by categorical keys, we compute the median relative error across all overlapping groups:
+We evaluate synthetic data quality by first assigning each query to one of five query categories, then routing it to the corresponding metric and pass rule. The categories are:
+\begin{itemize}
+    \item Agg+Join, aggregate statistics computed after joining multiple tables on \texttt{guid} (e.g., \texttt{ChassisAgg}, \texttt{NetAsymAgg}).
+    \item Geo/Demo, grouped summaries by geography or demographics such as country, CPU family, or generation (e.g., \texttt{XeonGeo}, \texttt{BatteryDemo}).
+    \item Top-k, ranked outputs produced by window functions that return the highest-$k$ items per group (e.g., \texttt{BrowserRank}, \texttt{WaitRank}).
+    \item Pivot, wide multi-column summaries that represent joint behavior across many dimensions (e.g., \texttt{PersonaPivot}, \texttt{SleepPivot}).
+    \item Histogram, distributional summaries over categories or bins (e.g., \texttt{BrowserHist}, \texttt{RamHist}).
+\end{itemize}
+
+For aggregate queries that produce numeric columns grouped by categorical keys, we compute the median relative error across all overlapping groups:
 \begin{equation}
     \text{RE}(r, s) = |r - s| / |r|.
 \end{equation}
@@ -436,7 +446,52 @@ For queries that produce categorical distributions or histograms, we compute tot
 \begin{equation}
     \text{TV}(p, q) = \frac{1}{2} \sum_i |p_i - q_i|.
 \end{equation}
-For ranked result sets, we compute Spearman's rank correlation coefficient on the overlapping items. Group coverage is assessed via Jaccard similarity between real and synthetic group keys. Each metric is evaluated against its query-type threshold, then query score is computed as the fraction of per-column metrics that pass. A query is marked as passing when this score is at least 0.5. The default thresholds are relative error $\leq 0.25$, total variation $\leq 0.15$, and Spearman $\rho \geq 0.5$, with query-specific overlap thresholds defined in the evaluation metadata.
+For ranked result sets, we compute Spearman's rank correlation coefficient on overlapping items. Group coverage is assessed via Jaccard similarity between real and synthetic group keys. We route Agg+Join and Geo/Demo queries to RE, Histogram and Pivot queries to TV, and Top-k queries to Spearman $\rho$. The default pass thresholds are $\text{RE} \leq 0.25$, $\text{TV} \leq 0.15$, and $\rho \geq 0.5$. These are benchmark policy thresholds chosen to enforce moderate fidelity across metric types while remaining realistic under differential privacy noise. The query score is the fraction of metric columns that pass, and a query is marked as passing when its score is at least 0.5, with query-specific overlap thresholds defined in the evaluation metadata. We also test threshold sensitivity in Section~\ref{fig:sensitivity} to verify that comparative conclusions are not driven by a single cutoff choice.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[font=\scriptsize, x=0.9cm, y=0.9cm, >={Stealth[length=1.6mm]}]
+    \node[draw, circle, align=center, minimum size=1.1cm] (start) at (0,0) {Start};
+    \node[draw, rectangle, align=center, minimum width=2.4cm, minimum height=0.65cm] (classify) at (0,-1.5) {Classify type};
+
+    \node[draw, rectangle, align=center, minimum width=1.9cm, minimum height=0.65cm] (agg) at (-6.0,-3.2) {Agg+Join};
+    \node[draw, rectangle, align=center, minimum width=1.9cm, minimum height=0.65cm] (geo) at (-3.0,-3.2) {Geo/Demo};
+    \node[draw, rectangle, align=center, minimum width=1.9cm, minimum height=0.65cm] (hist) at (0,-3.2) {Histogram};
+    \node[draw, rectangle, align=center, minimum width=1.9cm, minimum height=0.65cm] (pivot) at (3.0,-3.2) {Pivot};
+    \node[draw, rectangle, align=center, minimum width=1.9cm, minimum height=0.65cm] (topk) at (6.0,-3.2) {Top-k};
+
+    \node[draw, rectangle, align=center, minimum width=3.1cm, minimum height=0.8cm] (re) at (-4.5,-5.2) {RE pass if \\ RE $\leq 0.25$};
+    \node[draw, rectangle, align=center, minimum width=3.1cm, minimum height=0.8cm] (tv) at (1.5,-5.2) {TV pass if \\ TV $\leq 0.15$};
+    \node[draw, rectangle, align=center, minimum width=3.3cm, minimum height=0.8cm] (sp) at (6.0,-5.2) {$\rho$ pass if \\ $\rho \geq 0.5$};
+
+    \node[draw, rectangle, align=center, minimum width=3.9cm, minimum height=0.8cm] (score) at (0,-7.0) {Score $= \frac{\#\text{pass}}{\#\text{metrics}}$};
+    \node[draw, diamond, aspect=2.0, align=center, minimum width=3.0cm, minimum height=1.0cm] (decision) at (0,-8.7) {score $\geq 0.5$?};
+    \node[draw, circle, align=center, minimum size=1.0cm] (pass) at (-2.5,-10.3) {Pass};
+    \node[draw, circle, align=center, minimum size=1.0cm] (nopass) at (2.5,-10.3) {Fail};
+
+    \draw[->] (start) -- (classify);
+    \draw[->] (classify) -- (agg);
+    \draw[->] (classify) -- (geo);
+    \draw[->] (classify) -- (hist);
+    \draw[->] (classify) -- (pivot);
+    \draw[->] (classify) -- (topk);
+
+    \draw[->] (agg) -- (re);
+    \draw[->] (geo) -- (re);
+    \draw[->] (hist) -- (tv);
+    \draw[->] (pivot) -- (tv);
+    \draw[->] (topk) -- (sp);
+
+    \draw[->] (re) -- (score);
+    \draw[->] (tv) -- (score);
+    \draw[->] (sp) -- (score);
+    \draw[->] (score) -- (decision);
+    \draw[->] (decision) -- node[midway, left] {yes} (pass);
+    \draw[->] (decision) -- node[midway, right] {no} (nopass);
+\end{tikzpicture}
+\caption{Metric routing and pass/fail logic used for benchmark evaluation.}
+\label{fig:metric-routing}
+\end{figure}
 
 \subsection{DP-SGD and VAE results}
 
