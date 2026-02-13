@@ -86,17 +86,43 @@ This project uses [uv](https://docs.astral.sh/uv/) for package management.
 Each pipeline stage can be run via the numbered notebooks (interactive) or the equivalent CLI commands. Both use the same `src/` library code. See [`src/README.md`](src/README.md) for detailed module documentation.
 
 ```mermaid
-graph TD
-    A["Raw data (Globus)"] --> B["Build reporting tables<br/><i>Notebook 03 / src.pipeline.build_reporting</i>"]
-    B --> C["Ground truth queries<br/><i>Notebook 04 / src.pipeline.run_benchmark</i>"]
-    C --> D["Wide-table DP-SGD<br/><i>Notebook 05</i>"]
-    C --> E["Per-table DP-SGD<br/><i>Notebook 08</i>"]
-    C --> F["MST baseline<br/><i>Notebook 09</i>"]
-    C --> G["Private Evolution<br/><i>Notebook 06</i>"]
-    D --> H["Evaluate<br/><i>src.eval.compare → evaluation_*.csv</i>"]
-    E --> H
-    F --> H
-    G --> H
+flowchart TB
+  classDef ingest fill:#E3F2FD,stroke:#1E88E5,color:#0D47A1,stroke-width:1px;
+  classDef build fill:#E8F5E9,stroke:#43A047,color:#1B5E20,stroke-width:1px;
+  classDef truth fill:#FFF8E1,stroke:#F9A825,color:#E65100,stroke-width:1px;
+  classDef synth fill:#F3E5F5,stroke:#8E24AA,color:#4A148C,stroke-width:1px;
+  classDef eval fill:#E0F7FA,stroke:#00ACC1,color:#004D40,stroke-width:1px;
+  classDef artifact fill:#FAFAFA,stroke:#9E9E9E,color:#424242,stroke-width:1px;
+
+  G["Globus data<br/>data/raw/*"] --> BR["Notebook 03<br/>build_reporting"]
+  Q["Benchmark queries<br/>docs/queries/*.json"] --> RB0["run_benchmark (real)"]
+
+  BR --> RT["data/reporting<br/>19 reporting tables"]
+  RT --> WT["wide_training_table.parquet"]
+  RT --> RB0 --> R0["results/real/*.csv"]
+
+  WT --> W["Wide-table DP-SGD<br/>Notebook 05"] --> WS["reporting/synthetic/*"]
+  RT --> P["Per-table DP-SGD<br/>Notebook 08"] --> PS["reporting/synth_pertable/*"]
+  RT --> M["MST baseline<br/>Notebook 09"] --> MS["reporting/synth_mst/*"]
+  WT --> E["Private Evolution<br/>Notebook 06"] --> ES["reporting/pe/*"]
+
+  WS --> RB1["run_benchmark (synthetic)"]
+  PS --> RB1
+  MS --> RB1
+  ES --> RB1
+  Q --> RB1
+  RB1 --> RS["results/synth_*.csv"]
+
+  R0 --> EV["evaluate / compare"]
+  RS --> EV
+  EV --> EC["evaluation_*.csv"]
+
+  class G,Q ingest;
+  class BR build;
+  class RB0 truth;
+  class W,P,M,E synth;
+  class RB1,EV eval;
+  class RT,WT,R0,WS,PS,MS,ES,RS,EC artifact;
 ```
 
 CLI equivalents:
