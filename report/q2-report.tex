@@ -76,7 +76,7 @@ The parameter $\varepsilon$ controls the privacy-utility tradeoff. Smaller value
 
 \citet{ghalebikesabi2023differentially} demonstrated that fine-tuning diffusion models with DP-SGD generates synthetic images of reasonable quality, though their approach requires substantial privacy budgets ($\varepsilon \approx 32$ for CIFAR-10). This motivates the search for methods that achieve comparable fidelity at lower $\varepsilon$.
 
-\citet{lin2025differentiallyprivatesyntheticdata} introduced Private Evolution (PE), a fundamentally different paradigm that avoids model training entirely. PE operates through black-box API access to pre-trained foundation models, iteratively evolving synthetic samples by computing differentially private nearest-neighbor histograms. Each private data point votes for its nearest synthetic candidate; Gaussian noise is added to the vote histogram, and candidates are resampled according to the noisy distribution. PE achieved FID $\leq 7.9$ at $\varepsilon = 0.67$ on CIFAR-10, a substantial improvement over DP-Diffusion in both privacy cost and output quality. The privacy analysis is straightforward. Each iteration releases one Gaussian mechanism, and $T$ iterations compose to a single mechanism with noise multiplier $\sigma / \sqrt{T}$.
+\citet{lin2025differentiallyprivatesyntheticdata} introduced Private Evolution (PE), a fundamentally different paradigm that avoids model training entirely. PE operates through black-box API access to pre-trained foundation models, iteratively evolving synthetic samples by computing differentially private nearest-neighbor histograms. Each private data point votes for its nearest synthetic candidate. Gaussian noise is added to the vote histogram, and candidates are resampled according to the noisy distribution. PE achieved FID $\leq 7.9$ at $\varepsilon = 0.67$ on CIFAR-10, a substantial improvement over DP-Diffusion in both privacy cost and output quality. The privacy analysis is straightforward. Each iteration releases one Gaussian mechanism, and $T$ iterations compose to a single mechanism with noise multiplier $\sigma / \sqrt{T}$.
 
 \citet{xie2024differentiallyprivatesyntheticdata} extended PE to text through Aug-PE, introducing fill-in-the-blanks variation, adaptive text lengths, and rank-based selection. Aug-PE with GPT-3.5 outperformed DP-finetuning baselines at the same privacy budget while running 12--66$\times$ faster.
 
@@ -149,7 +149,7 @@ The application tables contain per-process and per-application breakdowns. \text
 
 The browsing tables take two forms. \texttt{system\_web\_cat\_pivot\_duration} is a wide table with one row per \texttt{guid} and 28 browsing-category columns (education, finance, gaming, mail, news, social media, etc.), each recording total duration. \texttt{system\_web\_cat\_usage} provides per-browser statistics (chrome, edge, firefox) with system count, instance count, and duration.
 
-The \texttt{system\_mods\_power\_consumption} table is a stub. Intel's December 2024 update contains only 10{,}000 rows from a single \texttt{guid}. Three benchmark queries reference this table; they execute and produce rankings, but the results reflect one client's power profile rather than population-level statistics. We retain these queries for pipeline completeness but exclude them from quantitative evaluation.
+The \texttt{system\_mods\_power\_consumption} table is a stub. Intel's December 2024 update contains only 10{,}000 rows from a single \texttt{guid}. Three benchmark queries reference this table. They execute and produce rankings, but the results reflect one client's power profile rather than population-level statistics. We retain these queries for pipeline completeness but exclude them from quantitative evaluation.
 
 \subsection{Analytical query workload}
 
@@ -169,7 +169,7 @@ Table~\ref{tab:query-inventory} lists all 21 feasible queries in the benchmark. 
 
 \begin{small}
 \begin{longtable}{>{\raggedright\arraybackslash}p{0.25\linewidth}>{\raggedright\arraybackslash}p{0.20\linewidth}>{\raggedright\arraybackslash}p{0.10\linewidth}>{\raggedright\arraybackslash}p{0.35\linewidth}}
-\caption{Complete inventory of the 21 feasible benchmark queries, grouped by query type. ``Agg+Join'' denotes aggregate statistics with multi-table joins; ``Top-$k$'' denotes ranked lists produced by window functions; ``Geo/Demo'' denotes geographic or demographic breakdowns; ``Histogram'' denotes binned distributions; ``Pivot'' denotes complex multi-way pivots.}
+\caption{Complete inventory of the 21 feasible benchmark queries, grouped by query type. ``Agg+Join'' denotes aggregate statistics with multi-table joins. ``Top-$k$'' denotes ranked lists produced by window functions. ``Geo/Demo'' denotes geographic or demographic breakdowns. ``Histogram'' denotes binned distributions. ``Pivot'' denotes complex multi-way pivots.}
 \label{tab:query-inventory} \\
 \toprule
 \textbf{Query} & \textbf{Codename} & \textbf{Type} & \textbf{Description} \\
@@ -248,7 +248,7 @@ Given the 21-query benchmark and matched privacy budgets, we investigate the fol
 
 The unit of synthesis is the \texttt{guid}. Each \texttt{guid} represents one client system, and the privacy guarantee is per-\texttt{guid}, meaning neighboring databases differ by adding or removing all rows associated with a single device.
 
-Synthesizing each reporting table independently would destroy cross-table correlations. Most benchmark queries join multiple tables on \texttt{guid}; if synthetic tables share no relationship, joins produce either zero matches (mismatched \texttt{guid}s) or random associations (correct \texttt{guid}s but uncorrelated attributes). Queries measuring cross-table relationships (e.g., ``average network consumption by chassis type'') would return meaningless results.
+Synthesizing each reporting table independently would destroy cross-table correlations. Most benchmark queries join multiple tables on \texttt{guid}, and if synthetic tables share no relationship, joins produce either zero matches (mismatched \texttt{guid}s) or random associations (correct \texttt{guid}s but uncorrelated attributes). Queries measuring cross-table relationships (e.g., ``average network consumption by chassis type'') would return meaningless results.
 
 We therefore construct a single wide table with one row per \texttt{guid} containing all attributes and pre-aggregated metrics from every reporting table. For each reporting table, we compute \texttt{guid}-level aggregations of the columns referenced by benchmark queries. Multi-row-per-\texttt{guid} tables (e.g., web browsing by category) are pivoted into separate columns per category. All aggregations are LEFT JOINed onto the sysinfo anchor table (1{,}000{,}000 \texttt{guid}s).
 
@@ -344,9 +344,9 @@ We evaluate 8 of the 21 feasible queries whose reporting tables are fully recons
 We implement Private Evolution adapted for tabular data, following the framework of \citet{lin2025differentiallyprivatesyntheticdata} with the workload-aware distance function proposed by \citet{swanberg2025apiaccessllmsuseful}. The algorithm operates in a single iteration ($T = 1$, the optimal setting for tabular data per \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that subsequent iterations provide marginal gains outweighed by composition cost).
 
 \begin{enumerate}
-    \item \textit{Population generation:} prompt a foundation model (OpenAI gpt-5-nano via the Batch API) to produce $N_{\text{synth}} \times L$ synthetic records conforming to the DCA wide-table schema (68 fields: 9 categorical as constrained strings, 59 numeric as floats). Each batch request uses Pydantic Structured Outputs to guarantee schema compliance.
-    \item \textit{DP nearest-neighbor histogram:} each of the $n = 1{,}000{,}000$ real records votes for its nearest synthetic candidate under the workload-aware distance. Gaussian noise $\mathcal{N}(0, \sigma^2)$ is added to the vote histogram. The sensitivity is 1, since each \texttt{guid} contributes exactly one vote.
-    \item \textit{Rank-based selection:} the top $N_{\text{synth}}$ candidates by noisy vote count are selected as the final synthetic population.
+    \item \textit{Population generation.} Prompt a foundation model (OpenAI gpt-5-nano via the Batch API) to produce $N_{\text{synth}} \times L$ synthetic records conforming to the DCA wide-table schema (68 fields, 9 categorical as constrained strings, 59 numeric as floats). Each batch request uses Pydantic Structured Outputs to guarantee schema compliance.
+    \item \textit{DP nearest-neighbor histogram.} Each of the $n = 1{,}000{,}000$ real records votes for its nearest synthetic candidate under the workload-aware distance. Gaussian noise $\mathcal{N}(0, \sigma^2)$ is added to the vote histogram. The sensitivity is 1, since each \texttt{guid} contributes exactly one vote.
+    \item \textit{Rank-based selection.} The top $N_{\text{synth}}$ candidates by noisy vote count are selected as the final synthetic population.
 \end{enumerate}
 
 The workload-aware distance follows \citeauthor{swanberg2025apiaccessllmsuseful}'s formulation:
@@ -396,9 +396,9 @@ Per-table synthesis also serves as a diagnostic. If it outperforms the wide-tabl
 As a non-neural baseline, we implement the Maximum Spanning Tree (MST) algorithm \citep{mckenna2021winning} using the SmartNoise Synth library \citep{smartnoise2024}. MST is a marginal-based method that operates in three phases:
 
 \begin{enumerate}
-    \item \textit{Marginal selection:} compute all pairwise column marginals and select a spanning tree of high-mutual-information pairs using the exponential mechanism.
-    \item \textit{Noisy measurement:} estimate the selected marginals with calibrated Gaussian noise, splitting the privacy budget across all selected measurements.
-    \item \textit{Synthetic generation:} fit a probabilistic graphical model (Private-PGM) to the noisy marginals and sample synthetic records consistent with the estimated distributions.
+    \item \textit{Marginal selection.} Compute all pairwise column marginals and select a spanning tree of high-mutual-information pairs using the exponential mechanism.
+    \item \textit{Noisy measurement.} Estimate the selected marginals with calibrated Gaussian noise, splitting the privacy budget across all selected measurements.
+    \item \textit{Synthetic generation.} Fit a probabilistic graphical model (Private-PGM) to the noisy marginals and sample synthetic records consistent with the estimated distributions.
 \end{enumerate}
 
 MST requires all columns to have finite cardinality. We discretize continuous columns into 20 quantile bins (computed on the nonzero values only, with a separate zero bin when present) and cap categorical columns at 50 categories (the same top-$k$ binning used for the DP-VAE). After synthesis, continuous values are reconstructed by sampling uniformly within each bin's range.
@@ -705,7 +705,7 @@ PE completes generation of 150{,}000 candidates via the OpenAI Batch API (gpt-5-
 
 PE remains weak on aggregate and geographic queries. In \texttt{BrowserRank}, PE generates only 15 of 51 real countries and gets 13 correct among those 15, which leads to poor overall score despite good local matches. \texttt{PersonaPivot} also remains low (0.032).
 
-Category support mismatch is a key reason for this behavior. Country support is the largest gap. PE covers 18 of 51 real countries (35.3\% coverage), and hallucinates extra categories not present in real telemetry data; this issue is discussed further in Section~\ref{sec:discussion}.
+Category support mismatch is a key reason for this behavior. Country support is the largest gap. PE covers 18 of 51 real countries (35.3\% coverage), and hallucinates extra categories not present in real telemetry data. This issue is discussed further in Section~\ref{sec:discussion}.
 
 \begin{table}[H]
 \centering
@@ -836,7 +836,7 @@ Figure~\ref{fig:method-comparison} complements this table with pass-count and av
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
-\caption{Left: number of queries passing (score $\geq 0.5$) for each method. Right: average score across all evaluated queries. The per-table methods evaluate all 21 queries; the wide-table and PE methods evaluate 8.}
+\caption{Left: number of queries passing (score $\geq 0.5$) for each method. Right: average score across all evaluated queries. The per-table methods evaluate all 21 queries, while the wide-table and PE methods evaluate 8.}
 \label{fig:method-comparison}
 \end{figure}
 
@@ -971,7 +971,7 @@ Error does compound in multi-table queries, and this is the clearest structural 
 \textit{(3) Which method better preserves minority class frequencies (prevalence $<5\%$)?}
 \end{quote}
 
-\texttt{BrowserRank} demonstrates that all methods preserve dominant categorical associations: per-table DP-SGD achieves 47 of 50 correct top browsers per country, and the wide-table DP-VAE achieves 42 of 50. For rare categories, per-table DP-SGD inflates minority chassis types due to the top-50 binning and uniform noise in DP-SGD, while MST underrepresents them (generating too few entries for rare combinations). Both methods underperform on queries involving rare process names or application-specific rankings; as such, the implication is that analysis of minority groups should include targeted diagnostics beyond aggregate pass and fail rates.
+\texttt{BrowserRank} demonstrates that all methods preserve dominant categorical associations. Per-table DP-SGD achieves 47 of 50 correct top browsers per country, and the wide-table DP-VAE achieves 42 of 50. For rare categories, per-table DP-SGD inflates minority chassis types due to the top-50 binning and uniform noise in DP-SGD, while MST underrepresents them (generating too few entries for rare combinations). Both methods underperform on queries involving rare process names or application-specific rankings. The implication is that analysis of minority groups should include targeted diagnostics beyond aggregate pass and fail rates.
 
 \begin{quote}
 \textit{(4) Do classifiers trained on synthetic data match performance of classifiers trained on real data?}
@@ -989,12 +989,12 @@ There are clear differences in resource costs between methods. The wide-table DP
 
 The PE results confirm that foundation models import their own distributional priors rather than learning the target distribution (Win11 at 77.8\% vs.\ 10.4\% real). The DP nearest-neighbor histogram partially corrects these biases for histogram-type queries (PE matches MST on browser usage at 0.667 and outperforms the wide-table DP-VAE on RAM utilization at 0.500 vs.\ 0.000), but cannot compensate for the near-total absence of nonzero continuous metrics in the LLM output. The hallucinated categorical values further reduce effective sample size by generating records that cannot match any real data point in the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
 
-Several mitigation strategies warrant investigation:
+Several mitigation strategies warrant investigation.
 
 \begin{itemize}
     \item A two-stage model in which a Bernoulli model predicts zero vs.\ nonzero per column, followed by a conditional model for nonzero values only.
     \item Relational DP synthesis methods that handle multi-table structure directly, eliminating the zero-inflation problem while preserving cross-table correlations.
-    \item Method ensembling: using per-table DP-SGD for queries requiring continuous accuracy and MST for queries requiring ranking preservation, selecting per query type.
+    \item Method ensembling, using per-table DP-SGD for queries requiring continuous accuracy and MST for queries requiring ranking preservation, selecting per query type.
     \item Post-processing the synthetic data with mode patching and constraint enforcement, as proposed by recent work on model-agnostic DP post-processing.
 \end{itemize}
 
@@ -1002,7 +1002,7 @@ Several mitigation strategies warrant investigation:
 
 Figure~\ref{fig:sensitivity} reports how pass rates change as the relative error, total variation, and Spearman $\rho$ thresholds vary. The analysis confirms that our findings are not artifacts of a particular threshold choice.
 
-The relative error threshold has the largest effect. Per-table DP-SGD's pass rate increases from 14.3\% at RE $\leq 0.05$ to 57.1\% at RE $\leq 1.0$, indicating many queries produce synthetic values in the right order of magnitude but outside the strict 25\% tolerance. MST is more robust to strict thresholds: it starts at 23.8\% at RE $\leq 0.05$ (compared to 14.3\% for per-table), reflecting its strength on categorical distributions where exact values are less important than distributional shape. The wide-table method is flat at 12.5\% until RE $\leq 1.0$, at which point it jumps to 75\%, confirming that the continuous metric failure is total (relative errors exceed 99\%) rather than marginal.
+The relative error threshold has the largest effect. Per-table DP-SGD's pass rate increases from 14.3\% at RE $\leq 0.05$ to 57.1\% at RE $\leq 1.0$, indicating many queries produce synthetic values in the right order of magnitude but outside the strict 25\% tolerance. MST is more robust to strict thresholds. It starts at 23.8\% at RE $\leq 0.05$ (compared to 14.3\% for per-table), reflecting its strength on categorical distributions where exact values are less important than distributional shape. The wide-table method is flat at 12.5\% until RE $\leq 1.0$, at which point it jumps to 75\%, confirming that the continuous metric failure is total (relative errors exceed 99\%) rather than marginal.
 
 Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates across all methods. TV sensitivity is limited because the distribution queries either match closely (TV $< 0.10$) or fail badly (TV $> 0.5$), with few queries in the boundary region. Rank correlation sensitivity is limited because MST achieves perfect $\rho = 1.0$ on its passing ranking queries while both methods score near zero on failing ones, leaving no queries sensitive to the threshold.
 
@@ -1122,13 +1122,15 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
 \label{fig:sensitivity}
 \end{figure}
 
+\newpage
+
 \section{Conclusion}
 
-We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing four synthesis approaches: a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, MST marginal-based synthesis, and Private Evolution via foundation model APIs.
+We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing four synthesis approaches, namely a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, MST marginal-based synthesis, and Private Evolution via foundation model APIs.
 
-All four methods have completed evaluation against the 21-query benchmark. Per-table DP-SGD and MST each pass 6 of 21 queries (28.6\% pass rate), passing different subsets that reflect their algorithmic strengths: DP histogram synthesis preserves continuous distributions (on-time RE = 0.13) while MST preserves rankings (Spearman $\rho$ = 1.00 on application counts). The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%), with all continuous metrics near zero due to extreme sparsity in the wide-table representation. PE passes 2 of 8 (25.0\%), outperforming the wide-table DP-VAE in pass count but with a lower average score (0.150 vs.\ 0.258). PE's two passing queries (\texttt{BrowserHist} and \texttt{RamHist}) are histogram-type queries where the DP nearest-neighbor selection can correct the foundation model's distributional biases.
+All four methods have completed evaluation against the 21-query benchmark. Per-table DP-SGD and MST each pass 6 of 21 queries (28.6\% pass rate), and they pass different subsets that reflect their algorithmic strengths. DP histogram synthesis preserves continuous distributions (on-time RE = 0.13), while MST preserves rankings (Spearman $\rho$ = 1.00 on application counts). The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%), with all continuous metrics near zero due to extreme sparsity in the wide-table representation. PE passes 2 of 8 (25.0\%), outperforming the wide-table DP-VAE in pass count but with a lower average score (0.150 vs.\ 0.258). PE's two passing queries (\texttt{BrowserHist} and \texttt{RamHist}) are histogram-type queries where the DP nearest-neighbor selection can correct the foundation model's distributional biases.
 
-Two structural findings emerge. First, wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide table has 93--99.9\% zero values in metric columns, and both the VAE and the foundation model collapse these to their mode. Second, per-table independence destroys cross-table correlations: the 5-way chassis join produces empty or random results under both per-table methods, while the wide-table approaches (DP-VAE and PE) at least preserve some cross-table structure.
+Two structural findings emerge. First, wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide table has 93--99.9\% zero values in metric columns, and both the VAE and the foundation model collapse these to their mode. Second, per-table independence destroys cross-table correlations. The 5-way chassis join produces empty or random results under both per-table methods, while the wide-table approaches (DP-VAE and PE) at least preserve some cross-table structure.
 
 Our PE results are consistent with \citet{swanberg2025apiaccessllmsuseful}, and do not indicate a tabular advantage from foundation model API access in this setting. The broader lesson is that structure in the data representation and workload alignment matter more than model class alone.
 
