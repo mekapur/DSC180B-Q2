@@ -39,7 +39,9 @@
 \maketitle
 
 \begin{abstract}
-Differentially private synthetic data generation promises to resolve the tension between data utility and individual privacy, enabling the release of datasets that preserve the statistical properties analysts need while bounding what any adversary can learn about a single record. Two paradigms have emerged to fulfill this promise. Training-based methods inject calibrated noise during model optimization, coupling privacy to the learning process itself. Training-free methods instead leverage foundation models through black-box API access, achieving privacy through selection mechanisms that never touch the model's parameters. Both have demonstrated success on image and text benchmarks, yet their behavior on realistic, multi-table relational data remains largely unexplored. We investigate both approaches on Intel's Driver and Client Applications (DCA) telemetry corpus, evaluating against a benchmark of 21 analytical SQL queries representative of production business intelligence workloads.
+Differentially private synthetic data generation promises to resolve the tension between data utility and individual privacy, enabling the release of datasets that preserve the statistical properties analysts need while bounding what any adversary can learn about a single record. Two paradigms have emerged to fulfill this promise: (1) training-based methods, which inject calibrated noise during model optimization and couple privacy to the learning process itself, and (2) training-free methods, which leverage foundation models through black-box API access and achieve privacy through selection mechanisms that never touch model parameters.
+
+Both paradigms have demonstrated success on image and text benchmarks, yet their behavior on realistic, multi-table relational data remains largely unexplored. We investigate both approaches on Intel's Driver and Client Applications (DCA) telemetry corpus, evaluating against a benchmark of 21 analytical SQL queries representative of production business intelligence workloads.
 \end{abstract}
 
 \begin{center}
@@ -225,6 +227,7 @@ where $d_j$ is a distance metric appropriate to the result type (relative error 
 where $\tau_j$ is a query-specific tolerance threshold. A synthetic dataset passes the benchmark if it achieves a high score, indicating that analysts could substitute $\tilde{D}$ for $D$ without materially affecting conclusions.
 
 \subsection{Research questions}
+\label{sec:research-questions}
 
 Given the 21-query benchmark and matched privacy budgets, we investigate the following.
 
@@ -950,17 +953,39 @@ Hybrid routed outputs & 21 & 8 & 38.1\% & 0.404 \\
 \section{Discussion}
 \label{sec:discussion}
 
-The four-method comparison provides answers to several of our research questions.
+We frame our discussion around the five research questions we posed in Section~\ref{sec:research-questions}.
 
-Research question (1), which method achieves higher benchmark scores, has a nuanced answer. Per-table DP-SGD and MST both pass 6 of 21 queries (28.6\%), with MST achieving a slightly higher average score (0.328 vs.\ 0.303). The wide-table DP-VAE passes 1 of 8 evaluated queries (12.5\%). PE passes 2 of 8 (25.0\%), outperforming the wide-table DP-VAE on the same query set but with a lower average score (0.150 vs.\ 0.258). No method comes close to passing all queries. The two per-table methods pass different query subsets: per-table DP-SGD passes \texttt{SleepPivot} (score 0.64) and \texttt{RamHist} (0.50), while MST passes \texttt{BrowserHist} (0.67) and two application ranking queries (1.00 each). PE's two passing queries (\texttt{BrowserHist} at 0.667 and \texttt{RamHist} at 0.500) overlap with the per-table methods, indicating that the DP histogram selection can correct distributional biases in the LLM output for histogram-type queries. This complementarity reflects fundamental algorithmic differences. DP histogram synthesis preserves continuous distributions by sampling from noisy bin counts, yielding low relative error on time-based metrics (on-time RE = 0.13, sleep-time RE = 0.04). MST preserves pairwise marginals between categorical keys and count columns, maintaining rankings (Spearman $\rho$ = 1.00 on application system counts) even when absolute values are distorted. Neither algorithm achieves both properties simultaneously.
+\begin{quote}
+\textit{(1) Under matched $(\varepsilon,\delta)$, which method achieves higher benchmark scores, and which query types show the largest gap?}
+\end{quote}
 
-Research question (2), whether error compounds across multi-table joins, receives a clear affirmative. \texttt{ChassisAgg} requires data from five independently synthesized tables. Both per-table methods score 0.00 because the synthetic tables share no correlated \texttt{guid}s; the inner join produces empty results (per-table DP-SGD) or random associations (MST). The wide-table DP-VAE scores 0.17 on this query, the only method that preserves any cross-table structure, but the values are near-zero due to sparsity. \texttt{NetAsymAgg} (a 2-way join) similarly suffers: both per-table methods overcount matching rows by 5--7$\times$ and report network byte values with RE $\approx 1.0$, because the independently synthesized network and sysinfo tables produce spurious \texttt{guid} overlaps.
+At the benchmark level, no single method dominates all query families. The per-table methods produce the strongest overall utility and pass a larger share of the workload than the wide-table and training-free runs in this study, at the sacrifice of a substantially weaker privacy budget. Between those two per-table methods, MST has a small edge in average score, while per-table DP-SGD remains competitive and stronger on selected continuous summaries. The broad pattern is that ranking and distribution-oriented queries are more recoverable than join-intensive queries post-synthesis. This stipulates that method choice should be treated as workload-dependent rather than universal.
 
-Research question (3), minority class preservation, is partially addressed. \texttt{BrowserRank} demonstrates that all methods preserve dominant categorical associations: per-table DP-SGD achieves 47 of 50 correct top browsers per country, and the wide-table DP-VAE achieves 42 of 50. For rare categories, per-table DP-SGD inflates minority chassis types (``Intel NUC/STK'' at 8.4\% synthetic vs.\ 2.0\% real) due to the top-50 binning and uniform noise in DP-SGD, while MST underrepresents them (generating too few entries for rare combinations). Both methods underperform on queries involving rare process names or application-specific rankings.
+\begin{quote}
+\textit{(2) Does error compound across multi-table joins, or is joint structure preserved adequately?}
+\end{quote}
 
-Research question (4), classifier comparability, remains unaddressed. The benchmark queries are analytical (aggregate statistics, rankings, distributions), not predictive, so training downstream classifiers on the synthetic data was not a natural fit for this evaluation framework. A direct comparison would require defining a classification task on the DCA data (e.g., predicting chassis type from usage patterns), training models on real versus synthetic data, and comparing test accuracy. We defer this to future work.
+Error does compound in multi-table queries, and this is the clearest structural result in the project. Independent per-table synthesis improves realism at the local level, but weakens coherence between tables at join time. The wide-table approach preserves a shared client-level representation and therefore retains some relational structure, yet it introduces sparsity that degrades many continuous outputs. In practical terms, the study shows a tradeoff between join consistency and sparse-feature fidelity. The current pipelines do not remove that tradeoff.
 
-Research question (5), wall-clock time, shows clear differences. The wide-table DP-VAE trains in 360 minutes on CPU (20 epochs, 1M rows, 307 features). Per-table synthesis completes in approximately 90 minutes total (two VAEs at $\sim$30 minutes each for sysinfo and cpu\_metadata, plus histogram synthesis for 17 smaller tables). MST runs in under 10 minutes per table using the \texttt{mst} library. PE completes in 59 minutes total: the OpenAI Batch API generates 150{,}000 candidate records (7{,}500 batch calls at approximately \$20 USD), and the DP nearest-neighbor histogram over 1{,}000{,}000 real $\times$ 150{,}000 synthetic records accounts for the remaining computation.
+\begin{quote}
+\textit{(3) Which method better preserves minority class frequencies (prevalence $<5\%$)?}
+\end{quote}
+
+\texttt{BrowserRank} demonstrates that all methods preserve dominant categorical associations: per-table DP-SGD achieves 47 of 50 correct top browsers per country, and the wide-table DP-VAE achieves 42 of 50. For rare categories, per-table DP-SGD inflates minority chassis types due to the top-50 binning and uniform noise in DP-SGD, while MST underrepresents them (generating too few entries for rare combinations). Both methods underperform on queries involving rare process names or application-specific rankings; as such, the implication is that analysis of minority groups should include targeted diagnostics beyond aggregate pass and fail rates.
+
+\begin{quote}
+\textit{(4) Do classifiers trained on synthetic data match performance of classifiers trained on real data?}
+\end{quote}
+
+This question remains open in the current report. The benchmark queries are analytical (aggregate statistics, rankings, distributions), not predictive, so training downstream classifiers on the synthetic data was not a natural fit for this evaluation framework. A direct comparison would require defining a classification task on the DCA data (e.g., predicting chassis type from usage patterns), training models on real versus synthetic data, and comparing test accuracy. We defer this to future work.
+
+\begin{quote}
+\textit{(5) What are the wall-clock and resource tradeoffs for each method?}
+\end{quote}
+
+There are clear differences in resource costs between methods. The wide-table DP-VAE has no external API bill, but it is the most compute intensive option and requires 360 minutes on CPU (20 epochs, 1M rows, 307 features). Per-table synthesis also avoids APIs and completes in approximately 90 minutes total (two VAEs at $\sim$30 minutes each, plus histogram synthesis for 17 smaller tables). MST is the lightest local compute path in this study and runs in under 10 minutes per table. PE is the only method with explicit out-of-pocket cost because it depends on a paid foundation-model API. It completes in 59 minutes total, where the OpenAI Batch API generates 150{,}000 candidate records (7{,}500 batch calls at approximately \$20 USD), and the DP nearest-neighbor histogram over 1{,}000{,}000 real $\times$ 150{,}000 synthetic records accounts for the remaining computation.
+
+\subsubsection{Overall interpretation}
 
 The PE results confirm that foundation models import their own distributional priors rather than learning the target distribution (Win11 at 77.8\% vs.\ 10.4\% real). The DP nearest-neighbor histogram partially corrects these biases for histogram-type queries (PE matches MST on browser usage at 0.667 and outperforms the wide-table DP-VAE on RAM utilization at 0.500 vs.\ 0.000), but cannot compensate for the near-total absence of nonzero continuous metrics in the LLM output. The hallucinated categorical values further reduce effective sample size by generating records that cannot match any real data point in the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
 
@@ -1105,9 +1130,9 @@ All four methods have completed evaluation against the 21-query benchmark. Per-t
 
 Two structural findings emerge. First, wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide table has 93--99.9\% zero values in metric columns, and both the VAE and the foundation model collapse these to their mode. Second, per-table independence destroys cross-table correlations: the 5-way chassis join produces empty or random results under both per-table methods, while the wide-table approaches (DP-VAE and PE) at least preserve some cross-table structure.
 
-PE confirms the negative result of \citet{swanberg2025apiaccessllmsuseful}: API access to foundation models does not improve DP tabular synthesis beyond established baselines on the DCA corpus. The foundation model imports its own distributional priors (Win11 at 77.8\% vs.\ 10.4\% real), hallucinates categorical values outside the real vocabulary, and generates near-zero continuous metrics. The DP histogram partially corrects distributional queries but cannot compensate for the absence of signal in aggregate and geographic queries.
+Our PE results are consistent with \citet{swanberg2025apiaccessllmsuseful}, and do not indicate a tabular advantage from foundation model API access in this setting. The broader lesson is that structure in the data representation and workload alignment matter more than model class alone.
 
-These results point toward relational DP synthesis as the most promising direction: methods that handle multi-table structure directly could eliminate zero-inflation while preserving cross-table correlations. A secondary direction is method ensembling, selecting per-table DP-SGD for continuous-valued queries and MST for ranking queries, capitalizing on their complementary strengths.
+The most promising next step is relational DP synthesis that models linked tables directly, so sparsity and cross-table dependence are handled in the same mechanism. In parallel, a practical benchmark strategy is to combine methods by query type, using each method where it is most reliable while preserving a single, auditable privacy accounting framework.
 
 \newpage
 
