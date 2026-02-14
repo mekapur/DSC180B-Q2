@@ -1,0 +1,9 @@
+persona,number_of_systems,days,content_creation_photo_edit_creation,content_creation_video_audio_edit_creation,content_creation_web_design_development,education,entertainment_music_audio_streaming,entertainment_other,entertainment_video_streaming,finance,games_other,games_video_games,mail,news,unclassified,private,productivity_crm,productivity_other,productivity_presentations,productivity_programming,productivity_project_management,productivity_spreadsheets,productivity_word_processing,recreation_travel,reference,search,shopping,social_social_network,social_communication,social_communication_live
+Casual Gamer,8,8.0,12.5,0.0,12.5,0.0,0.0,0.0,0.0,0.0,50.0,12.5,0.0,0.0,0.0,0.0,12.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+Casual User,45,45.0,52.799,3.576,2.222,23.815,0.0,0.0,2.032,0.0,0.0,0.0,0.0,4.444,0.0,0.0,4.444,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,4.444,0.0,2.222,0.0,0.0
+Content Creator/IT,424,424.0,58.635,30.758,6.351,0.775,0.266,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.236,0.738,0.0,0.472,0.708,0.236,0.059,0.295,0.0,0.0,0.236,0.0,0.236,0.0,0.0
+ Entertainment,2,2.0,0.0,0.0,0.0,0.0,100.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+Office/Productivity,107,107.0,10.465,2.816,2.138,14.703,0.935,0.0,0.0,0.0,0.935,0.0,2.804,0.935,0.0,0.935,29.104,4.673,2.085,9.346,0.234,6.272,6.638,0.0,0.0,2.181,0.935,1.869,0.0,0.0
+Gamer,65,65.0,1.538,1.538,1.538,3.077,11.154,0.0,0.769,0.0,35.85,26.586,1.538,0.0,0.0,0.0,0.769,1.538,0.0,4.615,0.0,0.0,0.0,0.0,0.0,4.872,0.0,4.615,0.0,0.0
+Entertainment,567,567.0,0.497,0.0,0.0,0.0,97.412,0.066,1.648,0.0,0.0,0.024,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.176,0.0,0.0,0.0,0.176,0.0,0.0
+Web User,31,31.0,21.447,1.133,6.452,12.903,19.355,0.0,3.226,0.0,3.226,3.226,3.226,0.0,0.0,0.0,0.0,0.0,0.0,3.226,0.0,0.0,3.226,0.0,0.0,12.903,0.0,6.452,0.0,0.0

@@ -1,0 +1,21 @@
+proc_name,ac_duration,dc_duration,unknown_duration
+SelfService.exe,17.83,22.64,29.25
+OneDrive.exe,30.73,25.17,24.3
+Sonos.exe,14539.4,0.02,59.71
+RtlS5Wake.exe,42.62,35.12,16.7
+start_wow.exe,2.6,0.01,32025.82
+QBW32.EXE,37.56,0.09,13.13
+MoNotificationUx.exe,25.95,20.5,20.36
+AvastUI.exe,14.43,21.47,26.23
+McUICnt.exe,25.91,29.88,27.17
+LockApp.exe,37.94,33.47,34.33
+NA,73.03,46.4,50.02
+Razer Synapse Service Process.exe,43.57,76.1,14.59
+SLDWORKS.exe,19.52,30.16,30.53
+Inventor.exe,19.95,48.85,0.01
+SoftwareUpdate.exe,43.55,45.46,39.47
+LogiOverlay.exe,26.91,19.78,38.7
+SynTPEnh.exe,19.13,18.43,22.35
+StartMenuExperienceHost.exe,19.0,23.9,22.85
+mbamtray.exe,29.36,27.24,22.5
+browser.exe,25.51,17.62,23.74

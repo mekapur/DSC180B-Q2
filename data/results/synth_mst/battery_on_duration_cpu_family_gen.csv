@@ -1,0 +1,47 @@
+marketcodename,cpugen,number_of_systems,avg_duration_mins_on_battery
+Tiger Lake,11th Gen i7,237,4531.675362274002
+Coffee Lake,8th Gen i7,622,4687.87161170203
+Cherry Trail,Atom-Cherry Trail,102,4562.561284444724
+Comet Lake,10th Gen i3,126,4331.328284365297
+Arrandale,1st Gen i5,162,3523.728927825072
+Haswell,4th Gen i7,742,3966.132324664513
+Haswell,4th Gen i5,923,4549.47606403442
+Ivy Bridge,3rd Gen i3,330,5628.116558523604
+Whiskey Lake,8th Gen i7,186,3184.8606321637117
+Broadwell,5th Gen i3,222,4722.033297231303
+Kaby Lake,7th Gen i3,364,4814.111307134129
+Skylake,6th Gen i7,712,4883.121232469661
+Sandy Bridge,2nd Gen i3,383,3216.9032161470964
+Kaby Lake,7th Gen i5,1085,3926.370184007335
+Kaby Lake,7th Gen i7,882,3496.6865044405877
+Sandy Bridge,Pentium/Celeron-2nd Gen,194,5025.6465367492365
+Broadwell,5th Gen i7,153,5563.271018198322
+Apollo Lake,Pentium/Celeron-Apollo Lake,177,5353.82314793596
+Coffee Lake,9th Gen i5,369,3860.362577393921
+Gemini Lake,Pentium/Celeron-Gemini Lake,173,3970.314594127744
+Sandy Bridge,2nd Gen i7,227,4640.946967540299
+Coffee Lake,9th Gen i9,125,4629.785117774807
+Whiskey Lake,8th Gen i5,288,4226.119359727477
+Coffee Lake,8th Gen i3,158,4185.817861418657
+Haswell,4th Gen i3,362,4492.933088790456
+Ice Lake,10th Gen i5,209,4192.816201120218
+Haswell,Pentium/Celeron-4th Gen,143,4479.599675473606
+Comet Lake,10th Gen i7,399,4910.522286839382
+Tiger Lake,11th Gen i5,286,3410.326178145477
+Wolfdale,Core2 Duo-Wolfdale,135,3247.8509669313917
+Coffee Lake,8th Gen i5,483,4119.634582800571
+Braswell,Pentium/Celeron-Braswell,255,4973.229165602924
+Skylake,6th Gen i3,401,4124.861173013885
+Broadwell,5th Gen i5,319,4947.5466818504
+Skylake,6th Gen i5,843,5108.310634240262
+Kaby Lake R,8th Gen i7,354,4400.2529168028705
+Comet Lake,10th Gen i5,484,3659.00838598109
+Arrandale,1st Gen i3,160,4568.639710199633
+Ivy Bridge,3rd Gen i5,743,4084.117054657858
+Kaby Lake R,8th Gen i5,577,4684.32932191767
+Ivy Bridge,3rd Gen i7,360,3983.105118964993
+Sandy Bridge,2nd Gen i5,607,4025.6419773114003
+Ivy Bridge,Pentium/Celeron-3rd Gen,152,3939.083802605264
+Prescott,Pentium/Celeron-Prescott,111,2587.686103509189
+Coffee Lake,9th Gen i7,343,3817.9386344789928
+Bay Trail,Pentium/Celeron-Bay Trail,271,3164.209702579703

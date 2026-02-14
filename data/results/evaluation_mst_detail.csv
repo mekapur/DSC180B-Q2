@@ -1,0 +1,96 @@
+query,query_type,column,metric_type,value,passed,detail
+Xeon_network_consumption,aggregate,group_coverage,jaccard,0.6666666666666666,True,"8/8 real groups matched, 12 synth groups total"
+Xeon_network_consumption,aggregate,number_of_systems,median_relative_error,0.461845280568272,False,"median RE=0.4618, mean RE=2.0708, n_groups=8"
+Xeon_network_consumption,aggregate,avg_bytes_received,median_relative_error,1719.2793148884955,False,"median RE=1719.2793, mean RE=634771.4646, n_groups=8"
+Xeon_network_consumption,aggregate,avg_bytes_sent,median_relative_error,31.589269423473947,False,"median RE=31.5893, mean RE=664437.6935, n_groups=8"
+avg_platform_power_c0_freq_temp_by_chassis,aggregate,group_coverage,jaccard,0.0,False,"0/4 real groups matched, 0 synth groups total"
+avg_platform_power_c0_freq_temp_by_chassis,aggregate,number_of_systems,relative_error,inf,False,no overlapping groups
+avg_platform_power_c0_freq_temp_by_chassis,aggregate,avg_psys_rap_watts,relative_error,inf,False,no overlapping groups
+avg_platform_power_c0_freq_temp_by_chassis,aggregate,avg_pkg_c0,relative_error,inf,False,no overlapping groups
+avg_platform_power_c0_freq_temp_by_chassis,aggregate,avg_freq_mhz,relative_error,inf,False,no overlapping groups
+avg_platform_power_c0_freq_temp_by_chassis,aggregate,avg_temp_centigrade,relative_error,inf,False,no overlapping groups
+battery_on_duration_cpu_family_gen,aggregate,group_coverage,jaccard,0.15384615384615385,False,"8/14 real groups matched, 46 synth groups total"
+battery_on_duration_cpu_family_gen,aggregate,number_of_systems,median_relative_error,0.8048270807554658,False,"median RE=0.8048, mean RE=0.7590, n_groups=8"
+battery_on_duration_cpu_family_gen,aggregate,avg_duration_mins_on_battery,median_relative_error,35.99838876139563,False,"median RE=35.9984, mean RE=37.4642, n_groups=8"
+battery_power_on_geographic_summary,aggregate,group_coverage,jaccard,0.8780487804878049,True,"36/37 real groups matched, 40 synth groups total"
+battery_power_on_geographic_summary,aggregate,number_of_systems,median_relative_error,0.1893839820586564,True,"median RE=0.1894, mean RE=0.2214, n_groups=36"
+battery_power_on_geographic_summary,aggregate,avg_number_of_dc_powerons,median_relative_error,39.71055712440443,False,"median RE=39.7106, mean RE=40.6483, n_groups=36"
+battery_power_on_geographic_summary,aggregate,avg_duration,median_relative_error,28.187406984369495,False,"median RE=28.1874, mean RE=29.9596, n_groups=36"
+display_devices_connection_type_resolution_durations_ac_dc,aggregate,group_coverage,jaccard,0.014598540145985401,False,"8/431 real groups matched, 125 synth groups total"
+display_devices_connection_type_resolution_durations_ac_dc,aggregate,number_of_systems,median_relative_error,0.9472871730953847,False,"median RE=0.9473, mean RE=0.9476, n_groups=8"
+display_devices_connection_type_resolution_durations_ac_dc,aggregate,average_duration_on_ac_in_seconds,median_relative_error,1828.4348491116739,False,"median RE=1828.4348, mean RE=2198.8859, n_groups=8"
+display_devices_connection_type_resolution_durations_ac_dc,aggregate,average_duration_on_dc_in_seconds,median_relative_error,5459.145519735353,False,"median RE=5459.1455, mean RE=6616.3028, n_groups=8"
+display_devices_vendors_percentage,distribution,percentage_of_systems,total_variation,0.08291232574081187,True,"TV=0.0829, 21 categories"
+mods_blockers_by_osname_and_codename,aggregate,group_coverage,jaccard,0.6875,True,"11/11 real groups matched, 16 synth groups total"
+mods_blockers_by_osname_and_codename,aggregate,num_entries,median_relative_error,0.9415249175578226,False,"median RE=0.9415, mean RE=0.9221, n_groups=11"
+mods_blockers_by_osname_and_codename,aggregate,number_of_systems,median_relative_error,3.7011739594450375,False,"median RE=3.7012, mean RE=14.0636, n_groups=11"
+mods_blockers_by_osname_and_codename,aggregate,entries_per_system,median_relative_error,0.9857382009295804,False,"median RE=0.9857, mean RE=0.9831, n_groups=11"
+most_popular_browser_in_each_country_by_system_count,ranking_categorical,browser,categorical_accuracy,0.9411764705882353,True,48/51 countries correct (51 overlapping)
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,group_coverage,jaccard,0.21428571428571427,False,"15/27 real groups matched, 58 synth groups total"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,number_of_systems,median_relative_error,0.7931844888366627,False,"median RE=0.7932, mean RE=0.7851, n_groups=15"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,avg_on_time,median_relative_error,40.171486342168706,False,"median RE=40.1715, mean RE=44.7816, n_groups=15"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,avg_off_time,median_relative_error,45.14149528494707,False,"median RE=45.1415, mean RE=45.6121, n_groups=15"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,avg_modern_sleep_time,median_relative_error,113.3586063517098,False,"median RE=113.3586, mean RE=inf, n_groups=15"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,avg_sleep_time,median_relative_error,44.15811630060551,False,"median RE=44.1581, mean RE=42.8114, n_groups=15"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,avg_total_time,median_relative_error,43.94971224010254,False,"median RE=43.9497, mean RE=44.2461, n_groups=15"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,avg_pcnt_on_time,median_relative_error,0.1466950959488272,True,"median RE=0.1467, mean RE=0.1595, n_groups=15"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,avg_pcnt_off_time,median_relative_error,0.13284753363228696,True,"median RE=0.1328, mean RE=0.1692, n_groups=15"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,avg_pcnt_mods_time,median_relative_error,1.4148681055155876,False,"median RE=1.4149, mean RE=inf, n_groups=15"
+on_off_mods_sleep_summary_by_cpu_marketcodename_gen,aggregate,avg_pcnt_sleep_time,median_relative_error,0.10451650260567456,True,"median RE=0.1045, mean RE=0.1043, n_groups=15"
+persona_web_cat_usage_analysis,aggregate,group_coverage,jaccard,1.0,True,"11/11 real groups matched, 11 synth groups total"
+persona_web_cat_usage_analysis,aggregate,number_of_systems,median_relative_error,0.1454798331015299,True,"median RE=0.1455, mean RE=0.2169, n_groups=11"
+persona_web_cat_usage_analysis,aggregate,days,median_relative_error,0.22201761409127302,True,"median RE=0.2220, mean RE=2.0307, n_groups=11"
+persona_web_cat_usage_analysis,aggregate,content_creation_photo_edit_creation,median_relative_error,12.13888888888889,False,"median RE=12.1389, mean RE=13.1755, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,content_creation_video_audio_edit_creation,median_relative_error,91.26086956521738,False,"median RE=91.2609, mean RE=113.6997, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,content_creation_web_design_development,median_relative_error,4.673306772908367,False,"median RE=4.6733, mean RE=6.0321, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,education,median_relative_error,0.4198210598761184,False,"median RE=0.4198, mean RE=0.4018, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,entertainment_music_audio_streaming,median_relative_error,16.62987012987013,False,"median RE=16.6299, mean RE=15.5839, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,entertainment_other,median_relative_error,0.1853837471783296,True,"median RE=0.1854, mean RE=0.5587, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,entertainment_video_streaming,median_relative_error,0.5094550275626264,False,"median RE=0.5095, mean RE=0.4545, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,finance,median_relative_error,1.8490566037735852,False,"median RE=1.8491, mean RE=2.1439, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,games_other,median_relative_error,0.9540425531914891,False,"median RE=0.9540, mean RE=1.4108, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,games_video_games,median_relative_error,97.66666666666667,False,"median RE=97.6667, mean RE=130.6644, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,mail,median_relative_error,0.4475913181577554,False,"median RE=0.4476, mean RE=0.4132, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,news,median_relative_error,0.25641025641025644,False,"median RE=0.2564, mean RE=0.3785, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,unclassified,median_relative_error,0.6687222426522588,False,"median RE=0.6687, mean RE=0.6592, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,private,median_relative_error,0.42590318288813844,False,"median RE=0.4259, mean RE=0.4314, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,productivity_crm,median_relative_error,inf,False,"median RE=inf, mean RE=inf, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,productivity_other,median_relative_error,0.3752395553852051,False,"median RE=0.3752, mean RE=0.6207, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,productivity_presentations,median_relative_error,12.453124999999998,False,"median RE=12.4531, mean RE=11.8291, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,productivity_programming,median_relative_error,3.647058823529412,False,"median RE=3.6471, mean RE=6.2877, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,productivity_project_management,median_relative_error,39.24444444444445,False,"median RE=39.2444, mean RE=57.3159, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,productivity_spreadsheets,median_relative_error,4.684931506849314,False,"median RE=4.6849, mean RE=5.9989, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,productivity_word_processing,median_relative_error,2.664761904761905,False,"median RE=2.6648, mean RE=2.8734, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,recreation_travel,median_relative_error,1.5969696969696967,False,"median RE=1.5970, mean RE=2.5113, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,reference,median_relative_error,0.12201591511936331,True,"median RE=0.1220, mean RE=0.2486, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,search,median_relative_error,0.7183621058638893,False,"median RE=0.7184, mean RE=0.6681, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,shopping,median_relative_error,0.21570014144271568,True,"median RE=0.2157, mean RE=0.2621, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,social_social_network,median_relative_error,0.25733041575492344,False,"median RE=0.2573, mean RE=0.3066, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,social_communication,median_relative_error,1.0404949381327335,False,"median RE=1.0405, mean RE=1.1027, n_groups=7"
+persona_web_cat_usage_analysis,aggregate,social_communication_live,median_relative_error,1.5180265654648954,False,"median RE=1.5180, mean RE=1.3948, n_groups=7"
+pkg_power_by_country,aggregate,group_coverage,jaccard,0.9607843137254902,True,"49/49 real groups matched, 51 synth groups total"
+pkg_power_by_country,aggregate,number_of_systems,median_relative_error,0.3333333333333333,False,"median RE=0.3333, mean RE=0.5351, n_groups=49"
+pkg_power_by_country,aggregate,avg_pkg_power_consumed,median_relative_error,1.1914256423079583,False,"median RE=1.1914, mean RE=2129.8028, n_groups=49"
+popular_browsers_by_count_usage_percentage,distribution,percent_systems,total_variation,0.040255138868086016,True,"TV=0.0403, 3 categories"
+popular_browsers_by_count_usage_percentage,distribution,percent_instances,total_variation,0.2754472447244724,False,"TV=0.2754, 3 categories"
+popular_browsers_by_count_usage_percentage,distribution,percent_duration,total_variation,0.020499999999999984,True,"TV=0.0205, 3 categories"
+ram_utilization_histogram,histogram,count(DISTINCT guid)_distribution,total_variation,1.0,False,"TV=1.0000, 69541 bins"
+server_exploration_1,row_level,row_count,relative_error,7.23313293253173,False,"real=1497, synth=12325"
+server_exploration_1,row_level,chassistype_distribution,total_variation,0.20141047476968812,False,TV=0.2014
+server_exploration_1,row_level,vendor_distribution,total_variation,0.14408365073622567,True,TV=0.1441
+server_exploration_1,row_level,os_distribution,total_variation,0.14959178337200202,True,TV=0.1496
+server_exploration_1,row_level,nrs_mean,relative_error,0.355898342883949,True,"real_mean=2932668.62, synth_mean=3976400.52"
+server_exploration_1,row_level,received_bytes_mean,relative_error,0.9101487889221114,False,"real_mean=86411085652480592.00, synth_mean=7764140696430551.00"
+server_exploration_1,row_level,sent_bytes_mean,relative_error,18.89882574124282,False,"real_mean=86412557005220912.00, synth_mean=1719508413702102528.00"
+top_10_applications_by_app_type_ranked_by_focal_time,ranking_numeric,item_overlap,mean_jaccard,0.0,False,avg Jaccard=0.0000 across 14 groups
+top_10_applications_by_app_type_ranked_by_system_count,ranking_numeric,item_overlap,mean_jaccard,0.4119795548366976,True,avg Jaccard=0.4120 across 14 groups
+top_10_applications_by_app_type_ranked_by_system_count,ranking_numeric,number_of_systems_rank_corr,mean_spearman_rho,1.0,True,avg rho=1.0000 across 13 groups
+top_10_applications_by_app_type_ranked_by_total_detections,ranking_numeric,item_overlap,mean_jaccard,0.5067028835825829,True,avg Jaccard=0.5067 across 14 groups
+top_10_applications_by_app_type_ranked_by_total_detections,ranking_numeric,total_number_of_detections_rank_corr,mean_spearman_rho,0.7146520146520147,True,avg rho=0.7147 across 13 groups
+top_mods_blocker_types_durations_by_osname_and_codename,aggregate,group_coverage,jaccard,0.16774636079567107,False,"2201/10568 real groups matched, 4754 synth groups total"
+top_mods_blocker_types_durations_by_osname_and_codename,aggregate,number_of_clients,median_relative_error,1.0,False,"median RE=1.0000, mean RE=10.5195, n_groups=2201"
+top_mods_blocker_types_durations_by_osname_and_codename,aggregate,average_active_time_in_seconds,median_relative_error,78.65068496829589,False,"median RE=78.6507, mean RE=2007.2850, n_groups=2201"
+top_mods_blocker_types_durations_by_osname_and_codename,aggregate,number_of_occurences,median_relative_error,0.9800780161604904,False,"median RE=0.9801, mean RE=6.0756, n_groups=2201"
+userwait_top_10_wait_processes,ranking_numeric,item_overlap,jaccard,0.0,False,0/10 items matched
+userwait_top_10_wait_processes_wait_type_ac_dc,ranking_numeric,item_overlap,mean_jaccard,0.14285714285714285,False,avg Jaccard=0.1429 across 7 groups
+userwait_top_20_wait_processes_compare_ac_dc_unknown_durations,ranking_numeric,item_overlap,jaccard,0.02564102564102564,False,1/20 items matched

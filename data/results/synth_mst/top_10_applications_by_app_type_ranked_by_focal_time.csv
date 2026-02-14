@@ -1,0 +1,141 @@
+app_type,exe_name,average_focal_sec_per_day,rank
+Communication,softwareupdate.exe,72423602.0,1
+Communication,hearthstone.exe,66197192.0,2
+Communication,whatsapp.exe,60661898.0,3
+Communication,bluestacks.exe,58523789.0,4
+Communication,pma.exe,57792475.0,5
+Communication,wow.exe,49612593.0,6
+Communication,cdviewer.exe,41434591.0,7
+Communication,javaw.exe,38849647.0,8
+Communication,brave.exe,32077225.0,9
+Communication,mbamtray.exe,28880742.0,10
+Developer tools,browser.exe,70148942.0,1
+Developer tools,photoshop.exe,57617589.0,2
+Developer tools,mousewithoutbordershelper.exe,55342911.0,3
+Developer tools,anydesk.exe,53003101.0,4
+Developer tools,ffxiv_dx11.exe,37274446.0,5
+Developer tools,potplayer64.exe,33723492.0,6
+Developer tools,wfica32.exe,33308320.0,7
+Developer tools,utorrent.exe,29581401.0,8
+Developer tools,wechat.exe,21176975.0,9
+Developer tools,logioverlay.exe,18103904.0,10
+Entertainment,outlook.exe,52227947.0,1
+Entertainment,chrome.exe,39915679.0,2
+Entertainment,ts4_x64.exe,38930785.0,3
+Entertainment,rs2client.exe,36254990.0,4
+Entertainment,1cv8c.exe,34982183.0,5
+Entertainment,avastbrowser.exe,33511598.0,6
+Entertainment,lync.exe,32771091.0,7
+Entertainment,java.exe,28780931.0,8
+Entertainment,discord.exe,28562351.0,9
+Entertainment,fm.exe,19808541.0,10
+Gaming,brave.exe,23700825.0,1
+Gaming,chrome.exe,21098821.0,2
+Gaming,hwp.exe,19725312.0,3
+Gaming,downloader2.exe,18744887.0,4
+Gaming,tposd.exe,18017501.0,5
+Gaming,kakaotalk.exe,15007966.0,6
+Gaming,qbw32.exe,13669284.0,7
+Gaming,uiwinmgr.exe,13517724.0,8
+Gaming,pma.exe,12949803.0,9
+Gaming,razer synapse service process.exe,12939761.0,10
+Gaming auxiliary,outlook.exe,78246216.0,1
+Gaming auxiliary,wps.exe,74487767.0,2
+Gaming auxiliary,chrome.exe,74293770.0,3
+Gaming auxiliary,wow.exe,63858130.0,4
+Gaming auxiliary,worldofwarships64.exe,52885841.0,5
+Gaming auxiliary,r5apex.exe,39367614.0,6
+Gaming auxiliary,dota2.exe,39199092.0,7
+Gaming auxiliary,1cv8c.exe,38741569.0,8
+Gaming auxiliary,robloxplayerbeta.exe,34293226.0,9
+Gaming auxiliary,ts4_x64.exe,33020854.0,10
+Lifestyle,whale.exe,67273272.0,1
+Lifestyle,terminal.exe,4087328.0,2
+Lifestyle,outlook.exe,2290055.0,3
+Lifestyle,ffxiv_dx11.exe,281872.0,4
+Lifestyle,qqbrowser.exe,196542.0,5
+Lifestyle,fortniteclient-win64-shipping.exe,185880.0,6
+Lifestyle,uiwinmgr.exe,121912.0,7
+Lifestyle,csgo.exe,105651.0,8
+Lifestyle,leagueclientux.exe,102603.0,9
+Lifestyle,vmware-view.exe,45819.0,10
+Multimedia,overwatch.exe,76549847.0,1
+Multimedia,zoomrooms.exe,57175769.0,2
+Multimedia,overwolf.exe,40776665.0,3
+Multimedia,worldoftanks.exe,36209932.0,4
+Multimedia,zalo.exe,32897814.0,5
+Multimedia,wowclassic.exe,32205916.0,6
+Multimedia,fivem_gtaprocess.exe,26566485.0,7
+Multimedia,msedge.exe,23371912.0,8
+Multimedia,360se.exe,21235036.0,9
+Multimedia,cdviewer.exe,20094426.0,10
+Other,csgo.exe,53671696.0,1
+Other,runelite.exe,42021717.0,2
+Other,brave.exe,39272240.0,3
+Other,avpui.exe,35023713.0,4
+Other,vmware-view.exe,34581987.0,5
+Other,bluestacks.exe,32499388.0,6
+Other,destiny2.exe,27946190.0,7
+Other,valorant-win64-shipping.exe,22200577.0,8
+Other,firefox.exe,20463529.0,9
+Other,overwatch.exe,19146466.0,10
+Productivity,chrome.exe,41287058.0,1
+Productivity,rs2client.exe,29088044.0,2
+Productivity,memu.exe,28360534.0,3
+Productivity,pma.exe,23593373.0,4
+Productivity,runelite.exe,20587160.0,5
+Productivity,fortniteclient-win64-shipping.exe,20118791.0,6
+Productivity,line.exe,19655104.0,7
+Productivity,vivaldi.exe,19557650.0,8
+Productivity,potplayer64.exe,19308531.0,9
+Productivity,skype.exe,18156036.0,10
+Security,pma.exe,72206615.0,1
+Security,qqlive.exe,58547665.0,2
+Security,league of legends.exe,48857568.0,3
+Security,coreldrw.exe,44155856.0,4
+Security,robloxplayerbeta.exe,41158163.0,5
+Security,citrixreceiverupdater.exe,40438750.0,6
+Security,wfica32.exe,36739083.0,7
+Security,kodi.exe,32515782.0,8
+Security,rustclient.exe,20666304.0,9
+Security,cdviewer.exe,20278746.0,10
+Social,whale.exe,39198497.0,1
+Social,idea64.exe,26476532.0,2
+Social,chrome.exe,18628307.0,3
+Social,nox.exe,17665746.0,4
+Social,bluestacks.exe,14802541.0,5
+Social,clipstudiopaint.exe,14564216.0,6
+Social,javaw.exe,13804704.0,7
+Social,citrixreceiverupdater.exe,13504675.0,8
+Social,cdviewer.exe,10857426.0,9
+Social,league of legends.exe,10788793.0,10
+System,hwp.exe,78945999.0,1
+System,mstsc.exe,69697728.0,2
+System,monsterhunterworld.exe,61927156.0,3
+System,soffice.bin,58777817.0,4
+System,wowclassic.exe,40686620.0,5
+System,rs2client.exe,40526629.0,6
+System,teams.exe,38895444.0,7
+System,modernwarfare.exe,32902273.0,8
+System,revit.exe,27967190.0,9
+System,dota2.exe,24935810.0,10
+Utilities + tools,runelite.exe,61559350.0,1
+Utilities + tools,deadbydaylight-win64-shipping.exe,34906627.0,2
+Utilities + tools,hwp.exe,30759776.0,3
+Utilities + tools,wowclassic.exe,30400874.0,4
+Utilities + tools,worldofwarships64.exe,29431236.0,5
+Utilities + tools,csgo.exe,19419795.0,6
+Utilities + tools,kodi.exe,15630709.0,7
+Utilities + tools,dnplayer.exe,14419632.0,8
+Utilities + tools,firefox.exe,14050796.0,9
+Utilities + tools,sketchup.exe,13546082.0,10
+Web Browsing,leagueclientux.exe,72178762.0,1
+Web Browsing,wow.exe,40102684.0,2
+Web Browsing,wondershare filmora9.exe,36613370.0,3
+Web Browsing,escapefromtarkov.exe,24798130.0,4
+Web Browsing,coreldrw.exe,23597270.0,5
+Web Browsing,potplayer64.exe,22651955.0,6
+Web Browsing,clipstudiopaint.exe,20660976.0,7
+Web Browsing,lostark.exe,18199324.0,8
+Web Browsing,ffxiv_dx11.exe,17796457.0,9
+Web Browsing,wechat.exe,16883696.0,10

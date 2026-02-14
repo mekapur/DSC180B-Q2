@@ -1,0 +1,151 @@
+app_type,exe_name,total_number_of_detections,rank
+Communication,outlook.exe,6406082.911558124,1
+Communication,notes2.exe,4081091.70704168,2
+Communication,imvuclient.exe,3233996.807244203,3
+Communication,thunderbird.exe,3072107.3382538585,4
+Communication,mailclient.exe,3059421.231047635,5
+Communication,mailmaster.exe,2733136.127468873,6
+Communication,slack.exe,2588178.426172594,7
+Communication,ciscojabber.exe,2581146.532618655,8
+Communication,nlnotes.exe,2505453.0073445076,9
+Communication,foxmail.exe,1837692.7122013676,10
+Developer tools,dreamweaver.exe,1983572.9784285896,1
+Developer tools,idea64.exe,1542120.7727620322,2
+Developer tools,mobaxterm.exe,1485997.3839289653,3
+Developer tools,ttermpro.exe,1469522.0036058547,4
+Developer tools,devenv.exe,1383624.588304469,5
+Developer tools,ssms.exe,1149940.6473259716,6
+Developer tools,code.exe,1051721.4812027186,7
+Developer tools,eclipse.exe,1010945.8445873451,8
+Developer tools,navicat.exe,664619.244679984,9
+Developer tools,studio64.exe,663223.3189556205,10
+Entertainment,potplayer64.exe,1216387.0457425634,1
+Entertainment,gom.exe,1136269.8020382973,2
+Entertainment,mpc-hc64_nvo.exe,1063053.5480878374,3
+Entertainment,potplayermini64.exe,1050515.7246307083,4
+Entertainment,bitcomet.exe,1001117.2408078649,5
+Entertainment,youkudesktop.exe,858672.3809176185,6
+Entertainment,mpc-hc64.exe,815621.0199264106,7
+Entertainment,bsplayer.exe,704745.1361805348,8
+Entertainment,mp3tag.exe,694055.4507426475,9
+Entertainment,kmplayer64.exe,601813.2896695975,10
+Gaming,nox.exe,6653988.17296511,1
+Gaming,wow.exe,5958101.556476091,2
+Gaming,leagueclientux.exe,5686615.5651416,3
+Gaming,robloxplayerbeta.exe,5538314.544392662,4
+Gaming,dnplayer.exe,4362714.958978051,5
+Gaming,league of legends.exe,3558499.4254996255,6
+Gaming,fm.exe,2755154.6697448697,7
+Gaming,worldoftanks.exe,2412973.3718305463,8
+Gaming,valorant-win64-shipping.exe,2178665.6334925666,9
+Gaming,dota2.exe,1936463.0751366261,10
+Gaming auxiliary,exefile.exe,1963007.5215938555,1
+Gaming auxiliary,modorganizer.exe,1763820.7964290767,2
+Gaming auxiliary,memu.exe,1209498.760134448,3
+Gaming auxiliary,wegame.exe,1085270.5584538963,4
+Gaming auxiliary,steam.exe,976984.335616278,5
+Gaming auxiliary,garena.exe,899671.1215309696,6
+Gaming auxiliary,bluestacks.exe,894862.9208521583,7
+Gaming auxiliary,rustclient.exe,767563.1934529617,8
+Gaming auxiliary,pallas.exe,700658.2689873449,9
+Gaming auxiliary,fivem_b2189_gtaprocess.exe,690841.1970598549,10
+Installers + Updaters,foxitreaderupdater.exe,110749.34488118798,1
+Installers + Updaters,alupproduct.exe,98112.9119115399,2
+Installers + Updaters,msiexec.exe,64231.96307724592,3
+Installers + Updaters,irsetup.exe,62612.25921125694,4
+Installers + Updaters,setup.exe,52432.36215338543,5
+Installers + Updaters,gjagent.exe,49084.93351890883,6
+Installers + Updaters,wirelesssetup.exe,44615.0898306195,7
+Installers + Updaters,clupdater.exe,44546.143655631924,8
+Installers + Updaters,_iu14d2n.tmp,39857.44290530751,9
+Installers + Updaters,updater.exe,33360.049987002996,10
+Lifestyle,profitchart.exe,1143612.4578473293,1
+Lifestyle,tdxw.exe,618123.3840060049,2
+Lifestyle,tws.exe,478290.7536475082,3
+Lifestyle,qw.exe,393746.3465616124,4
+Lifestyle,terminal.exe,303857.33523085166,5
+Lifestyle,msmoney.exe,260122.08631986222,6
+Lifestyle,tradingview.exe,257511.45842635527,7
+Lifestyle,qgis-bin.exe,197047.80824207613,8
+Lifestyle,wechatstore.exe,164957.76170603218,9
+Lifestyle,terminal64.exe,148593.2257719961,10
+Multimedia,3dsmax.exe,6308239.961011317,1
+Multimedia,coreldrw.exe,4179968.3309490606,2
+Multimedia,indesign.exe,3906836.051922519,3
+Multimedia,photoshop.exe,3404270.8768205955,4
+Multimedia,illustrator.exe,3254723.2003184063,5
+Multimedia,unity.exe,2116389.6567503903,6
+Multimedia,adobe premiere pro.exe,2112220.6298598154,7
+Multimedia,fl64.exe,1750664.5838177274,8
+Multimedia,afterfx.exe,1640943.5716930414,9
+Multimedia,sketchup.exe,1447909.6532964378,10
+Other,applicationframehost.exe,8684207.686979774,1
+Other,shellexperiencehost.exe,8607007.854132026,2
+Other,startmenuexperiencehost.exe,2589350.551553803,3
+Other,upc.exe,2206812.5015356764,4
+Other,7zfm.exe,1789956.9879503977,5
+Other,screenclippinghost.exe,1662475.321066821,6
+Other,dllhost.exe,1249743.6033608934,7
+Other,socialclubhelper.exe,918586.022689783,8
+Other,dropbox.exe,912836.5996317265,9
+Other,rundll32.exe,905678.1606574231,10
+Productivity,acad.exe,32930805.575776655,1
+Productivity,wfica32.exe,25870941.8575804,2
+Productivity,excel.exe,17436657.848423153,3
+Productivity,hwp.exe,10322944.566713216,4
+Productivity,cdviewer.exe,10055487.023450464,5
+Productivity,mstsc.exe,8788970.394496033,6
+Productivity,matlab.exe,8143203.312274693,7
+Productivity,winword.exe,8027524.858110359,8
+Productivity,acrobat.exe,5679851.1483908575,9
+Productivity,nitropdf.exe,5440511.589227275,10
+Security,keepass.exe,684355.6541956268,1
+Security,pulse.exe,606369.6995909478,2
+Security,mbamtray.exe,416464.2235002953,3
+Security,uiwinmgr.exe,415755.5530557517,4
+Security,vpnui.exe,387771.9286706721,5
+Security,vpnclient_x64.exe,387699.2452734244,6
+Security,mcuicnt.exe,385214.37652525824,7
+Security,pangpa.exe,249641.01922484883,8
+Security,v3lite4exp.exe,243869.33494163246,9
+Security,forticlient.exe,189155.5803713039,10
+Social,kakaotalk.exe,4536519.527104234,1
+Social,camfrog video chat.exe,4158843.90073991,2
+Social,chatstudio2.exe,3505005.374355994,3
+Social,line.exe,3216623.2731812354,4
+Social,discordptb.exe,2665901.449754394,5
+Social,wechat.exe,2665177.2911815303,6
+Social,pidgin.exe,2566299.0290832985,7
+Social,wxwork.exe,2328396.2087005787,8
+Social,discord.exe,2265606.1696110736,9
+Social,paltalk.exe,1944705.3988135275,10
+System,jp2launcher.exe,4181070.402826039,1
+System,explorer.exe,3711449.5656947573,2
+System,javaw.exe,2856909.9650467504,3
+System,java.exe,2269440.346379593,4
+System,flow.exe,1502371.7534881548,5
+System,searchapp.exe,1261568.813810938,6
+System,searchui.exe,1221291.389304131,7
+System,windowsterminal.exe,1091096.7418036351,8
+System,us008sm.exe,980931.7585671596,9
+System,alzip.exe,891628.3087056231,10
+Utilities + tools,winscp.exe,3743320.7524523097,1
+Utilities + tools,snippingtool.exe,3169062.9598211767,2
+Utilities + tools,idman.exe,2515624.259135076,3
+Utilities + tools,qbittorrent.exe,2471888.9941012613,4
+Utilities + tools,filezilla.exe,2152246.7100860295,5
+Utilities + tools,scanutility.exe,1947427.76545538,6
+Utilities + tools,hpscan.exe,1683593.2571857842,7
+Utilities + tools,utorrent.exe,1616148.1595389375,8
+Utilities + tools,escndv.exe,1614430.7362032048,9
+Utilities + tools,lightshot.exe,1583426.9946103145,10
+Web Browsing,chrome.exe,13772297.418580428,1
+Web Browsing,whale.exe,12586378.286680588,2
+Web Browsing,brave.exe,8817858.741235852,3
+Web Browsing,firefox.exe,6903470.554279637,4
+Web Browsing,vivaldi.exe,6635554.814497866,5
+Web Browsing,opera.exe,5775960.6279999465,6
+Web Browsing,360chrome.exe,5736721.436836482,7
+Web Browsing,sogouexplorer.exe,4540177.391357614,8
+Web Browsing,browser.exe,3616987.306293372,9
+Web Browsing,msedge.exe,2628507.5117732245,10

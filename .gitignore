@@ -11,6 +11,8 @@ data/**/*.duckdb
 
 # Track README and manifest JSONs, ignore everything else
 !data/README.md
+!data/results/*.csv
+!data/results/**/*.csv
 
 # DuckDB databases
 *.duckdb
