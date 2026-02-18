@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Training-based vs Training-free Differential Privacy for Data Synthesis</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a href="#overview">Overview</a>
+      <a href="#methods">Methods</a>
+      <a href="#results">Results</a>
+      <a href="#explore">Explore</a>
+      <a href="#takeaways">Takeaways</a>
+      <a href="#links">Links</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="section hero" id="overview">
+      <div class="hero-left">
+        <h1>Can we share device telemetry safely?</h1>
+        <p class="lead">
+          We compared training-based (DP-SGD) and training-free (Private Evolution) approaches
+          for differentially private synthetic data on multi-table device telemetry, and tested utility
+          using a production-style SQL benchmark.
+        </p>
+        <div class="cta">
+          <a class="button" href="../report/q2-report.pdf" target="_blank" rel="noopener">Read the Report (PDF)</a>
+          <a class="button button-secondary" href="https://github.com/mekapur/DSC180B-Q2" target="_blank" rel="noopener">View Code</a>
+        </div>
+        <p class="small">
+          Audience note: this page is written for a general reader. Technical details are available in the report.
+        </p>
+      </div>
+      <div class="hero-right">
+        <img class="hero-img" src="assets/hero.png" alt="Project overview figure" />
+        <p class="caption">Figure: project overview and evaluation workflow.</p>
+      </div>
+    </section>
+
+    <!-- METHODS -->
+    <section class="section" id="methods">
+      <h2>Methods</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>Training-based: DP-SGD + VAE</h3>
+          <p>
+            We trained a differentially private variational autoencoder using DP-SGD.
+            A wide table representation aims to preserve cross-table relationships.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Training-free: Private Evolution</h3>
+          <p>
+            An LLM generates many candidate records, then a DP selection step chooses candidates
+            that best match real data under a workload-aware distance.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Baselines</h3>
+          <p>
+            We compared against per-table DP synthesis and MST (marginal-based) synthesis to understand
+            utility and join behavior.
+          </p>
+        </div>
+      </div>
+
+      <details class="details">
+        <summary>What is differential privacy (plain language)?</summary>
+        <p>
+          Differential privacy adds carefully calibrated randomness so that the output of an algorithm
+          does not reveal whether any single person (or device) is in the dataset. It enables learning
+          population patterns while limiting individual leakage.
+        </p>
+      </details>
+    </section>
+
+    <!-- RESULTS (static highlights) -->
+    <section class="section" id="results">
+      <h2>Key Results</h2>
+      <ul class="bullets">
+        <li>Per-table DP-SGD and MST each passed 6 of 21 benchmark queries.</li>
+        <li>Wide-table DP-VAE and Private Evolution were evaluated on 8 queries due to schema constraints, passing 1/8 and 2/8 respectively.</li>
+        <li>Join-heavy aggregate queries were hardest: sparsity collapses continuous metrics in wide-table synthesis, while per-table synthesis breaks cross-table relationships.</li>
+      </ul>
+
+      <div class="callout">
+        <p><strong>Tip:</strong> Scroll down to explore interactive comparisons of real vs synthetic plots and query-by-query results.</p>
+      </div>
+    </section>
+
+    <!-- EXPLORE (Option A + B) -->
+    <section class="section" id="explore">
+      <h2>Explore the Results</h2>
+
+      <!-- Option B: Query slider driving content -->
+      <div class="explore-panel">
+        <div class="explore-header">
+          <h3>Query Explorer</h3>
+          <p class="small">Use the slider to view a query summary and an associated figure.</p>
+        </div>
+
+        <div class="slider-row">
+          <label for="queryRange"><strong>Query:</strong> <span id="queryLabel">Loading…</span></label>
+          <input id="queryRange" type="range" min="0" max="0" value="0" step="1" />
+        </div>
+
+        <div class="query-card" id="queryCard">
+          <div>
+            <p class="meta"><span id="queryType"> </span></p>
+            <p id="queryDesc"> </p>
+            <div class="scores" id="queryScores"></div>
+          </div>
+          <div class="query-figure">
+            <img id="queryImg" src="" alt="Query figure" />
+            <p class="caption" id="queryCaption"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Option A: before/after image compare -->
+      <div class="explore-panel">
+        <div class="explore-header">
+          <h3>Real vs Synthetic (Drag to Compare)</h3>
+          <p class="small">Drag the handle to compare the same plot for real and synthetic data.</p>
+        </div>
+
+        <div class="compare-grid">
+          <div class="compare-block">
+            <h4>Example 1: Browser Histogram</h4>
+            <div class="img-compare" data-left-label="Real" data-right-label="Synthetic">
+              <img class="img-compare__base" src="assets/slider/q_browserhist_real.png" alt="Real histogram" />
+              <div class="img-compare__overlay">
+                <img src="assets/slider/q_browserhist_synth.png" alt="Synthetic histogram" />
+              </div>
+              <div class="img-compare__handle" role="slider" aria-label="Image comparison handle"></div>
+            </div>
+            <p class="caption">Swap these images to your best pass example.</p>
+          </div>
+
+          <div class="compare-block">
+            <h4>Example 2: RAM Histogram</h4>
+            <div class="img-compare" data-left-label="Real" data-right-label="Synthetic">
+              <img class="img-compare__base" src="assets/slider/q_ramhist_real.png" alt="Real histogram" />
+              <div class="img-compare__overlay">
+                <img src="assets/slider/q_ramhist_synth.png" alt="Synthetic histogram" />
+              </div>
+              <div class="img-compare__handle" role="slider" aria-label="Image comparison handle"></div>
+            </div>
+            <p class="caption">Swap these images to a contrast example (where a method fails).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAKEAWAYS -->
+    <section class="section" id="takeaways">
+      <h2>Discussion and Takeaways</h2>
+      <ul class="bullets">
+        <li>Independent per-table synthesis can improve within-table fidelity but breaks cross-table correlations, hurting joins.</li>
+        <li>Wide-table training preserves shared structure but extreme sparsity and zero-inflation collapse continuous features.</li>
+        <li>Training-free PE can help some distributions, but category support mismatch limits aggregate and geo-style queries.</li>
+      </ul>
+
+      <h2>Conclusion</h2>
+      <ul class="bullets">
+        <li>Per-table DP-SGD and MST passed 6/21 queries, while wide-table DP-VAE and PE passed 1/8 and 2/8 evaluated queries.</li>
+        <li>Join-heavy aggregates remain the core challenge; hybrid routing by query type improves overall passes and motivates relational DP synthesis as the next step.</li>
+      </ul>
+    </section>
+
+    <!-- LINKS -->
+    <section class="section" id="links">
+      <h2>Links</h2>
+      <ul class="bullets">
+        <li><a href="../report/q2-report.pdf" target="_blank" rel="noopener">Full Report (PDF)</a></li>
+        <li><a href="https://github.com/mekapur/DSC180B-Q2" target="_blank" rel="noopener">GitHub Repository</a></li>
+      </ul>
+
+      <footer class="footer">
+        <p class="small">Made for DSC180B. Contact: add team emails or LinkedIn here.</p>
+      </footer>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
