@@ -22,7 +22,7 @@ This project uses [uv](https://docs.astral.sh/uv/) for package management.
 ### Dependencies
 
 This project requires **Python >= 3.12**.
-All required Python dependencies for this project are declared in the 'pyproject.toml' file and are automatically installed during environment setup using 'uv'.
+All required Python dependencies for this project are declared in the `pyproject.toml` file and are automatically installed during environment setup using `uv`.
 
 - duckdb >= 1.4.4
 - ipykernel >= 7.2.0
@@ -42,7 +42,8 @@ Development and testing dependencies:
 
 - pytest >= 9.0.2
 
-No manual installation of these packages is required. Running the setup steps below will create a virtual environment and install all required dependencies directly from 'pyproject.toml'.
+No manual installation of these packages is required. Running the setup steps below will create a virtual environment and install all required dependencies directly from `pyproject.toml`.
+
 1. Install uv:
 
    ```bash
