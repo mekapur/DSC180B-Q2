@@ -106,11 +106,11 @@
           <div class="compare-panel">
             <h4 style="margin: 0 0 12px;">Browser Histogram: Real vs. Synthetic</h4>
             <div class="img-compare" data-left-label="Real" data-right-label="Synthetic" style="height: 350px;">
-              <div style="width: 100%; height: 100%; background: var(--card); display: flex; align-items: center; justify-content: center; color: var(--muted);">
+              <div style="width: 100%; height: 100%; background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--muted);">
                 <p>Image: q_browserhist_real.png</p>
               </div>
               <div class="img-compare__overlay" style="width: 50%;">
-                <div style="width: 100%; height: 100%; background: var(--card); display: flex; align-items: center; justify-content: center; color: var(--muted);">
+                <div style="width: 100%; height: 100%; background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--muted);">
                   <p>Image: q_browserhist_synth.png</p>
                 </div>
               </div>
