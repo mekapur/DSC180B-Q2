@@ -217,17 +217,9 @@ def compute_normalized_errors(
             baseline_err = abs(baseline_val)
             method_err = abs(method_val)
 
-        # Compute normalized error
-        if abs(baseline_err) < 1e-10:
-            # Baseline variation is ~0, can't normalize meaningfully
-            # If method error is also ~0, that's perfect (normalized = 0)
-            # If method error is large, that's bad (normalized = inf)
-            if method_err < 1e-10:
-                normalized = 0.0
-            else:
-                normalized = float("inf")
-        else:
-            normalized = method_err / abs(baseline_err)
+        # Compute normalized error with eta stabilizer (matches paper Eq. 6)
+        ETA = 1e-8
+        normalized = method_err / (abs(baseline_err) + ETA)
 
         rows.append({
             "query": query,
@@ -351,8 +343,8 @@ def main():
     print("=" * 60)
 
     if len(norm_df) > 0:
-        # Filter out infinities for summary stats
-        finite_df = norm_df[np.isfinite(norm_df["normalized_error"])]
+        # With eta stabilizer, all values are finite — no need to filter infinities
+        finite_df = norm_df
 
         # Per-method summary
         print("\n--- Per-method mean normalized error ---")
