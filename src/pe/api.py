@@ -223,8 +223,16 @@ def _build_schema_description(real_df: pd.DataFrame) -> str:
     The group sparsity is still computed from the real data for accuracy.
     """
     group_sparsity = _compute_group_sparsity(real_df)
+    # Merge browser and webcat into a single combined group to match the
+    # 7-group definition in the prompt (browser+webcat is one group).
+    merged = {}
+    for g, pct in sorted(group_sparsity.items()):
+        if g in ("browser", "webcat"):
+            merged["browser+webcat"] = max(merged.get("browser+webcat", 0), pct)
+        else:
+            merged[g] = pct
     sparsity_info = ", ".join(
-        f"{g}: {pct}%" for g, pct in sorted(group_sparsity.items())
+        f"{g}: {pct}%" for g, pct in sorted(merged.items())
     )
     return f"{_DISTRIBUTION_PROMPT}\nReal group sparsity: {sparsity_info}"
 
