@@ -64,10 +64,6 @@
                 <p id="queryDesc"></p>
                 <div class="scores" id="queryScores"></div>
               </div>
-              <div class="query-figure">
-                <img id="queryImg" src="" alt="Query figure" style="width: 100%; border-radius: 8px; background: var(--card);" />
-                <p class="caption" id="queryCaption"></p>
-              </div>
             </div>
           </div>
         `;
