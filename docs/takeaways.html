@@ -6,7 +6,7 @@
   <title>Takeaways | DP Synthesis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-page="takeaways">
@@ -14,7 +14,7 @@
 
   <main id="main-content">
     <section class="section">
-      <h1>Discussion &amp; Takeaways</h1>
+      <h1>Discussion &amp; takeaways</h1>
       <p class="lead">
         Lessons learned, practical recommendations, and future directions from comparing
         training-based and training-free DP synthesis.
@@ -23,9 +23,9 @@
 
     <!-- KEY TAKEAWAYS -->
     <section class="section">
-      <h2>Key Takeaways</h2>
+      <h2>Key takeaways</h2>
 
-      <h3>1. Per-Table Independence Breaks Cross-Table Queries</h3>
+      <h3>1. Per-table independence breaks cross-table queries</h3>
       <p>Per-table DP-SGD and MST generated high-fidelity data within individual tables but failed on queries
          joining multiple tables. Foreign-key mismatches caused inflated relative errors and low Jaccard overlap.</p>
       <div class="callout">
@@ -33,7 +33,7 @@
         Future methods must reason about foreign-key relationships directly.</p>
       </div>
 
-      <h3>2. Wide-Table Sparsity Collapses Continuous Metrics</h3>
+      <h3>2. Wide-table sparsity collapses continuous metrics</h3>
       <p>Flattening all tables into one wide table introduced extreme sparsity. The VAE encoded most columns
          as near-zero, destroying continuous distributions (power consumption, network throughput, RAM usage).</p>
       <div class="callout-warn callout">
@@ -41,16 +41,16 @@
         without structural preprocessing (e.g., graph-based encoding).</p>
       </div>
 
-      <h3>3. Training-Free Methods Have a Knowledge Ceiling</h3>
+      <h3>3. Training-free methods have a knowledge ceiling</h3>
       <p>Private Evolution relied on an LLM's pre-trained knowledge. When real data contained categories unseen
          by the model (geographic regions, rare OS versions, niche applications), the method produced 0% group
          coverage on those queries.</p>
 
-      <h3>4. Simple Distributions Are Tractable</h3>
+      <h3>4. Simple distributions are tractable</h3>
       <p>Queries on categorical distributions with few categories (browser usage, vendor percentages) passed
          across multiple methods. This suggests distribution synthesis is largely solved for non-sparse data.</p>
 
-      <h3>5. DP Noise Is Necessary But Limiting</h3>
+      <h3>5. DP noise is necessary but limiting</h3>
       <p>Even at &epsilon;&nbsp;=&nbsp;4.0 (moderate privacy), noise masked subtle correlations and rare subgroups.
          Query-specific privacy budgets via advanced composition may help allocate noise more efficiently.</p>
     </section>
@@ -78,7 +78,7 @@
 
     <!-- COMPARATIVE TABLE -->
     <section class="section">
-      <h2>Method Comparison</h2>
+      <h2>Method comparison</h2>
       <div class="table-wrapper">
         <table>
           <thead>
@@ -100,9 +100,9 @@
 
     <!-- RECOMMENDATIONS -->
     <section class="section">
-      <h2>Recommendations for Practitioners</h2>
+      <h2>Recommendations for practitioners</h2>
 
-      <h3>Hybrid Routing Strategy</h3>
+      <h3>Hybrid routing strategy</h3>
       <p>No single method dominates. We recommend routing queries to different methods based on type:</p>
       <ul class="bullets">
         <li><strong>Simple aggregates &amp; distributions:</strong> MST (fast, interpretable, good TV scores).</li>
@@ -111,7 +111,7 @@
         <li><strong>Cross-table joins:</strong> Requires future relational DP methods; current approaches are insufficient.</li>
       </ul>
 
-      <h3>Privacy Configuration</h3>
+      <h3>Privacy configuration</h3>
       <ul class="bullets">
         <li>Start with &epsilon;&nbsp;=&nbsp;4.0 for moderate privacy. Lower for stronger guarantees.</li>
         <li>Use R&eacute;nyi DP accountants for tighter composition across multiple queries.</li>
@@ -123,20 +123,20 @@
 
     <!-- FUTURE WORK -->
     <section class="section">
-      <h2>Future Directions</h2>
+      <h2>Future directions</h2>
 
-      <h3>Relational Differential Privacy</h3>
+      <h3>Relational differential privacy</h3>
       <p>Develop methods that reason about foreign-key relationships directly, applying DP at the join level.
          This is the most impactful open problem identified by our work.</p>
 
-      <h3>Domain-Adapted LLMs for PE</h3>
+      <h3>Domain-adapted LLMs for PE</h3>
       <p>Fine-tune LLMs on domain-specific schemas and category lists to improve Private Evolution's coverage
          of rare values.</p>
 
-      <h3>Multi-Epsilon Evaluation</h3>
+      <h3>Multi-epsilon evaluation</h3>
       <p>Characterize the privacy-utility frontier by sweeping &epsilon; from 0.1 to 10 for each method.</p>
 
-      <h3>Broader Datasets</h3>
+      <h3>Broader datasets</h3>
       <p>Validate findings on healthcare, financial, and census datasets to test generalizability.</p>
     </section>
 
@@ -163,7 +163,7 @@
 
     <!-- REFERENCES -->
     <section class="section">
-      <h2>References &amp; Resources</h2>
+      <h2>References &amp; resources</h2>
       <ul class="bullets">
         <li>Dwork, C., &amp; Roth, A. (2014). <em>The Algorithmic Foundations of Differential Privacy.</em> Foundations and Trends in Theoretical Computer Science.</li>
         <li>Abadi, M., et al. (2016). <em>Deep Learning with Differential Privacy.</em> CCS 2016.</li>

@@ -6,7 +6,7 @@
   <title>Explore | DP Synthesis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 </head>
@@ -15,7 +15,7 @@
 
   <main id="main-content">
     <section class="section">
-      <h1>Explore the Results</h1>
+      <h1>Explore the results</h1>
       <p class="lead">
         Scroll through interactive visualizations: see our workflow, browse individual queries,
         compare real vs. synthetic distributions, and review the final scorecard.
@@ -27,7 +27,7 @@
       <div class="scrolly-text">
         <!-- STEP 1 -->
         <section class="step" data-step="step-hero">
-          <h2>Step 1: Project Overview</h2>
+          <h2>Step 1: Project overview</h2>
           <p>We compare four approaches to differentially private synthetic data generation on multi-table telemetry:</p>
           <ul>
             <li><strong>Wide-Table DP-VAE:</strong> Train a VAE on all columns flattened into one table.</li>
@@ -40,7 +40,7 @@
 
         <!-- STEP 2 -->
         <section class="step" data-step="step-queries">
-          <h2>Step 2: Query Explorer</h2>
+          <h2>Step 2: Query explorer</h2>
           <p>Use the slider on the right to browse all 21 benchmark queries. Each card shows:</p>
           <ul>
             <li>Query name and type (Agg+Join, Geo/Demo, Histogram, Pivot, Top-k)</li>
@@ -52,7 +52,7 @@
 
         <!-- STEP 3 -->
         <section class="step" data-step="step-histogram">
-          <h2>Step 3: Distribution Comparison</h2>
+          <h2>Step 3: Distribution comparison</h2>
           <p>This interactive chart compares real distributions against each synthetic method.</p>
           <ul>
             <li><strong>Select a dataset:</strong> Browser usage, RAM utilization, or display vendors.</li>
@@ -64,7 +64,7 @@
 
         <!-- STEP 4 -->
         <section class="step" data-step="step-compare">
-          <h2>Step 4: Side-by-Side Comparison</h2>
+          <h2>Step 4: Side-by-side comparison</h2>
           <p>The panel shows a visual comparison of real vs. synthetic query results. Look for:</p>
           <ul>
             <li><strong>Shape match:</strong> Does the synthetic distribution follow the same shape?</li>
@@ -76,7 +76,7 @@
 
         <!-- STEP 5 -->
         <section class="step" data-step="step-scoreboard">
-          <h2>Step 5: Final Scorecard</h2>
+          <h2>Step 5: Final scorecard</h2>
           <p>The final tally: how many queries each method passed out of its evaluated set.</p>
           <p><strong>Key insight:</strong> Per-table DP-SGD and MST tied at 6/21, but excel at different query types.
              Simple distributions pass; complex joins remain hard across all methods.</p>

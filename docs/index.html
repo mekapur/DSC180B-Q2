@@ -6,7 +6,7 @@
   <title>Differential Privacy for Data Synthesis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-page="index">
@@ -33,7 +33,7 @@
 
     <!-- KEY RESULTS AT A GLANCE -->
     <section class="section" id="at-a-glance">
-      <h2>Results at a Glance</h2>
+      <h2>Results at a glance</h2>
       <p>Each method was evaluated on a shared benchmark of SQL queries. A query "passes" when all relevant
          metrics (relative error, total variation, Jaccard similarity, Spearman correlation) fall within
          pre-defined thresholds. Privacy budget: &epsilon;&nbsp;=&nbsp;4.0, &delta;&nbsp;=&nbsp;10<sup>&minus;5</sup>.</p>
@@ -65,7 +65,7 @@
 
     <!-- WHY THIS MATTERS -->
     <section class="section" id="motivation">
-      <h2>Why This Matters</h2>
+      <h2>Why this matters</h2>
       <p>
         Device telemetry&mdash;hardware specs, usage patterns, network activity&mdash;helps product teams
         improve software, but it contains sensitive information about individuals. Releasing raw telemetry
@@ -88,7 +88,7 @@
 
     <!-- NAVIGATE THE SITE -->
     <section class="section" id="quick-nav">
-      <h2>Explore the Project</h2>
+      <h2>Explore the project</h2>
       <div class="cards">
         <a class="card" href="methods.html">
           <h3>Methods</h3>
@@ -117,10 +117,10 @@
 
     <!-- SCOPE -->
     <section class="section" id="scope">
-      <h2>Project Scope</h2>
+      <h2>Project scope</h2>
       <div class="compare-grid">
         <div>
-          <h3>What We Did</h3>
+          <h3>What we did</h3>
           <ul class="bullets">
             <li>Implemented four DP synthesis pipelines (Wide DP-VAE, Per-table DP-SGD, MST, Private Evolution).</li>
             <li>Designed a 21-query SQL benchmark covering aggregates, distributions, rankings, and pivots.</li>
@@ -129,7 +129,7 @@
           </ul>
         </div>
         <div>
-          <h3>What We Did Not Do</h3>
+          <h3>What we did not do</h3>
           <ul class="bullets">
             <li>Sweep over multiple &epsilon; values (fixed at 4.0 for fair comparison).</li>
             <li>Implement relational DP methods that reason about foreign keys directly.</li>

@@ -74,7 +74,7 @@
           <div class="histogram-panel">
             <div style="margin-bottom: 12px;">
               <label for="histogramDataset" style="display: block; margin-bottom: 6px;"><strong>Dataset:</strong></label>
-              <select id="histogramDataset" style="width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 6px;">
+              <select id="histogramDataset" style="width: 100%; padding: 6px; border: 1px solid var(--border);">
                 <option value="popular_browsers">Browser Distribution</option>
                 <option value="ram_utilization">RAM Utilization</option>
                 <option value="display_vendors">Display Vendors</option>
@@ -82,7 +82,7 @@
             </div>
             <div style="margin-bottom: 12px;">
               <label for="histogramMethod" style="display: block; margin-bottom: 6px;"><strong>Method:</strong></label>
-              <select id="histogramMethod" style="width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 6px;">
+              <select id="histogramMethod" style="width: 100%; padding: 6px; border: 1px solid var(--border);">
                 <option value="MST">MST</option>
                 <option value="PerTable_DPSGD">Per-Table DP-SGD</option>
                 <option value="Wide_DPVAE">Wide-Table DP-VAE</option>
@@ -125,24 +125,24 @@
         html = `
           <div class="scoreboard-panel">
             <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
-              <div class="score-card" style="text-align: center; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--card);">
+              <div class="score-card" style="text-align: center; padding: 16px; border: 1px solid var(--border); background: var(--surface);">
                 <h4 style="margin: 0 0 6px;">Per-Table DP-SGD</h4>
-                <p style="font-size: 1.8rem; font-weight: bold; margin: 0; color: #2563eb;">6/21</p>
+                <p style="font-size: 1.8rem; font-weight: 400; margin: 0; color: var(--text);">6/21</p>
                 <p class="small" style="margin: 4px 0 0;">Queries passed</p>
               </div>
-              <div class="score-card" style="text-align: center; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--card);">
+              <div class="score-card" style="text-align: center; padding: 16px; border: 1px solid var(--border); background: var(--surface);">
                 <h4 style="margin: 0 0 6px;">MST (Marginal)</h4>
-                <p style="font-size: 1.8rem; font-weight: bold; margin: 0; color: #2563eb;">6/21</p>
+                <p style="font-size: 1.8rem; font-weight: 400; margin: 0; color: var(--text);">6/21</p>
                 <p class="small" style="margin: 4px 0 0;">Queries passed</p>
               </div>
-              <div class="score-card" style="text-align: center; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--card);">
+              <div class="score-card" style="text-align: center; padding: 16px; border: 1px solid var(--border); background: var(--surface);">
                 <h4 style="margin: 0 0 6px;">Wide-Table DP-VAE</h4>
-                <p style="font-size: 1.8rem; font-weight: bold; margin: 0; color: #dc2626;">1/8</p>
+                <p style="font-size: 1.8rem; font-weight: 400; margin: 0; color: var(--text);">1/8</p>
                 <p class="small" style="margin: 4px 0 0;">Evaluated subset</p>
               </div>
-              <div class="score-card" style="text-align: center; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--card);">
+              <div class="score-card" style="text-align: center; padding: 16px; border: 1px solid var(--border); background: var(--surface);">
                 <h4 style="margin: 0 0 6px;">Private Evolution</h4>
-                <p style="font-size: 1.8rem; font-weight: bold; margin: 0; color: #dc2626;">2/8</p>
+                <p style="font-size: 1.8rem; font-weight: 400; margin: 0; color: var(--text);">2/8</p>
                 <p class="small" style="margin: 4px 0 0;">Evaluated subset</p>
               </div>
             </div>

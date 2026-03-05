@@ -6,7 +6,7 @@
   <title>Results | DP Synthesis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-page="results">
@@ -23,7 +23,7 @@
 
     <!-- PASS RATES -->
     <section class="section">
-      <h2>Overall Pass Rates</h2>
+      <h2>Overall pass rates</h2>
       <p>Wide-table DP-VAE and Private Evolution were only evaluated on 8 queries (single-table only) due
          to schema constraints. Per-table DP-SGD and MST were evaluated on all 21.</p>
       <div class="results-summary">
@@ -54,7 +54,7 @@
 
     <!-- CONTINUOUS METRICS -->
     <section class="section">
-      <h2>Continuous Performance Metrics</h2>
+      <h2>Continuous performance metrics</h2>
       <p>Beyond pass/fail, we report average scores and error metrics to understand <em>how close</em> each method gets.</p>
       <div class="table-wrapper">
         <table>
@@ -104,7 +104,7 @@
 
     <!-- PER-QUERY TABLE -->
     <section class="section">
-      <h2>Per-Query Breakdown</h2>
+      <h2>Per-query breakdown</h2>
       <p>Full scores for all 21 queries. Green = pass, red = fail, gray = not evaluated (N/A).</p>
       <div class="table-wrapper" id="queryTable">
         <!-- Populated by JavaScript from results.json -->
@@ -123,12 +123,12 @@
       <h2>Visualizations</h2>
 
       <div class="chart-container">
-        <p class="chart-title">Pass Rate by Method</p>
+        <p class="chart-title">Pass rate by method</p>
         <div id="chartPassRate" style="width:100%;height:300px;" role="img" aria-label="Bar chart showing pass rates: Per-table DP-SGD 6/21, MST 6/21, Wide DP-VAE 1/8, Private Evolution 2/8"></div>
       </div>
 
       <div class="chart-container">
-        <p class="chart-title">Average Score by Query Type</p>
+        <p class="chart-title">Average score by query type</p>
         <div id="chartByType" style="width:100%;height:350px;" role="img" aria-label="Grouped bar chart showing average scores broken down by query type for each method"></div>
       </div>
     </section>
@@ -137,23 +137,23 @@
 
     <!-- KEY INSIGHTS -->
     <section class="section">
-      <h2>Key Insights</h2>
+      <h2>Key insights</h2>
 
-      <h3>What Worked</h3>
+      <h3>What worked</h3>
       <ul class="bullets">
         <li><strong>Simple distributions:</strong> Histogram queries (browser usage, RAM utilization) passed for MST and Per-table DP-SGD. Total Variation distances were low (&lt; 0.15).</li>
         <li><strong>Single-table aggregates:</strong> Queries on independent features within one table were well-preserved by Per-table DP-SGD.</li>
         <li><strong>MST on structured data:</strong> Marginal-based synthesis excelled at queries with high-cardinality group-by keys.</li>
       </ul>
 
-      <h3>What Failed</h3>
+      <h3>What failed</h3>
       <ul class="bullets">
         <li><strong>Join-heavy aggregates:</strong> Queries requiring cross-table joins (e.g., "avg power by CPU type and country") failed across all methods due to foreign-key mismatches.</li>
         <li><strong>Wide-table sparsity:</strong> DP-VAE on the wide table suffered from zero-inflation&mdash;continuous distributions collapsed to near-zero values.</li>
         <li><strong>LLM knowledge gaps (PE):</strong> Private Evolution could not synthesize categories unseen in the LLM's training data (rare geographic regions, niche applications).</li>
       </ul>
 
-      <h3>Interpretation Guide</h3>
+      <h3>Interpretation guide</h3>
       <div class="callout">
         <p><strong>What's meaningful:</strong> Differences in pass rates of 2+ queries are significant. Score differences &lt; 0.05 are within noise.
         The gap between Per-table/MST (6/21) and Wide/PE (1&ndash;2/8) reflects a fundamental structural limitation, not just noise.</p>
@@ -164,7 +164,7 @@
 
     <!-- FAILURE MODES -->
     <section class="section">
-      <h2>Failure Modes</h2>
+      <h2>Failure modes</h2>
 
       <h3>1. Sparsity Collapse (Wide-Table DP-VAE)</h3>
       <p>Flattening 8 tables into one wide table creates extreme sparsity. The VAE encodes most columns
@@ -187,7 +187,7 @@
 
     <!-- ITERATION -->
     <section class="section">
-      <h2>What Changed After Early Attempts</h2>
+      <h2>What changed after early attempts</h2>
       <ul class="bullets">
         <li><strong>Initial approach:</strong> We started with only the wide-table DP-VAE. Pass rate was 1/8, prompting us to explore per-table splitting.</li>
         <li><strong>Adding per-table:</strong> Splitting improved single-table queries dramatically but revealed the join problem.</li>

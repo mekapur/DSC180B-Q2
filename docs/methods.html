@@ -6,7 +6,7 @@
   <title>Methods | DP Synthesis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-page="methods">
@@ -22,7 +22,7 @@
 
     <!-- DP PRIMER -->
     <section class="section">
-      <h2>What Is Differential Privacy?</h2>
+      <h2>What is differential privacy?</h2>
       <p>
         Differential privacy (DP) is a mathematical framework that quantifies privacy loss. It adds
         carefully calibrated noise so that an algorithm's output is nearly identical whether or not any
@@ -86,7 +86,7 @@
         to our evaluation&mdash;many benchmark queries require joining 2&ndash;3 tables.
       </p>
 
-      <h3>Data Handling</h3>
+      <h3>Data handling</h3>
       <ul class="bullets">
         <li><strong>No data leakage:</strong> Synthetic data is generated from the full dataset; benchmark queries test statistical fidelity, not prediction.</li>
         <li><strong>No private data in outputs:</strong> All published results are aggregate statistics or synthetic data. No individual records are exposed.</li>
@@ -98,7 +98,7 @@
 
     <!-- FOUR METHODS -->
     <section class="section">
-      <h2>Synthesis Approaches</h2>
+      <h2>Synthesis approaches</h2>
 
       <h3>1. Wide-Table DP-VAE</h3>
       <p>
@@ -147,13 +147,13 @@
 
     <!-- EVALUATION FRAMEWORK -->
     <section class="section">
-      <h2>Evaluation Framework</h2>
+      <h2>Evaluation framework</h2>
       <p>
         We designed a benchmark of <strong>21 SQL queries</strong> spanning five types, each with
         type-appropriate metrics and pass/fail thresholds.
       </p>
 
-      <h3>Query Types</h3>
+      <h3>Query types</h3>
       <div class="table-wrapper">
         <table>
           <thead>
@@ -169,7 +169,7 @@
         </table>
       </div>
 
-      <h3>Metrics &amp; Thresholds</h3>
+      <h3>Metrics &amp; thresholds</h3>
       <div class="table-wrapper">
         <table>
           <thead>
@@ -188,7 +188,7 @@
         See the <a href="results.html">Results</a> page for per-query scores.
       </p>
 
-      <h3>What the Team Built vs. Reused</h3>
+      <h3>What the team built vs. reused</h3>
       <ul class="bullets">
         <li><strong>Built:</strong> The 21-query benchmark, the Per-table DP-SGD pipeline, the Private Evolution integration, and the evaluation harness.</li>
         <li><strong>Reused:</strong> The MST implementation from the

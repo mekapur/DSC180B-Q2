@@ -6,7 +6,7 @@
   'use strict';
 
   const METHODS = ['Wide DP-SGD', 'Per-table DP-SGD', 'MST', 'Private Evolution'];
-  const COLORS  = ['#6366f1', '#2563eb', '#16a34a', '#d97706'];
+  const COLORS  = ['#6366f1', '#1a1a1a', '#2d6a4f', '#7c5e10'];
 
   document.addEventListener('DOMContentLoaded', async () => {
     const page = document.body.getAttribute('data-page');
