@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 from openai import APITimeoutError, AsyncOpenAI, LengthFinishReasonError, OpenAI
@@ -15,16 +15,106 @@ from .distance import CAT_COLS, NUMERIC_COLS
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Constrained categorical values derived from the real DCA telemetry data.
+# Using Literal types forces OpenAI's structured outputs to only produce
+# these exact values, eliminating hallucinated categories entirely.
+# ---------------------------------------------------------------------------
+
+VALID_CHASSIS = [
+    "2 in 1", "Desktop", "Intel NUC/STK", "Notebook",
+    "Other/Unknown", "Tablet", "Detachable",
+]
+
+VALID_COUNTRIES = [
+    "Argentina", "Australia", "Austria", "Bangladesh", "Belgium", "Brazil",
+    "Canada", "Chile", "China", "Colombia", "Czech Republic", "Denmark",
+    "Ecuador", "Egypt", "France", "Germany", "Greece", "Hong Kong",
+    "Hungary", "India", "Indonesia", "Israel", "Italy", "Japan",
+    "Korea, Republic of", "Malaysia", "Mexico", "Netherlands", "Norway",
+    "Other", "Pakistan", "Peru", "Philippines", "Poland", "Portugal",
+    "Romania", "Russian Federation", "Saudi Arabia", "Singapore",
+    "South Africa", "Spain", "Sweden", "Switzerland",
+    "Taiwan, Province of China", "Thailand", "Turkey", "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom of Great Britain and Northern Ireland",
+    "United States of America", "Viet Nam",
+]
+
+VALID_OS = ["Win10", "Win11", "Win8.1", "Win Server", "n/a"]
+
+VALID_PERSONA = [
+    "Casual Gamer", "Casual User", "Communication", "Content Creator/IT",
+    "Entertainment", "File & Network Sharer", "Gamer",
+    "Office/Productivity", "Unknown", "Web User", "Win Store App User",
+]
+
+VALID_VENDORS = [
+    "Lenovo", "Dell Inc.", "HP", "ASUSTeK COMPUTER INC.", "Acer",
+    "Microsoft Corporation", "Samsung", "HUAWEI", "MSI",
+    "Micro-Star International", "Toshiba", "TOSHIBA", "Sony",
+    "Hewlett-Packard", "Fujitsu", "LG Electronics", "Razer",
+    "Panasonic", "Dynabook", "Intel", "Other",
+]
+
+VALID_CPUNAMES = [
+    "Intel Core i5", "Intel Core i7", "Intel Core i3", "Intel Core i9",
+    "Intel Celeron", "Intel Pentium", "Intel Core Ultra 5",
+    "Intel Core Ultra 7", "Intel Core Ultra 9", "Intel Xeon",
+    "Intel Atom", "Other",
+]
+
+VALID_CPUCODES = [
+    "Alder Lake", "Tiger Lake", "Comet Lake", "Ice Lake", "Raptor Lake",
+    "Whiskey Lake", "Coffee Lake", "Meteor Lake", "Kaby Lake",
+    "Skylake", "Cannon Lake", "Rocket Lake", "Jasper Lake",
+    "Gemini Lake", "Elkhart Lake", "Arrow Lake", "Lunar Lake", "Other",
+]
+
+VALID_CPU_FAMILY = [
+    "6th Gen", "7th Gen", "8th Gen", "9th Gen", "10th Gen",
+    "11th Gen", "12th Gen", "13th Gen", "14th Gen",
+    "Core Ultra Series 1", "Core Ultra Series 2",
+    "Pentium/Celeron", "Xeon", "Atom", "Other",
+]
+
+VALID_PROCESSORS = [
+    "i5-1135G7", "i7-1165G7", "i5-10210U", "i7-10510U", "i5-8250U",
+    "i7-8550U", "i5-1235U", "i5-1240P", "i7-1255U", "i7-1260P",
+    "i5-8265U", "i7-8565U", "i5-10310U", "i7-10610U", "i5-1145G7",
+    "i7-1185G7", "i5-1335U", "i7-1355U", "i5-1345U", "i7-1365U",
+    "Other",
+]
+
+# Build Literal types from valid value lists
+ChassisType = Literal[tuple(VALID_CHASSIS)]  # type: ignore[valid-type]
+CountryType = Literal[tuple(VALID_COUNTRIES)]  # type: ignore[valid-type]
+OsType = Literal[tuple(VALID_OS)]  # type: ignore[valid-type]
+PersonaType = Literal[tuple(VALID_PERSONA)]  # type: ignore[valid-type]
+VendorType = Literal[tuple(VALID_VENDORS)]  # type: ignore[valid-type]
+CpuNameType = Literal[tuple(VALID_CPUNAMES)]  # type: ignore[valid-type]
+CpuCodeType = Literal[tuple(VALID_CPUCODES)]  # type: ignore[valid-type]
+CpuFamilyType = Literal[tuple(VALID_CPU_FAMILY)]  # type: ignore[valid-type]
+ProcessorType = Literal[tuple(VALID_PROCESSORS)]  # type: ignore[valid-type]
+
+
 class TelemetryRecord(BaseModel):
-    chassistype: str
-    countryname_normalized: str
-    modelvendor_normalized: str
-    os: str
-    cpuname: str
-    cpucode: str
-    cpu_family: str
-    persona: str
-    processornumber: str
+    """Pydantic model with enum-constrained categoricals.
+
+    Uses Literal types to restrict outputs to only valid values from the real
+    dataset, eliminating hallucinated categories (e.g. "Workstation",
+    "Server/WS", "USA", "Japanese").
+    """
+
+    chassistype: ChassisType
+    countryname_normalized: CountryType
+    modelvendor_normalized: VendorType
+    os: OsType
+    cpuname: CpuNameType
+    cpucode: CpuCodeType
+    cpu_family: CpuFamilyType
+    persona: PersonaType
+    processornumber: ProcessorType
     ram: float
     net_nrs: float
     net_received_bytes: float
@@ -91,8 +181,10 @@ class RecordsBatch(BaseModel):
 
 
 INSTRUCTIONS = (
-    "You generate synthetic tabular data. "
-    "Produce realistic, diverse records following the schema and sparsity rules exactly."
+    "You are a tabular data generator. You output ONLY valid JSON conforming "
+    "to the provided schema. Do not add commentary, explanations, or any text "
+    "outside the JSON structure. Every field value must come from the allowed "
+    "set or be a realistic numeric value within the specified ranges."
 )
 
 
@@ -131,39 +223,89 @@ def _compute_group_sparsity(real_df: pd.DataFrame) -> dict[str, int]:
     return result
 
 
+# Distribution-aware prompt with real marginal percentages and sparsity examples
+_DISTRIBUTION_PROMPT = """You are generating synthetic Intel DCA telemetry records. Each record = one client system (Windows PC).
+
+CATEGORICAL DISTRIBUTIONS (match these frequencies):
+- chassistype: Notebook 72%, Desktop 18%, 2 in 1 6%, Intel NUC/STK 2%, Tablet 1%, Other/Unknown 1%
+- os: Win10 85%, Win11 10%, Win8.1 3%, Win Server 1%, n/a 1%
+- countryname_normalized: United States of America 22%, India 10%, China 7%, Germany 5%, United Kingdom of Great Britain and Northern Ireland 4%, Brazil 4%, Japan 3%, France 3%, Korea Republic of 2%, Italy 2%, Canada 2%, Australia 2%, Mexico 2%, Russian Federation 2%, Poland 1.5%, Netherlands 1.5%, Spain 1.5%, Turkey 1.5%, Indonesia 1%, Thailand 1%, Taiwan Province of China 1%, Sweden 1%, Switzerland 1%, Colombia 1%, other countries ~15% (spread across remaining countries in the enum)
+- persona: Casual User 27%, Communication 16%, Casual Gamer 16%, Office/Productivity 13%, Web User 8%, Entertainment 6%, Content Creator/IT 5%, Win Store App User 4%, Gamer 2%, File & Network Sharer 2%, Unknown 1%
+- modelvendor_normalized: Lenovo 22%, Dell Inc. 20%, HP 18%, ASUSTeK COMPUTER INC. 8%, Acer 7%, Microsoft Corporation 3%, Samsung 3%, HUAWEI 2%, MSI 2%, others smaller
+- ram: 8 (38%), 16 (28%), 4 (18%), 32 (7%), 12 (4%), 6 (2%), 64 (1%)
+
+NUMERIC RANGES (for nonzero values only):
+- net_received_bytes: 1e8 to 1e14 (median ~1e11), net_sent_bytes: 1e7 to 1e13 (median ~1e10), net_nrs: 100-50000
+- mem_avg_pct_used: 20-95 (median 55), mem_nrs: 100-50000, mem_sysinfo_ram: match ram in MB (e.g. ram=8 -> 8192)
+- batt_num_power_ons: 1-20 (median 3), batt_duration_mins: 10-600 (median 130)
+- web_chrome_duration/web_edge_duration/web_firefox_duration: 1e3 to 1e8 (ms)
+- webcat_* fields: 0.0-100.0 (percentage of browsing time; active webcat fields should sum to roughly 100)
+- onoff_on_time/off_time/mods_time/sleep_time: 0-1e7 (seconds)
+- disp_num_displays: 1-4, disp_total_duration_ac/dc: 1e3 to 1e8
+
+*** CRITICAL SPARSITY RULES (MOST IMPORTANT) ***
+There are 8 numeric groups: net, mem, batt, browser+webcat, onoff, disp, hw.
+Each system has data in EXACTLY 1 or 2 of these groups. ALL other groups MUST be exactly 0.
+
+Group definitions:
+- net: net_nrs, net_received_bytes, net_sent_bytes
+- mem: mem_nrs, mem_avg_pct_used, mem_sysinfo_ram
+- batt: batt_num_power_ons, batt_duration_mins
+- browser+webcat: web_chrome_duration, web_edge_duration, web_firefox_duration, web_total_duration, web_num_instances, AND all webcat_* fields
+- onoff: onoff_on_time, onoff_off_time, onoff_mods_time, onoff_sleep_time
+- disp: disp_num_displays, disp_total_duration_ac, disp_total_duration_dc
+- hw: psys_rap_nrs, psys_rap_avg, pkg_c0_nrs, pkg_c0_avg, avg_freq_nrs, avg_freq_avg, temp_nrs, temp_avg, pkg_power_nrs, pkg_power_avg
+
+Approximate group frequencies (what % of systems have data in each group):
+- net: 25%, mem: 22%, batt: 15% (Notebook/2-in-1 only), browser+webcat: 20%, onoff: 18%, disp: 10%, hw: <1%
+
+EXAMPLE of correct sparsity (system with net + mem active):
+- net_nrs=5000, net_received_bytes=5e10, net_sent_bytes=3e9 (NONZERO - active)
+- mem_nrs=5000, mem_avg_pct_used=62, mem_sysinfo_ram=16384 (NONZERO - active)
+- batt_num_power_ons=0, batt_duration_mins=0 (ZERO - inactive)
+- web_*=0, webcat_*=0 (all ZERO - inactive)
+- onoff_*=0 (all ZERO - inactive)
+- disp_*=0 (all ZERO - inactive)
+- hw fields=0 (all ZERO - inactive)
+
+EXAMPLE of correct sparsity (system with browser+webcat + onoff active):
+- net_*=0 (ZERO), mem_*=0 (ZERO), batt_*=0 (ZERO)
+- web_chrome_duration=5e6, web_total_duration=6e6, web_num_instances=150 (NONZERO)
+- webcat_entertainment_video_streaming=35, webcat_social_social_network=25, webcat_search=20, webcat_news=10, webcat_mail=10 (sum ~100)
+- onoff_on_time=3e6, onoff_off_time=1e6, onoff_mods_time=500000, onoff_sleep_time=2e6 (NONZERO)
+- disp_*=0 (ZERO), hw=0 (ZERO)
+
+VIOLATION: Setting net, mem, browser, AND onoff all nonzero for the same system. That is 4 active groups (max allowed is 2).
+
+ram is ALWAYS present and nonzero regardless of group activation.
+
+Do NOT inject your own assumptions. Follow the distributions and sparsity rules exactly."""
+
+
 def _build_schema_description(real_df: pd.DataFrame) -> str:
-    cat_info = []
-    for c in CAT_COLS:
-        if c not in real_df.columns:
-            continue
-        top_vals = real_df[c].value_counts().head(10).index.tolist()
-        cat_info.append(f"{c}: {json.dumps(top_vals)}")
+    """Build schema description with real distribution statistics.
 
+    Uses the static distribution prompt with real-world frequencies rather than
+    dynamically computing top-10 values (which lost long-tail coverage).
+    The group sparsity is still computed from the real data for accuracy.
+    """
     group_sparsity = _compute_group_sparsity(real_df)
-    num_groups = []
-    for gname, cols in _NUMERIC_GROUPS.items():
-        present = [c for c in cols if c in real_df.columns]
-        if present and gname in group_sparsity:
-            pct = group_sparsity[gname]
-            num_groups.append(f"{gname} ({pct}% of systems): {', '.join(present)}")
-
-    return (
-        "Intel telemetry. Each record represents one client system.\n"
-        "Categorical (pick from list): "
-        + "; ".join(cat_info)
-        + "\nram: integer GB (4/8/16/32/64), always present."
-        + "\nNumeric groups (all float>=0): "
-        + "; ".join(num_groups)
-        + "\nRULE: each system has data in 1-2 groups only. "
-        "Set all other groups to 0. hw group is <1% of systems."
+    sparsity_info = ", ".join(
+        f"{g}: {pct}%" for g, pct in sorted(group_sparsity.items())
     )
+    return f"{_DISTRIBUTION_PROMPT}\nReal group sparsity: {sparsity_info}"
 
 
 def _build_random_prompt(schema_desc: str, batch_size: int) -> str:
     return (
-        f"Generate exactly {batch_size} synthetic telemetry records.\n\n"
-        f"Schema:\n{schema_desc}\n\n"
-        f"Generate diverse, realistic records. Follow the sparsity rules strictly."
+        f"{schema_desc}\n\n"
+        f"Generate exactly {batch_size} synthetic telemetry records.\n"
+        f"Requirements:\n"
+        f"1. Each record MUST have exactly 1 or 2 active numeric groups (all others = 0).\n"
+        f"2. Vary countries broadly - use many different countries, not just top 3.\n"
+        f"3. Match the categorical frequency distributions above.\n"
+        f"4. ram is always nonzero (pick from 4, 8, 16, 32, 64 with given frequencies).\n"
+        f"5. Do not repeat the same combination of categoricals across records."
     )
 
 
@@ -171,15 +313,16 @@ def _build_variation_prompt(
     schema_desc: str, records: list[dict], n_variations: int
 ) -> str:
     return (
+        f"{schema_desc}\n\n"
         f"Below are {len(records)} telemetry records. For each, generate {n_variations} "
         f"variation(s) that are similar but slightly different.\n\n"
         f"Rules for variations:\n"
-        f"- Categorical values: may change to a similar value (e.g., nearby country, same OS family)\n"
+        f"- Categorical values: may change to a different valid value from the enum\n"
         f"- Numeric values: perturb by 10-30% (multiply by a random factor between 0.7 and 1.3)\n"
-        f"- Zero values MUST remain zero (preserve sparsity pattern)\n"
+        f"- Zero values MUST remain zero (preserve the sparsity pattern exactly)\n"
         f"- Non-zero values should remain non-zero\n"
-        f"- ram should stay at a standard size (4, 8, 16, 32, 64)\n\n"
-        f"Schema:\n{schema_desc}\n\n"
+        f"- ram should stay at a standard size (4, 8, 16, 32, 64)\n"
+        f"- Do NOT activate new numeric groups that were zero in the source\n\n"
         f"Source records:\n{json.dumps(records, indent=None)}\n\n"
         f"Return {len(records) * n_variations} variation records total."
     )
@@ -209,7 +352,7 @@ class PEApi:
     def __init__(
         self,
         real_df: pd.DataFrame,
-        model: str = "gpt-5-nano",
+        model: str = "gpt-4.1-mini",
         max_concurrent: int = 50,
     ):
         api_key = os.environ.get("OPENAI_API_KEY", "")
@@ -221,6 +364,10 @@ class PEApi:
         self.all_cols = CAT_COLS + NUMERIC_COLS
         self.present_cols = [c for c in self.all_cols if c in real_df.columns]
         self._is_reasoning = model.startswith("gpt-5") or model.startswith("o")
+        logger.info(
+            "PEApi initialized: model=%s, reasoning=%s, concurrent=%d",
+            model, self._is_reasoning, max_concurrent,
+        )
         self._strict_schema = _make_strict_schema()
 
     # ------------------------------------------------------------------ #
@@ -239,7 +386,7 @@ class PEApi:
             if self._is_reasoning:
                 kwargs["reasoning"] = {"effort": "minimal"}
             else:
-                kwargs["temperature"] = 1.0
+                kwargs["temperature"] = 0.8
             response = await self.client.responses.parse(**kwargs)
             if response.output_parsed and response.output_parsed.records:
                 return [r.model_dump() for r in response.output_parsed.records]
@@ -363,9 +510,9 @@ class PEApi:
                     "max_output_tokens": 16000,
                 }
                 if self._is_reasoning:
-                    body["reasoning"] = {"effort": "minimal"}
+                    body["reasoning"] = {"effort": "low"}
                 else:
-                    body["temperature"] = 1.0
+                    body["temperature"] = 0.8
                 request = {
                     "custom_id": f"req-{i}",
                     "method": "POST",
