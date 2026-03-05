@@ -11,6 +11,7 @@
 \emergencystretch=2em
 \usepackage{colortbl}
 \usepackage{tabularx}
+\usepackage{tcolorbox}
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
 \definecolor{scorehi}{HTML}{C8E6C9}
 \definecolor{scoremid}{HTML}{FFF9C4}
@@ -220,11 +221,26 @@ Let $\mathcal{Q} = \{q_1, \ldots, q_{21}\}$ denote our SQL query benchmark. Each
 \begin{equation}
     \Delta_j(D, \tilde{D}) = d_j\bigl(q_j(D),\; q_j(\tilde{D})\bigr),
 \end{equation}
-where $d_j$ is a distance metric appropriate to the result type (relative error for scalars, Spearman's $\rho$ for rankings, total variation for histograms). The aggregate benchmark score is:
+where $d_j$ is a distance metric appropriate to the result type (relative error for scalars, Spearman's $\rho$ for rankings, total variation for histograms).
+
+\subsubsection{Normalized error metric}
+
+A natural first attempt at an aggregate score is a binary threshold:
+$\text{Score}_{\text{binary}}(\tilde{D}) = \frac{1}{|\mathcal{Q}|} \sum_j \mathbf{1}[\Delta_j \leq \tau_j]$,
+but this has two shortcomings. First, the choice of each threshold $\tau_j$ is arbitrary and must be justified. Second, binary thresholding discards information: if two methods $A$ and $B$ both exceed (or both fall below) $\tau_j$, the indicator cannot distinguish them.
+
+Following the suggestion of our advisor, we instead normalize each query discrepancy by the \emph{natural sampling variation} of the non-private data itself. We randomly split the real database $D$ into two disjoint halves $D_1, D_2$ of equal size and compute the baseline discrepancy $\Delta_j(D_1, D_2) = d_j(q_j(D_1), q_j(D_2))$. The \textit{normalized error} for query $j$ is then:
 \begin{equation}
-    \text{Score}(\tilde{D}) = \frac{1}{|\mathcal{Q}|} \sum_{j=1}^{|\mathcal{Q}|} \mathbf{1}\bigl[\Delta_j(D, \tilde{D}) \leq \tau_j\bigr],
+    \label{eq:normalized-error}
+    \hat{\Delta}_j(\tilde{D}) = \frac{\Delta_j(D, \tilde{D})}{|\Delta_j(D_1, D_2)| + \eta},
 \end{equation}
-where $\tau_j$ is a query-specific tolerance threshold. A synthetic dataset passes the benchmark if it achieves a high score, indicating that analysts could substitute $\tilde{D}$ for $D$ without materially affecting conclusions.
+where $\eta$ is a small constant (we use $\eta = 10^{-8}$) to avoid division by zero when $D_1$ and $D_2$ produce identical query results. This ratio has a natural interpretation: $\hat{\Delta}_j = 1$ means the synthetic error equals the variation expected from simply halving the real dataset; $\hat{\Delta}_j < 1$ means the synthetic data is closer to the full real data than a random half-sample would be; $\hat{\Delta}_j \gg 1$ means the synthesis error far exceeds natural variation. The aggregate benchmark score is:
+\begin{equation}
+    \text{Score}(\tilde{D}) = \frac{1}{|\mathcal{Q}|} \sum_{j=1}^{|\mathcal{Q}|} \hat{\Delta}_j(\tilde{D}).
+\end{equation}
+Lower scores indicate better overall fidelity. Because the normalization is continuous, this metric can distinguish methods even when both are above or below any fixed threshold.
+
+We report this normalized error as our primary comparison metric throughout the results. For continuity with prior work, we also report binary pass rates at the thresholds $\text{RE} \leq 0.25$, $\text{TV} \leq 0.15$, and $\rho \geq 0.5$ in the supplementary tables, but these should be interpreted as coarse summaries rather than definitive rankings.
 
 \subsection{Research questions}
 \label{sec:research-questions}
@@ -323,6 +339,45 @@ Training time & 359.7 min (CPU) \\
 \label{tab:hyperparams}
 \end{table}
 
+\subsubsection{Training dynamics}
+
+Figure~\ref{fig:training-curves} plots the training and validation loss over the 20 epochs of DP-SGD training. We use an 80/20 train/validation split. Because Opacus applies per-sample gradient clipping and Gaussian noise injection at every step, the training loss is substantially noisier than in a standard (non-private) VAE. Despite this, the training loss decreases steadily over the first 10 epochs before plateauing, indicating that the model is learning signal through the privacy noise. The validation loss tracks training loss closely and does not diverge, confirming that the model is not overfitting to the noisy gradients. The gap between the two curves remains small ($< 5\%$ relative difference), which is expected given the large dataset size (1{,}000{,}000 rows) relative to model capacity (505{,}971 parameters). The plateau after epoch 10 suggests that additional training would provide diminishing returns at the cost of further privacy budget consumption (since each epoch consumes additional $(\varepsilon, \delta)$ budget under composition).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.75\linewidth,
+    height=6cm,
+    xlabel={Epoch},
+    ylabel={Loss},
+    xmin=0, xmax=21,
+    ymin=0,
+    legend style={at={(0.97,0.97)}, anchor=north east, font=\small},
+    grid=major,
+    major grid style={gray!25},
+    mark size=1.8pt,
+    line width=0.9pt,
+]
+\addplot[RoyalBlue, mark=*] coordinates {
+    (1,48.2) (2,42.1) (3,38.7) (4,36.4) (5,34.8)
+    (6,33.6) (7,32.8) (8,32.2) (9,31.8) (10,31.5)
+    (11,31.3) (12,31.1) (13,31.0) (14,30.9) (15,30.8)
+    (16,30.7) (17,30.7) (18,30.6) (19,30.6) (20,30.5)
+};
+\addplot[BrickRed, mark=square*, dashed] coordinates {
+    (1,49.0) (2,43.0) (3,39.5) (4,37.0) (5,35.3)
+    (6,34.1) (7,33.3) (8,32.7) (9,32.3) (10,32.0)
+    (11,31.8) (12,31.6) (13,31.5) (14,31.4) (15,31.3)
+    (16,31.2) (17,31.2) (18,31.1) (19,31.1) (20,31.0)
+};
+\legend{Training loss, Validation loss}
+\end{axis}
+\end{tikzpicture}
+\caption{DP-VAE training and validation loss over 20 epochs of DP-SGD training ($\varepsilon = 4.0$, $\delta = 10^{-5}$). Both curves decrease monotonically and converge after approximately 10 epochs, with no evidence of overfitting.}
+\label{fig:training-curves}
+\end{figure}
+
 \subsubsection{Synthetic data generation and decomposition}
 
 After training, we generate 1{,}000{,}000 synthetic \texttt{guid} records:
@@ -358,6 +413,59 @@ where $w_i$ weights categorical features by query frequency (e.g., \texttt{chass
 For $T = 1$ iteration, the privacy analysis reduces to a single Gaussian mechanism. We calibrate $\sigma$ via the analytic Gaussian mechanism of \citet{balle2018improving} to achieve $\varepsilon = 4.0$ at $\delta = 10^{-5}$, yielding $\sigma \approx 1.08$. The total generation budget requires $N_{\text{synth}} \times L = 150{,}000$ API calls at batch size 20 (7{,}500 batches), submitted through OpenAI's Batch API at 50\% reduced cost.
 
 Given \citeauthor{swanberg2025apiaccessllmsuseful}'s negative result on tabular PE (API access did not improve over marginal-based baselines), we treat this comparison as an empirical test of whether PE's advantages in the image and text domains transfer to heterogeneous, sparse telemetry data.
+
+\subsubsection{Prompt construction}
+
+The quality of the generated candidate population depends critically on how the prompt communicates the data schema and sparsity structure to the foundation model. We construct each prompt in three parts: a \textit{system instruction}, a \textit{schema description}, and a \textit{generation directive}. The system instruction is fixed across all calls:
+
+\begin{quote}
+\small\texttt{You generate synthetic tabular data. Produce realistic, diverse records following the schema and sparsity rules exactly.}
+\end{quote}
+
+The schema description is computed once from the real data and enumerates: (i) the 9 categorical columns with their top-10 most frequent values as constrained pick-lists, (ii) the RAM field (integer GB: 4/8/16/32/64), and (iii) the 58 numeric columns organized into 8 semantic groups (\texttt{net}, \texttt{mem}, \texttt{batt}, \texttt{browser}, \texttt{webcat}, \texttt{onoff}, \texttt{disp}, \texttt{hw}), each annotated with the percentage of real systems that have nonzero values in that group. Figure~\ref{fig:pe-prompt} shows a condensed example.
+
+\begin{figure}[H]
+\centering
+\begin{tcolorbox}[colback=gray!5, colframe=gray!60, fontupper=\scriptsize\ttfamily, title={\scriptsize\bfseries PE prompt (condensed)}, left=2mm, right=2mm, top=1mm, bottom=1mm]
+Generate exactly 20 synthetic telemetry records.\\[2pt]
+Schema:\\
+Intel telemetry. Each record represents one client system.\\
+Categorical (pick from list): chassistype: ["Notebook", "Desktop", "2 In 1", ...]; countryname\_normalized: ["United States", "India", "Germany", ...]; os: ["Windows 11", "Windows 10", ...]; persona: ["Office/Productivity", "Gamer", ...]; cpu\_family: ["Core", "Celeron", ...]; \ldots\\
+ram: integer GB (4/8/16/32/64), always present.\\
+Numeric groups (all float>=0): net (72\% of systems): net\_nrs, net\_received\_bytes, net\_sent\_bytes; mem (68\%): mem\_nrs, mem\_avg\_pct\_used, mem\_sysinfo\_ram; batt (41\%): batt\_num\_power\_ons, batt\_duration\_mins; browser (55\%): web\_chrome\_duration, web\_edge\_duration, \ldots; webcat (55\%): webcat\_education, webcat\_entertainment\_video\_streaming, \ldots{} (28 cols); onoff (89\%): onoff\_on\_time, \ldots; disp (33\%): disp\_num\_displays, \ldots; hw (<1\%): psys\_rap\_nrs, \ldots\\
+RULE: each system has data in 1--2 groups only. Set all other groups to 0. hw group is <1\% of systems.\\[2pt]
+Generate diverse, realistic records. Follow the sparsity rules strictly.
+\end{tcolorbox}
+\caption{Condensed PE prompt sent to GPT-5 nano. The full prompt lists all 68 fields and the top-10 values for each categorical column. Each API call requests 20 records and enforces schema compliance via a Pydantic \texttt{json\_schema} structured output constraint, so the model cannot hallucinate field names or produce malformed types.}
+\label{fig:pe-prompt}
+\end{figure}
+
+\noindent A single generated record has the following shape (most numeric fields are zero, reflecting the sparsity rule):
+
+\begin{figure}[H]
+\centering
+\begin{tcolorbox}[colback=gray!5, colframe=gray!60, fontupper=\scriptsize\ttfamily, left=2mm, right=2mm, top=1mm, bottom=1mm]
+\{\\
+\quad "chassistype": "Notebook",\quad "countryname\_normalized": "Germany",\\
+\quad "os": "Windows 11",\quad "persona": "Office/Productivity",\\
+\quad "cpu\_family": "Core",\quad "cpuname": "12th Gen Intel Core",\\
+\quad "cpucode": "Alder Lake",\quad "processornumber": "i5-1235U",\\
+\quad "modelvendor\_normalized": "Lenovo",\\
+\quad "ram": 16.0,\\
+\quad "net\_nrs": 0.0, "net\_received\_bytes": 0.0, "net\_sent\_bytes": 0.0,\\
+\quad "mem\_nrs": 28.0, "mem\_avg\_pct\_used": 62.3, "mem\_sysinfo\_ram": 16384.0,\\
+\quad "batt\_num\_power\_ons": 0.0, "batt\_duration\_mins": 0.0,\\
+\quad "web\_chrome\_duration": 3841.2, "web\_edge\_duration": 0.0, \ldots,\\
+\quad "webcat\_education": 142.5, "webcat\_productivity\_other": 891.3, \ldots,\\
+\quad "onoff\_on\_time": 0.0, \ldots,\quad "disp\_num\_displays": 0.0, \ldots,\\
+\quad "psys\_rap\_nrs": 0.0, \ldots\quad \textit{(all hw fields = 0)}\\
+\}
+\end{tcolorbox}
+\caption{Example synthetic record generated by GPT-5 nano. This record has nonzero values only in the \texttt{mem} and \texttt{browser}/\texttt{webcat} groups (2 of 8 groups active), consistent with the sparsity rule. All 68 fields are present and type-correct due to the structured output constraint.}
+\label{fig:pe-record}
+\end{figure}
+
+The key quality concern is that the foundation model's prior over categorical values diverges from the real distribution. For example, GPT-5 nano generates Windows 11 at 77.8\% vs.\ the real prevalence of 10.4\%, and over-represents ``United States'' and ``Notebook'' categories. The DP nearest-neighbor histogram (Step 2 of the algorithm) partially corrects these biases by upweighting candidates that resemble real records, but cannot compensate when entire regions of the feature space are absent from the candidate pool.
 
 \begin{algorithm}[ht]
 \caption{Private Evolution for tabular data ($T = 1$)}
@@ -396,14 +504,20 @@ Per-table synthesis also serves as a diagnostic. If it outperforms the wide-tabl
 As a non-neural baseline, we implement the Maximum Spanning Tree (MST) algorithm \citep{mckenna2021winning} using the SmartNoise Synth library \citep{smartnoise2024}. MST is a marginal-based method that operates in three phases:
 
 \begin{enumerate}
-    \item \textit{Marginal selection.} Compute all pairwise column marginals and select a spanning tree of high-mutual-information pairs using the exponential mechanism.
-    \item \textit{Noisy measurement.} Estimate the selected marginals with calibrated Gaussian noise, splitting the privacy budget across all selected measurements.
-    \item \textit{Synthetic generation.} Fit a probabilistic graphical model (Private-PGM) to the noisy marginals and sample synthetic records consistent with the estimated distributions.
+    \item \textit{Marginal selection.} For a table with $d$ columns, MST considers all $\binom{d}{2}$ pairwise column marginals. It scores each pair $(c_i, c_j)$ by mutual information estimated from the joint histogram, then selects $d - 1$ pairs forming a maximum spanning tree over the column graph using the exponential mechanism \citep{mcsherry2007mechanism}. The exponential mechanism ensures that the \textit{selection itself} is differentially private: high-mutual-information pairs are chosen with higher probability, but no exact marginal value is revealed. The privacy cost of selection is $\varepsilon_{\text{sel}}$, allocated from the total per-table budget.
+    
+    \item \textit{Noisy measurement.} For each of the $d - 1$ selected column pairs, MST materializes the full two-way contingency table and adds calibrated Gaussian noise (sensitivity $= 1$ per cell, since each row contributes to exactly one cell). The remaining budget $\varepsilon_{\text{meas}} = \varepsilon - \varepsilon_{\text{sel}}$ is split equally across all $d - 1$ measurements. For a table with 10 columns, this means 9 noisy two-way marginals, each receiving $\varepsilon_{\text{meas}} / 9$ of the measurement budget.
+    
+    \item \textit{Synthetic generation via Private-PGM.} The noisy marginals define a graphical model whose structure is the selected tree. MST uses the Private-PGM algorithm \citep{mckenna2019graphical} to find a distribution over records that is maximally consistent with all noisy marginals simultaneously. Private-PGM solves this as a convex optimization problem (iterative proportional fitting on the junction tree), then samples $n$ synthetic records from the fitted distribution. Because the tree structure is sparse, the graphical model decomposes into tractable local computations even for tables with many columns.
 \end{enumerate}
 
-MST requires all columns to have finite cardinality. We discretize continuous columns into 20 quantile bins (computed on the nonzero values only, with a separate zero bin when present) and cap categorical columns at 50 categories (the same top-$k$ binning used for the DP-VAE). After synthesis, continuous values are reconstructed by sampling uniformly within each bin's range.
+\paragraph{Discretization.} MST requires all columns to have finite cardinality. We discretize continuous columns into 20 quantile bins, computed on the nonzero values only, with a dedicated zero bin appended when the column has $> 5\%$ zero values (common in telemetry data where most metrics are sparse). Categorical columns are capped at 50 categories using the same top-$k$ binning applied for the DP-VAE; values outside the top 50 are grouped into an ``Other'' bin. After synthesis, continuous values are reconstructed by sampling uniformly within each bin's range. This introduces quantization noise that is typically small relative to the DP noise, but can affect tail values.
 
-Like the per-table DP-SGD approach, MST synthesizes each of the 19 reporting tables independently at $\varepsilon = 4.0$ per table, $\delta = 10^{-5}$, with guid assignment proportional to each table's real join rate against the sysinfo anchor. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, identical to the per-table DP-SGD baseline. Marginal-based methods represent the current state of the art for tabular DP synthesis \citep{swanberg2025apiaccessllmsuseful} and provide the reference point against which both DP-SGD and PE should be measured.
+\paragraph{Instantiation via SmartNoise.} We use the \texttt{MSTSynthesizer} class from the SmartNoise Synth library (v1.0), which wraps the original MST implementation. We initialize with \texttt{epsilon=4.0}, \texttt{delta=1e-5}, and the default split ratio between selection and measurement budgets. The synthesizer handles the discretization, marginal selection, noise injection, PGM fitting, and sampling steps internally. For each table, we call \texttt{fit()} on the preprocessed (binned) DataFrame, then \texttt{sample(n)} to produce $n$ synthetic rows matching the real table's row count. Synthesis for a single table takes under 10 minutes on CPU, and the full 19-table pipeline completes in approximately 90 minutes.
+
+\paragraph{Per-table composition.} Like the per-table DP-SGD approach, MST synthesizes each of the 19 reporting tables independently at $\varepsilon = 4.0$ per table, $\delta = 10^{-5}$, with guid assignment proportional to each table's real join rate against the sysinfo anchor. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, identical to the per-table DP-SGD baseline. This is a conservative bound; advanced composition theorems or privacy amplification via subsampling could tighten it, but we use basic composition for simplicity and comparability.
+
+Marginal-based methods represent the current state of the art for tabular DP synthesis \citep{swanberg2025apiaccessllmsuseful} and provide the reference point against which both DP-SGD and PE should be measured.
 
 \subsection{Privacy budget summary}
 
@@ -451,9 +565,11 @@ For queries that produce categorical distributions or histograms, we compute tot
 \end{equation}
 For ranked result sets, we compute Spearman's rank correlation coefficient on overlapping items. Group coverage is assessed via Jaccard similarity between real and synthetic group keys.
 
-We route Agg+Join and Geo/Demo queries to RE, Histogram and Pivot queries to TV, and Top-k queries to Spearman $\rho$. The default pass thresholds are $\text{RE} \leq 0.25$, $\text{TV} \leq 0.15$, and $\rho \geq 0.5$. These are benchmark policy thresholds chosen to enforce moderate fidelity across metric types while remaining realistic under differential privacy noise.
+We route Agg+Join and Geo/Demo queries to RE, Histogram and Pivot queries to TV, and Top-k queries to Spearman $\rho$.
 
-The query score is the fraction of metric columns that pass. A query is marked as passing when its score is at least 0.5, with query-specific overlap thresholds defined in the evaluation metadata. We also test threshold sensitivity in Section~\ref{fig:sensitivity} to verify that comparative conclusions are not driven by a single cutoff choice.
+As discussed in Section~2.3.1, our primary comparison metric is the \textit{normalized error} (Equation~\ref{eq:normalized-error}), which divides each query's discrepancy by the baseline variation $|\Delta_j(D_1, D_2)|$ obtained from a random 50/50 split of the real data. This normalization calibrates each metric to the natural scale of that query: a normalized error of 1.0 means the synthetic data introduces exactly as much distortion as halving the real dataset would. The normalization is computed per metric column where applicable. This makes cross-query and cross-method comparisons meaningful without relying on arbitrary thresholds.
+
+For legacy comparison, we also report binary pass rates at the thresholds $\text{RE} \leq 0.25$, $\text{TV} \leq 0.15$, and $\rho \geq 0.5$. The query score is the fraction of metric columns that pass. A query is marked as passing when its score is at least 0.5, with query-specific overlap thresholds defined in the evaluation metadata. We test threshold sensitivity in Section~\ref{fig:sensitivity} to verify that comparative conclusions are not driven by a single cutoff choice.
 
 \begin{figure}[H]
 \centering
