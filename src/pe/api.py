@@ -229,7 +229,7 @@ _DISTRIBUTION_PROMPT = """You are generating synthetic Intel DCA telemetry recor
 CATEGORICAL DISTRIBUTIONS (match these frequencies):
 - chassistype: Notebook 72%, Desktop 18%, 2 in 1 6%, Intel NUC/STK 2%, Tablet 1%, Other/Unknown 1%
 - os: Win10 85%, Win11 10%, Win8.1 3%, Win Server 1%, n/a 1%
-- countryname_normalized: United States of America 22%, India 10%, China 7%, Germany 5%, United Kingdom of Great Britain and Northern Ireland 4%, Brazil 4%, Japan 3%, France 3%, Korea Republic of 2%, Italy 2%, Canada 2%, Australia 2%, Mexico 2%, Russian Federation 2%, Poland 1.5%, Netherlands 1.5%, Spain 1.5%, Turkey 1.5%, Indonesia 1%, Thailand 1%, Taiwan Province of China 1%, Sweden 1%, Switzerland 1%, Colombia 1%, other countries ~15% (spread across remaining countries in the enum)
+- countryname_normalized: United States of America 22%, India 10%, China 7%, Germany 5%, United Kingdom of Great Britain and Northern Ireland 4%, Brazil 4%, Japan 3%, France 3%, Korea, Republic of 2%, Italy 2%, Canada 2%, Australia 2%, Mexico 2%, Russian Federation 2%, Poland 1.5%, Netherlands 1.5%, Spain 1.5%, Turkey 1.5%, Indonesia 1%, Thailand 1%, Taiwan, Province of China 1%, Sweden 1%, Switzerland 1%, Colombia 1%, other countries ~15% (spread across remaining countries in the enum)
 - persona: Casual User 27%, Communication 16%, Casual Gamer 16%, Office/Productivity 13%, Web User 8%, Entertainment 6%, Content Creator/IT 5%, Win Store App User 4%, Gamer 2%, File & Network Sharer 2%, Unknown 1%
 - modelvendor_normalized: Lenovo 22%, Dell Inc. 20%, HP 18%, ASUSTeK COMPUTER INC. 8%, Acer 7%, Microsoft Corporation 3%, Samsung 3%, HUAWEI 2%, MSI 2%, others smaller
 - ram: 8 (38%), 16 (28%), 4 (18%), 32 (7%), 12 (4%), 6 (2%), 64 (1%)
