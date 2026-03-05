@@ -455,7 +455,9 @@ def build_generation_plan(
         count = int(batt_scaled.iloc[i])  # type: ignore[arg-type]
         if count <= 0:
             continue
-        n_real = float(row["number_of_systems"])
+        # Use noised count (already DP-released) for sensitivity calibration
+        # to avoid data-dependent noise scaling
+        n_pub = max(float(noisy_batt_counts.iloc[i]), 1.0)
         allocations.append(StratumAllocation(
             active_group="batt",
             count=count,
@@ -466,11 +468,11 @@ def build_generation_plan(
             numeric_targets={
                 "batt_duration_mins": _dp_noise_mean(
                     float(row["avg_duration_mins_on_battery"]),
-                    n_real, _FIELD_RANGES["batt_duration_mins"],
+                    n_pub, _FIELD_RANGES["batt_duration_mins"],
                     sigma_per_query, rng,
                 ),
                 "batt_num_power_ons": _dp_noise_mean(
-                    3.0, n_real, _FIELD_RANGES["batt_num_power_ons"],
+                    3.0, n_pub, _FIELD_RANGES["batt_num_power_ons"],
                     sigma_per_query, rng,
                 ),
             },
@@ -491,7 +493,7 @@ def build_generation_plan(
         if count <= 0:
             continue
         ram_gb = float(row["ram_gb"])
-        n_real = float(row["count(DISTINCT guid)"])
+        n_pub = max(float(noisy_mem_counts.iloc[i]), 1.0)
         allocations.append(StratumAllocation(
             active_group="mem",
             count=count,
@@ -499,11 +501,11 @@ def build_generation_plan(
             numeric_targets={
                 "mem_avg_pct_used": _dp_noise_mean(
                     float(row["avg_percentage_used"]),
-                    n_real, _FIELD_RANGES["mem_avg_pct_used"],
+                    n_pub, _FIELD_RANGES["mem_avg_pct_used"],
                     sigma_per_query, rng,
                 ),
                 "mem_nrs": _dp_noise_mean(
-                    5000.0, n_real, _FIELD_RANGES["mem_nrs"],
+                    5000.0, n_pub, _FIELD_RANGES["mem_nrs"],
                     sigma_per_query, rng,
                 ),
                 "mem_sysinfo_ram": ram_gb * 1024,  # deterministic from ram_gb
@@ -523,7 +525,7 @@ def build_generation_plan(
         count = int(onoff_scaled.iloc[i])  # type: ignore[arg-type]
         if count <= 0:
             continue
-        n_real = float(row["number_of_systems"])
+        n_pub = max(float(noisy_onoff_counts.iloc[i]), 1.0)
         allocations.append(StratumAllocation(
             active_group="onoff",
             count=count,
@@ -534,22 +536,22 @@ def build_generation_plan(
             numeric_targets={
                 "onoff_on_time": _dp_noise_mean(
                     float(row["avg_on_time"]),
-                    n_real, _FIELD_RANGES["onoff_on_time"],
+                    n_pub, _FIELD_RANGES["onoff_on_time"],
                     sigma_per_query, rng,
                 ),
                 "onoff_off_time": _dp_noise_mean(
                     float(row["avg_off_time"]),
-                    n_real, _FIELD_RANGES["onoff_off_time"],
+                    n_pub, _FIELD_RANGES["onoff_off_time"],
                     sigma_per_query, rng,
                 ),
                 "onoff_mods_time": _dp_noise_mean(
                     float(row["avg_modern_sleep_time"]),
-                    n_real, _FIELD_RANGES["onoff_mods_time"],
+                    n_pub, _FIELD_RANGES["onoff_mods_time"],
                     sigma_per_query, rng,
                 ),
                 "onoff_sleep_time": _dp_noise_mean(
                     float(row["avg_sleep_time"]),
-                    n_real, _FIELD_RANGES["onoff_sleep_time"],
+                    n_pub, _FIELD_RANGES["onoff_sleep_time"],
                     sigma_per_query, rng,
                 ),
             },
@@ -575,7 +577,7 @@ def build_generation_plan(
             if count <= 0:
                 continue
 
-            n_real = float(row["number_of_systems"])
+            n_pub = max(float(noisy_bw_counts.iloc[i]), 1.0)
 
             # Build webcat targets from CSV columns — noise each percentage
             webcat_targets: dict[str, float] = {}
@@ -583,7 +585,7 @@ def build_generation_plan(
                 val = row.get(csv_col)
                 if pd.notna(val):
                     webcat_targets[record_col] = _dp_noise_percentage(
-                        float(val), n_real, sigma_per_query, rng,
+                        float(val), n_pub, sigma_per_query, rng,
                     )
 
             allocations.append(StratumAllocation(
@@ -615,7 +617,7 @@ def build_generation_plan(
         count = int(hw_scaled.iloc[i])  # type: ignore[arg-type]
         if count <= 0:
             continue
-        n_real = float(row["number_of_systems"])
+        n_pub = max(float(noisy_hw_counts.iloc[i]), 1.0)
         allocations.append(StratumAllocation(
             active_group="hw",
             count=count,
@@ -623,47 +625,47 @@ def build_generation_plan(
             numeric_targets={
                 "psys_rap_avg": _dp_noise_mean(
                     float(row["avg_psys_rap_watts"]),
-                    n_real, _FIELD_RANGES["psys_rap_avg"],
+                    n_pub, _FIELD_RANGES["psys_rap_avg"],
                     sigma_per_query, rng,
                 ),
                 "pkg_c0_avg": _dp_noise_mean(
                     float(row["avg_pkg_c0"]),
-                    n_real, _FIELD_RANGES["pkg_c0_avg"],
+                    n_pub, _FIELD_RANGES["pkg_c0_avg"],
                     sigma_per_query, rng,
                 ),
                 "avg_freq_avg": _dp_noise_mean(
                     float(row["avg_freq_mhz"]),
-                    n_real, _FIELD_RANGES["avg_freq_avg"],
+                    n_pub, _FIELD_RANGES["avg_freq_avg"],
                     sigma_per_query, rng,
                 ),
                 "temp_avg": _dp_noise_mean(
                     float(row["avg_temp_centigrade"]),
-                    n_real, _FIELD_RANGES["temp_avg"],
+                    n_pub, _FIELD_RANGES["temp_avg"],
                     sigma_per_query, rng,
                 ),
                 # nrs defaults — noise them too
                 "psys_rap_nrs": _dp_noise_mean(
-                    500.0, n_real, _FIELD_RANGES["psys_rap_nrs"],
+                    500.0, n_pub, _FIELD_RANGES["psys_rap_nrs"],
                     sigma_per_query, rng,
                 ),
                 "pkg_c0_nrs": _dp_noise_mean(
-                    500.0, n_real, _FIELD_RANGES["pkg_c0_nrs"],
+                    500.0, n_pub, _FIELD_RANGES["pkg_c0_nrs"],
                     sigma_per_query, rng,
                 ),
                 "avg_freq_nrs": _dp_noise_mean(
-                    500.0, n_real, _FIELD_RANGES["avg_freq_nrs"],
+                    500.0, n_pub, _FIELD_RANGES["avg_freq_nrs"],
                     sigma_per_query, rng,
                 ),
                 "temp_nrs": _dp_noise_mean(
-                    500.0, n_real, _FIELD_RANGES["temp_nrs"],
+                    500.0, n_pub, _FIELD_RANGES["temp_nrs"],
                     sigma_per_query, rng,
                 ),
                 "pkg_power_nrs": _dp_noise_mean(
-                    500.0, n_real, _FIELD_RANGES["pkg_power_nrs"],
+                    500.0, n_pub, _FIELD_RANGES["pkg_power_nrs"],
                     sigma_per_query, rng,
                 ),
                 "pkg_power_avg": _dp_noise_mean(
-                    10.0, n_real, _FIELD_RANGES["pkg_power_avg"],
+                    10.0, n_pub, _FIELD_RANGES["pkg_power_avg"],
                     sigma_per_query, rng,
                 ),
             },
@@ -673,7 +675,7 @@ def build_generation_plan(
     # ---- NET group -----------------------------------------------------
     net_df = _read_csv(real_results_dir, "Xeon_network_consumption.csv")
     # Handle 'n/a' OS values - skip them
-    net_df = net_df[net_df["os"] != "n/a"].copy()
+    net_df = net_df[net_df["os"].notna() & (net_df["os"] != "n/a")].copy()
     noisy_net_counts = net_df["number_of_systems"].reset_index(
         drop=True
     ).apply(lambda x: _dp_noise_count(x, sigma_per_query, rng))
@@ -683,7 +685,7 @@ def build_generation_plan(
         if count <= 0:
             continue
 
-        n_real = float(row["number_of_systems"])
+        n_pub = max(float(noisy_net_counts.iloc[i]), 1.0)
 
         # processor_class → cpuname mapping
         if row["processor_class"] == "Server Class":
@@ -701,16 +703,16 @@ def build_generation_plan(
             numeric_targets={
                 "net_received_bytes": _dp_noise_mean(
                     float(row["avg_bytes_received"]),
-                    n_real, _FIELD_RANGES["net_received_bytes"],
+                    n_pub, _FIELD_RANGES["net_received_bytes"],
                     sigma_per_query, rng,
                 ),
                 "net_sent_bytes": _dp_noise_mean(
                     float(row["avg_bytes_sent"]),
-                    n_real, _FIELD_RANGES["net_sent_bytes"],
+                    n_pub, _FIELD_RANGES["net_sent_bytes"],
                     sigma_per_query, rng,
                 ),
                 "net_nrs": _dp_noise_mean(
-                    5000.0, n_real, _FIELD_RANGES["net_nrs"],
+                    5000.0, n_pub, _FIELD_RANGES["net_nrs"],
                     sigma_per_query, rng,
                 ),
             },
