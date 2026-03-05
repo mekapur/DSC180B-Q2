@@ -322,6 +322,7 @@ def _run_evaluation(
     if prev_eval.exists():
         print("\n=== COMPARISON WITH PREVIOUS (INDEPENDENT) PE ===")
         prev_df = pd.read_csv(prev_eval)
+        prev_df["error"] = prev_df["error"].fillna("")
         prev_valid = prev_df[prev_df["error"] == ""]
         prev_passed = prev_valid[prev_valid["passed"]]
 
