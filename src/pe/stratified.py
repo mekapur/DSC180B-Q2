@@ -139,6 +139,8 @@ def _country_distribution_hint(
     """Build a short country distribution string from a query result."""
     total = df["number_of_systems"].sum() if "number_of_systems" in df.columns else len(df)
     if "number_of_systems" in df.columns:
+        if total <= 0:
+            return ""
         top = df.nlargest(15, "number_of_systems")
         lines = []
         for _, row in top.iterrows():
