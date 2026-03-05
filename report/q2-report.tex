@@ -224,6 +224,7 @@ Let $\mathcal{Q} = \{q_1, \ldots, q_{21}\}$ denote our SQL query benchmark. Each
 where $d_j$ is a distance metric appropriate to the result type (relative error for scalars, Spearman's $\rho$ for rankings, total variation for histograms).
 
 \subsubsection{Normalized error metric}
+\label{sec:normalized-error}
 
 A natural first attempt at an aggregate score is a binary threshold:
 $\text{Score}_{\text{binary}}(\tilde{D}) = \frac{1}{|\mathcal{Q}|} \sum_j \mathbf{1}[\Delta_j \leq \tau_j]$,
@@ -567,9 +568,9 @@ For ranked result sets, we compute Spearman's rank correlation coefficient on ov
 
 We route Agg+Join and Geo/Demo queries to RE, Histogram and Pivot queries to TV, and Top-k queries to Spearman $\rho$.
 
-As discussed in Section~2.3.1, our primary comparison metric is the \textit{normalized error} (Equation~\ref{eq:normalized-error}), which divides each query's discrepancy by the baseline variation $|\Delta_j(D_1, D_2)|$ obtained from a random 50/50 split of the real data. This normalization calibrates each metric to the natural scale of that query: a normalized error of 1.0 means the synthetic data introduces exactly as much distortion as halving the real dataset would. The normalization is computed per metric column where applicable. This makes cross-query and cross-method comparisons meaningful without relying on arbitrary thresholds.
+As discussed in Section~\ref{sec:normalized-error}, our primary comparison metric is the \textit{normalized error} (Equation~\ref{eq:normalized-error}), which divides each query's discrepancy by the baseline variation $|\Delta_j(D_1, D_2)|$ obtained from a random 50/50 split of the real data. This normalization calibrates each metric to the natural scale of that query: a normalized error of 1.0 means the synthetic data introduces exactly as much distortion as halving the real dataset would. The normalization is computed per metric column where applicable. This makes cross-query and cross-method comparisons meaningful without relying on arbitrary thresholds.
 
-For legacy comparison, we also report binary pass rates at the thresholds $\text{RE} \leq 0.25$, $\text{TV} \leq 0.15$, and $\rho \geq 0.5$. The query score is the fraction of metric columns that pass. A query is marked as passing when its score is at least 0.5, with query-specific overlap thresholds defined in the evaluation metadata. We test threshold sensitivity in Section~\ref{fig:sensitivity} to verify that comparative conclusions are not driven by a single cutoff choice.
+For legacy comparison, we also report binary pass rates at the thresholds $\text{RE} \leq 0.25$, $\text{TV} \leq 0.15$, and $\rho \geq 0.5$. The query score is the fraction of metric columns that pass. A query is marked as passing when its score is at least 0.5, with query-specific overlap thresholds defined in the evaluation metadata. We test threshold sensitivity in Figure~\ref{fig:sensitivity} to verify that comparative conclusions are not driven by a single cutoff choice.
 
 \begin{figure}[H]
 \centering
