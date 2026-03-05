@@ -111,7 +111,10 @@ def main():
         print(f"Loaded: {synth_df.shape}")
     else:
         print("\n=== GENERATING SYNTHETIC DATA (STRATIFIED) ===")
-        real_df_path = Path("data/pe_experiments/experiment_gpt-5-mini.parquet")
+        real_df_path = Path("data/reporting/pe_wide_table.parquet")
+        if not real_df_path.exists():
+            # Fallback to legacy path
+            real_df_path = Path("data/pe_experiments/experiment_gpt-5-mini.parquet")
         if real_df_path.exists():
             real_df = pd.read_parquet(real_df_path)
         else:
