@@ -948,6 +948,47 @@ Hybrid routed outputs & 21 & 8 & 38.1\% & 0.404 \\
 \label{tab:additive-followup}
 \end{table}
 
+\subsubsection{Stratified PE with DP-noised aggregates}
+
+The third intervention redesigns the PE generation pipeline to condition on aggregate statistics derived from the real query results. Instead of generating records independently (as in the baseline PE), we:
+\begin{enumerate}
+    \item Read aggregate statistics per stratum from the real benchmark CSVs (e.g., average battery duration per CPU generation, RAM utilization per memory size, webcat distributions per persona).
+    \item Add calibrated Gaussian noise to every aggregate query via the Gaussian mechanism, spending a privacy budget of $\varepsilon_{\text{agg}} = 1.0$. Per-query noise is calibrated via advanced composition: $\sigma_{\text{per-query}} = \sqrt{2k\ln(1.25/\delta)}/\varepsilon_{\text{agg}}$ where $k = 958$ is the total number of aggregate queries across all CSVs.
+    \item Use the noisy aggregates to construct per-stratum prompts (e.g., ``generate 55 Notebook records where batt\_duration\_mins averages ${\sim}187$''). Since these prompts are deterministic functions of the DP-released aggregates, this step is free post-processing under DP.
+    \item Generate a $3\times$ candidate pool (15{,}000 records across 104 strata) and select 5{,}000 via the DP nearest-neighbor histogram mechanism, spending $\varepsilon_{\text{hist}} = 3.0$.
+\end{enumerate}
+
+The total privacy cost is $\varepsilon_{\text{agg}} + \varepsilon_{\text{hist}} = 4.0$ by basic composition, matching the baseline PE budget. The key insight is that noising the aggregates before embedding them in prompts restores the independence assumption required for the histogram's sensitivity-1 analysis: since the candidate pool depends only on the DP-released aggregates (not the raw data), changing one record in the private dataset changes at most one vote in the histogram.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.50\textwidth}YYY}
+\toprule
+\textbf{Query} & \textbf{PE baseline} & \textbf{Stratified PE} & \textbf{Delta} \\
+\midrule
+ram\_utilization\_histogram & 0.000 & \cellcolor{scorehi}1.000 & +1.000 \\
+on\_off\_mods\_sleep\_summary & 0.000 & \cellcolor{scorehi}0.636 & +0.636 \\
+battery\_on\_duration\_cpu\_family\_gen & 0.000 & 0.333 & +0.333 \\
+persona\_web\_cat\_usage\_analysis & 0.000 & 0.097 & +0.097 \\
+battery\_power\_on\_geographic\_summary & 0.000 & 0.000 & 0.000 \\
+Xeon\_network\_consumption & 0.000 & 0.000 & 0.000 \\
+avg\_platform\_power\_c0\_freq\_temp\_by\_chassis & 0.000 & 0.000 & 0.000 \\
+most\_popular\_browser\_in\_each\_country & 0.000 & 0.000 & 0.000 \\
+pkg\_power\_by\_country & 0.000 & 0.000 & 0.000 \\
+popular\_browsers\_by\_count\_usage\_pct & 0.000 & 0.000 & 0.000 \\
+\midrule
+\textbf{Passed ($\geq 0.5$)} & \textbf{0/10} & \textbf{2/10} & \\
+\textbf{Average score} & \textbf{0.000} & \textbf{0.207} & \\
+\bottomrule
+\end{tabularx}
+\caption{Stratified PE with DP-noised aggregates ($\varepsilon_{\text{agg}}=1.0 + \varepsilon_{\text{hist}}=3.0 = 4.0$ total). Results shown only for the 10 evaluable queries (11 queries require reporting tables not producible from the wide table). The stratified approach improves over baseline PE on RAM utilization and on/off/sleep queries where per-stratum conditioning aligns well with the query structure.}
+\label{tab:stratified-pe}
+\end{table}
+
+The stratified approach improves over baseline PE (which scored 0 on all 10 evaluable queries at $\varepsilon = 4.0$) by passing 2 of 10 queries with an average score of 0.207. The gains concentrate on queries whose structure matches the stratification: RAM utilization (stratified by memory size) achieves a perfect 1.0, and the on/off/sleep summary (stratified by CPU market code name) passes at 0.636. Country-stratified and browser queries remain at 0 because the DP noise on per-country counts (sensitivity = 1 per system) overwhelms the small per-country populations, producing effectively uniform country distributions in the prompts.
+
+This experiment demonstrates that conditioning PE generation on DP-noised aggregates can meaningfully improve utility for queries that align with the stratification, while maintaining formal privacy guarantees through proper composition. The approach is complementary to the hybrid routing strategy: combining stratified PE with workload routing could further improve the overall benchmark.
+
 \newpage
 
 \section{Discussion}
