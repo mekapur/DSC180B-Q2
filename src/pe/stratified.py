@@ -263,7 +263,7 @@ def _dp_noise_mean(
     if n <= 0:
         return mean_val
     sensitivity = value_range / n
-    return mean_val + rng.normal(0, sigma * sensitivity)
+    return max(0.0, mean_val + rng.normal(0, sigma * sensitivity))
 
 
 def _dp_noise_percentage(
