@@ -243,148 +243,152 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     con = duckdb.connect()
-    # Increase memory limit for large parquet operations
-    con.execute("SET memory_limit='8GB'")
+    try:
+        # Increase memory limit for large parquet operations
+        con.execute("SET memory_limit='8GB'")
 
-    # Step 1: Get all GUIDs
-    print("=" * 60)
-    print("Step 1: Collecting GUIDs from anchor table...")
-    guids = get_all_guids(con)
+        # Step 1: Get all GUIDs
+        print("=" * 60)
+        print("Step 1: Collecting GUIDs from anchor table...")
+        guids = get_all_guids(con)
 
-    # Step 2: Split GUIDs
-    print("\nStep 2: Splitting GUIDs 50/50...")
-    d1_guids, d2_guids = split_guids(guids)
+        # Step 2: Split GUIDs
+        print("\nStep 2: Splitting GUIDs 50/50...")
+        d1_guids, d2_guids = split_guids(guids)
 
-    # Store GUID sets in DuckDB temp tables for efficient filtering
-    print("\nStep 3: Creating GUID temp tables...")
-    d1_df = pd.DataFrame({"guid": list(d1_guids)})
-    d2_df = pd.DataFrame({"guid": list(d2_guids)})
-    con.execute("CREATE TABLE d1_guids AS SELECT * FROM d1_df")
-    con.execute("CREATE TABLE d2_guids AS SELECT * FROM d2_df")
+        # Step 3: Store GUID sets in DuckDB temp tables for efficient filtering
+        print("\nStep 3: Creating GUID temp tables...")
+        # Note: d1_guid_df/d2_guid_df are consumed eagerly by DuckDB's
+        # CREATE TABLE ... AS SELECT, so reusing the names later is safe.
+        d1_guid_df = pd.DataFrame({"guid": list(d1_guids)})
+        d2_guid_df = pd.DataFrame({"guid": list(d2_guids)})
+        con.execute("CREATE TABLE d1_guids AS SELECT * FROM d1_guid_df")
+        con.execute("CREATE TABLE d2_guids AS SELECT * FROM d2_guid_df")
 
-    # Step 3: Create filtered views
-    print("\nStep 4: Creating filtered views for D1...")
-    create_split_views(con, "d1_guids", "d1")
-    print("Creating filtered views for D2...")
-    create_split_views(con, "d2_guids", "d2")
+        # Step 4: Create filtered views
+        print("\nStep 4: Creating filtered views for D1...")
+        create_split_views(con, "d1_guids", "d1")
+        print("Creating filtered views for D2...")
+        create_split_views(con, "d2_guids", "d2")
 
-    # Step 4: Run benchmark on each split
-    d1_output = OUTPUT_DIR / "d1"
-    d2_output = OUTPUT_DIR / "d2"
+        # Step 5: Run benchmark on each split
+        d1_output = OUTPUT_DIR / "d1"
+        d2_output = OUTPUT_DIR / "d2"
 
-    print("\nStep 5: Running benchmark queries on D1...")
-    d1_results = run_benchmark_on_split(con, "d1", d1_output)
-    print(f"  D1: {len(d1_results)} queries completed")
+        print("\nStep 5: Running benchmark queries on D1...")
+        d1_results = run_benchmark_on_split(con, "d1", d1_output)
+        print(f"  D1: {len(d1_results)} queries completed")
 
-    print("\nStep 6: Running benchmark queries on D2...")
-    d2_results = run_benchmark_on_split(con, "d2", d2_output)
-    print(f"  D2: {len(d2_results)} queries completed")
+        print("\nStep 6: Running benchmark queries on D2...")
+        d2_results = run_benchmark_on_split(con, "d2", d2_output)
+        print(f"  D2: {len(d2_results)} queries completed")
 
-    # Step 5: Evaluate D1 vs D2 (baseline variation)
-    print("\nStep 7: Evaluating D1 vs D2 (baseline variation)...")
-    baseline_results = []
-    for qname in sorted(QUERY_METADATA.keys()):
-        d1_path = d1_output / f"{qname}.csv"
-        d2_path = d2_output / f"{qname}.csv"
-        if not d1_path.exists() or not d2_path.exists():
-            print(f"  Skipping {qname}: missing split results")
-            continue
-        d1_df = pd.read_csv(d1_path)
-        d2_df = pd.read_csv(d2_path)
-        result = evaluate_query(qname, d1_df, d2_df)
-        baseline_results.append(result)
-
-    baseline_summary = results_to_dataframe(baseline_results)
-    baseline_detail = detailed_results_to_dataframe(baseline_results)
-    baseline_summary.to_csv(OUTPUT_DIR / "baseline_d1_vs_d2_summary.csv", index=False)
-    baseline_detail.to_csv(OUTPUT_DIR / "baseline_d1_vs_d2_detail.csv", index=False)
-    print(f"  Baseline: {len(baseline_results)} queries evaluated")
-
-    # Step 6: Evaluate real vs each synthetic method
-    print("\nStep 8: Evaluating real vs synthetic for each method...")
-    method_details = {}
-    for method_name, synth_dir in SYNTH_METHODS.items():
-        print(f"\n  --- {method_name} ---")
-        method_results = []
+        # Step 7: Evaluate D1 vs D2 (baseline variation)
+        print("\nStep 7: Evaluating D1 vs D2 (baseline variation)...")
+        baseline_results = []
         for qname in sorted(QUERY_METADATA.keys()):
-            real_path = RESULTS_DIR / "real" / f"{qname}.csv"
-            synth_path = synth_dir / f"{qname}.csv"
-            if not real_path.exists():
+            d1_path = d1_output / f"{qname}.csv"
+            d2_path = d2_output / f"{qname}.csv"
+            if not d1_path.exists() or not d2_path.exists():
+                print(f"  Skipping {qname}: missing split results")
                 continue
-            if not synth_path.exists():
-                print(f"    Skipping {qname}: no synth CSV")
-                continue
-            real_df = pd.read_csv(real_path)
-            synth_df = pd.read_csv(synth_path)
-            result = evaluate_query(qname, real_df, synth_df)
-            method_results.append(result)
+            d1_df = pd.read_csv(d1_path)
+            d2_df = pd.read_csv(d2_path)
+            result = evaluate_query(qname, d1_df, d2_df)
+            baseline_results.append(result)
 
-        method_summary = results_to_dataframe(method_results)
-        method_detail = detailed_results_to_dataframe(method_results)
-        method_summary.to_csv(OUTPUT_DIR / f"method_{method_name}_summary.csv", index=False)
-        method_detail.to_csv(OUTPUT_DIR / f"method_{method_name}_detail.csv", index=False)
-        method_details[method_name] = method_detail
-        print(f"    {method_name}: {len(method_results)} queries evaluated")
+        baseline_summary = results_to_dataframe(baseline_results)
+        baseline_detail = detailed_results_to_dataframe(baseline_results)
+        baseline_summary.to_csv(OUTPUT_DIR / "baseline_d1_vs_d2_summary.csv", index=False)
+        baseline_detail.to_csv(OUTPUT_DIR / "baseline_d1_vs_d2_detail.csv", index=False)
+        print(f"  Baseline: {len(baseline_results)} queries evaluated")
 
-    # Step 7: Compute normalized errors
-    print("\nStep 9: Computing normalized errors...")
-    baseline_vals = compute_metric_values(baseline_detail)
+        # Step 8: Evaluate real vs each synthetic method
+        print("\nStep 8: Evaluating real vs synthetic for each method...")
+        method_details = {}
+        for method_name, synth_dir in SYNTH_METHODS.items():
+            print(f"\n  --- {method_name} ---")
+            method_results = []
+            for qname in sorted(QUERY_METADATA.keys()):
+                real_path = RESULTS_DIR / "real" / f"{qname}.csv"
+                synth_path = synth_dir / f"{qname}.csv"
+                if not real_path.exists():
+                    continue
+                if not synth_path.exists():
+                    print(f"    Skipping {qname}: no synth CSV")
+                    continue
+                real_df = pd.read_csv(real_path)
+                synth_df = pd.read_csv(synth_path)
+                result = evaluate_query(qname, real_df, synth_df)
+                method_results.append(result)
 
-    all_normalized = []
-    for method_name, detail_df in method_details.items():
-        method_vals = compute_metric_values(detail_df)
-        norm_rows = compute_normalized_errors(baseline_vals, method_vals)
-        for row in norm_rows:
-            row["method"] = method_name
-        all_normalized.extend(norm_rows)
+            method_summary = results_to_dataframe(method_results)
+            method_detail = detailed_results_to_dataframe(method_results)
+            method_summary.to_csv(OUTPUT_DIR / f"method_{method_name}_summary.csv", index=False)
+            method_detail.to_csv(OUTPUT_DIR / f"method_{method_name}_detail.csv", index=False)
+            method_details[method_name] = method_detail
+            print(f"    {method_name}: {len(method_results)} queries evaluated")
 
-    norm_df = pd.DataFrame(all_normalized)
-    norm_df.to_csv(OUTPUT_DIR / "normalized_errors.csv", index=False)
+        # Step 9: Compute normalized errors
+        print("\nStep 9: Computing normalized errors...")
+        baseline_vals = compute_metric_values(baseline_detail)
 
-    # Step 8: Create summary table
-    print("\n" + "=" * 60)
-    print("NORMALIZED ERROR SUMMARY")
-    print("=" * 60)
+        all_normalized = []
+        for method_name, detail_df in method_details.items():
+            method_vals = compute_metric_values(detail_df)
+            norm_rows = compute_normalized_errors(baseline_vals, method_vals)
+            for row in norm_rows:
+                row["method"] = method_name
+            all_normalized.extend(norm_rows)
 
-    if len(norm_df) > 0:
-        # Zero-baseline metrics are excluded in compute_normalized_errors(),
-        # so all remaining values are finite.
-        finite_df = norm_df
+        norm_df = pd.DataFrame(all_normalized)
+        norm_df.to_csv(OUTPUT_DIR / "normalized_errors.csv", index=False)
 
-        # Per-method summary
-        print("\n--- Per-method mean normalized error ---")
-        method_summary = finite_df.groupby("method")["normalized_error"].agg(
-            ["mean", "median", "std", "count"]
-        )
-        print(method_summary.to_string())
-        method_summary.to_csv(OUTPUT_DIR / "normalized_error_per_method.csv")
+        # Step 10: Create summary table
+        print("\n" + "=" * 60)
+        print("NORMALIZED ERROR SUMMARY")
+        print("=" * 60)
 
-        # Per-method, per-query-type summary
-        print("\n--- Per-method, per-query-type mean normalized error ---")
-        # Map queries to types
-        query_types = {q: m["type"] for q, m in QUERY_METADATA.items()}
-        finite_df = finite_df.copy()
-        finite_df["query_type"] = finite_df["query"].map(query_types)
-        pivot = finite_df.groupby(["method", "query_type"])["normalized_error"].agg(
-            ["mean", "median", "count"]
-        )
-        print(pivot.to_string())
-        pivot.to_csv(OUTPUT_DIR / "normalized_error_by_method_querytype.csv")
+        if len(norm_df) > 0:
+            # Zero-baseline metrics are excluded in compute_normalized_errors(),
+            # so all remaining values are finite.
+            finite_df = norm_df
 
-        # Per-method, per-query summary (for the LaTeX table)
-        print("\n--- Per-method, per-query mean normalized error ---")
-        query_method = finite_df.groupby(["query", "method"])["normalized_error"].mean().unstack()
-        print(query_method.to_string())
-        query_method.to_csv(OUTPUT_DIR / "normalized_error_per_query_method.csv")
+            # Per-method summary
+            print("\n--- Per-method mean normalized error ---")
+            method_summary = finite_df.groupby("method")["normalized_error"].agg(
+                ["mean", "median", "std", "count"]
+            )
+            print(method_summary.to_string())
+            method_summary.to_csv(OUTPUT_DIR / "normalized_error_per_method.csv")
 
-        # Overall comparison
-        print("\n--- Overall method ranking (lower is better) ---")
-        ranking = finite_df.groupby("method")["normalized_error"].median().sort_values()
-        for method, val in ranking.items():
-            print(f"  {method}: median normalized error = {val:.4f}")
+            # Per-method, per-query-type summary
+            print("\n--- Per-method, per-query-type mean normalized error ---")
+            # Map queries to types
+            query_types = {q: m["type"] for q, m in QUERY_METADATA.items()}
+            finite_df = finite_df.copy()
+            finite_df["query_type"] = finite_df["query"].map(query_types)
+            pivot = finite_df.groupby(["method", "query_type"])["normalized_error"].agg(
+                ["mean", "median", "count"]
+            )
+            print(pivot.to_string())
+            pivot.to_csv(OUTPUT_DIR / "normalized_error_by_method_querytype.csv")
 
-    print(f"\nAll results saved to {OUTPUT_DIR}")
-    con.close()
+            # Per-method, per-query summary (for the LaTeX table)
+            print("\n--- Per-method, per-query mean normalized error ---")
+            query_method = finite_df.groupby(["query", "method"])["normalized_error"].mean().unstack()
+            print(query_method.to_string())
+            query_method.to_csv(OUTPUT_DIR / "normalized_error_per_query_method.csv")
+
+            # Overall comparison
+            print("\n--- Overall method ranking (lower is better) ---")
+            ranking = finite_df.groupby("method")["normalized_error"].median().sort_values()
+            for method, val in ranking.items():
+                print(f"  {method}: median normalized error = {val:.4f}")
+
+        print(f"\nAll results saved to {OUTPUT_DIR}")
+    finally:
+        con.close()
 
 
 if __name__ == "__main__":
