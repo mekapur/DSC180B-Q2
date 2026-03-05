@@ -326,6 +326,7 @@ def _count_aggregate_queries(real_results_dir: Path) -> int:
         ("battery_power_on_geographic_summary.csv", 1),  # count only (hints)
         ("popular_browsers_by_count_usage_percentage.csv", 1),  # pct
         ("most_popular_browser_in_each_country_by_system_count.csv", 1),
+        ("pkg_power_by_country.csv", 1),  # count only (hints)
     ]:
         path = real_results_dir / name
         if path.exists():
@@ -410,7 +411,9 @@ def build_generation_plan(
         real_results_dir, "popular_browsers_by_count_usage_percentage.csv"
     )
     # Noise browser percentages
-    n_browser_systems = browser_df["percent_systems"].sum()  # ~100
+    # Use anchor table size (1M guids) as the underlying system count;
+    # the CSV only contains percentages, not raw counts.
+    n_browser_systems = 1_000_000
     browser_df["percent_systems"] = browser_df["percent_systems"].apply(
         lambda x: _dp_noise_percentage(x, n_browser_systems, sigma_per_query, rng)
     )
