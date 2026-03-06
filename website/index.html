@@ -79,22 +79,22 @@
       <p>
         Differential privacy adds carefully calibrated noise so that an algorithm&rsquo;s output is nearly identical
         whether or not any single record is in the dataset. The privacy &ldquo;cost&rdquo; is measured by
-        a parameter &epsilon; (epsilon). Smaller &epsilon; means stronger privacy but potentially lower utility.
-        We use (&epsilon;,&nbsp;&delta;)-differential privacy with &epsilon;&nbsp;=&nbsp;4.0 and
-        &delta;&nbsp;=&nbsp;10<sup>&minus;5</sup>, matched across all methods for fair comparison.
+        a parameter $\epsilon$ (epsilon). Smaller $\epsilon$ means stronger privacy but potentially lower utility.
+        We use $(\epsilon, \delta)$-differential privacy with $\epsilon = 4.0$ and
+        $\delta = 10^{-5}$, matched across all methods for fair comparison.
       </p>
 
       <details>
         <summary>Formal definition (click to expand)</summary>
         <div>
-          <p>A randomized mechanism <em>M</em> satisfies (&epsilon;,&nbsp;&delta;)-DP if for all
-          neighboring datasets <em>D</em>, <em>D&prime;</em> (differing in one record) and all measurable
-          sets <em>S</em>.</p>
-          <p style="text-align:center;font-family:var(--mono);">
-            Pr[M(D) &isin; S] &le; e<sup>&epsilon;</sup> &middot; Pr[M(D&prime;) &isin; S] + &delta;
+          <p>A randomized mechanism $M$ satisfies $(\epsilon, \delta)$-DP if for all
+          neighboring datasets $D$, $D'$ (differing in one record) and all measurable
+          sets $S$.</p>
+          <p style="text-align:center;">
+            $$\Pr[M(D) \in S] \le e^{\epsilon} \cdot \Pr[M(D') \in S] + \delta$$
           </p>
           <p>In practice, DP-SGD tracks privacy loss via R&eacute;nyi Differential Privacy (RDP) accountants
-          and converts to (&epsilon;,&nbsp;&delta;) at the end of training.</p>
+          and converts to $(\epsilon, \delta)$ at the end of training.</p>
         </div>
       </details>
 
@@ -169,10 +169,10 @@
             <tr><th>Metric</th><th>Applies to</th><th>Pass threshold</th><th>Interpretation</th></tr>
           </thead>
           <tbody>
-            <tr><td>Relative Error</td><td>Aggregates</td><td>&le;&nbsp;0.3 (median)</td><td>Lower is better. Synthetic aggregates close to real.</td></tr>
-            <tr><td>Total Variation</td><td>Distributions</td><td>&le;&nbsp;0.15</td><td>Lower is better. Distributions overlap well.</td></tr>
-            <tr><td>Jaccard Similarity</td><td>Group coverage</td><td>&ge;&nbsp;0.5</td><td>Higher is better. Same groups appear in both.</td></tr>
-            <tr><td>Spearman Rho</td><td>Rankings</td><td>&ge;&nbsp;0.7</td><td>Higher is better. Same items ranked similarly.</td></tr>
+            <tr><td>Relative Error</td><td>Aggregates</td><td>$\le 0.3$ (median)</td><td>Lower is better. Synthetic aggregates close to real.</td></tr>
+            <tr><td>Total Variation</td><td>Distributions</td><td>$\le 0.15$</td><td>Lower is better. Distributions overlap well.</td></tr>
+            <tr><td>Jaccard Similarity</td><td>Group coverage</td><td>$\ge 0.5$</td><td>Higher is better. Same groups appear in both.</td></tr>
+            <tr><td>Spearman Rho</td><td>Rankings</td><td>$\ge 0.7$</td><td>Higher is better. Same items ranked similarly.</td></tr>
           </tbody>
         </table>
       </div>
@@ -232,7 +232,7 @@
 
       <h3>Privacy budget comparison</h3>
       <p>
-        All methods use &epsilon;&nbsp;=&nbsp;4.0, &delta;&nbsp;=&nbsp;10<sup>&minus;5</sup>.
+        All methods use $\epsilon = 4.0$, $\delta = 10^{-5}$.
         Training-based methods (DP-SGD) track cumulative privacy loss via R&eacute;nyi DP accountants.
         Training-free methods (PE) spend their budget through the exponential mechanism&rsquo;s selection step.
       </p>
@@ -262,12 +262,12 @@
         <div class="score-card">
           <h3>Per-table DP-SGD</h3>
           <p class="score">6 / 21</p>
-          <p class="small">Best on aggregates (RE&nbsp;=&nbsp;0.54)</p>
+          <p class="small">Best on aggregates ($\text{RE} = 0.54$)</p>
         </div>
         <div class="score-card">
           <h3>MST (Marginal)</h3>
           <p class="score">6 / 21</p>
-          <p class="small">Best on distributions (TV&nbsp;=&nbsp;0.105)</p>
+          <p class="small">Best on distributions ($\text{TV} = 0.105$)</p>
         </div>
         <div class="score-card">
           <h3>Wide-table DP-VAE</h3>
@@ -297,7 +297,7 @@
         </table>
       </div>
       <p class="small">
-        Avg score ranges 0&ndash;1 (higher is better, 1 = perfect fidelity).
+        Avg score ranges $0$&ndash;$1$ (higher is better, $1$ = perfect fidelity).
         Median normalized error measures how far off the synthetic data is on average (lower is better).
       </p>
 
@@ -354,7 +354,7 @@
          This causes 0% group coverage on queries involving rare categories.</p>
 
       <h4>4. DP noise masking signal (all methods)</h4>
-      <p>At &epsilon;&nbsp;=&nbsp;4.0, privacy noise is large enough to mask subtle correlations (e.g., CPU frequency
+      <p>At $\epsilon = 4.0$, privacy noise is large enough to mask subtle correlations (e.g., CPU frequency
          vs. power consumption) and rare subgroups.</p>
 
       <h3>What changed after early attempts</h3>
@@ -397,13 +397,13 @@
          across multiple methods. This suggests distribution synthesis is largely solved for non-sparse data.</p>
 
       <h4>5. DP noise is necessary but limiting</h4>
-      <p>Even at &epsilon;&nbsp;=&nbsp;4.0 (moderate privacy), noise masked subtle correlations and rare subgroups.
+      <p>Even at $\epsilon = 4.0$ (moderate privacy), noise masked subtle correlations and rare subgroups.
          Query-specific privacy budgets via advanced composition may help allocate noise more efficiently.</p>
 
       <h3>Limitations</h3>
       <p>
-        We only evaluated at a single privacy budget of &epsilon;&nbsp;=&nbsp;4.0, and performance at
-        stricter budgets (&epsilon;&nbsp;&lt;&nbsp;1) may differ substantially. Our results are also specific to the Intel DCA corpus,
+        We only evaluated at a single privacy budget of $\epsilon = 4.0$, and performance at
+        stricter budgets ($\epsilon < 1$) may differ substantially. Our results are also specific to the Intel DCA corpus,
         and other domains like healthcare or finance may show different method rankings.
         We did not implement methods that reason about foreign keys during synthesis, such as DP joins or relational GANs.
         Private Evolution used a general-purpose LLM, and domain-specific fine-tuning could improve category coverage.
@@ -448,7 +448,7 @@
          of rare values.</p>
 
       <h4>Multi-epsilon evaluation</h4>
-      <p>Characterize the privacy-utility frontier by sweeping &epsilon; from 0.1 to 10 for each method.</p>
+      <p>Characterize the privacy-utility frontier by sweeping $\epsilon$ from $0.1$ to $10$ for each method.</p>
 
       <h4>Broader datasets</h4>
       <p>Validate findings on healthcare, financial, and census datasets to test generalizability.</p>
