@@ -54,7 +54,7 @@
 
     <!-- ==================== ABSTRACT ==================== -->
     <div class="abstract">
-      <p>Differentially private synthetic data generation promises to resolve the tension between data utility and individual privacy, enabling the release of datasets that preserve the statistical properties analysts need while bounding what any adversary can learn about a single record. Two paradigms have emerged: training-based methods, which inject calibrated noise during model optimization, and training-free methods, which leverage foundation models through black-box API access. We investigate both approaches on Intel&rsquo;s Driver and Client Applications (DCA) telemetry corpus, evaluating against a benchmark of 21 analytical SQL queries representative of production business intelligence workloads.</p>
+      <p>Differentially private synthetic data generation promises to resolve the tension between data utility and individual privacy, enabling the release of datasets that preserve the statistical properties analysts need while bounding what any adversary can learn about a single record. Two paradigms have emerged. Training-based methods inject calibrated noise during model optimization. Training-free methods leverage foundation models through black-box API access. We investigate both approaches on Intel&rsquo;s Driver and Client Applications (DCA) telemetry corpus, evaluating against a benchmark of 21 analytical SQL queries representative of production business intelligence workloads.</p>
     </div>
 
     <!-- ==================== INTRODUCTION ==================== -->
@@ -63,7 +63,7 @@
 
       <h3>Why does this matter?</h3>
       <p>
-        Device telemetry&mdash;hardware specs, usage patterns, network activity&mdash;helps product teams
+        Device telemetry, including hardware specs, usage patterns, and network activity, helps product teams
         improve software, but it contains sensitive information about individuals. Releasing raw telemetry
         poses privacy risks. Differential privacy (DP) lets us publish synthetic data that
         preserves statistical utility while mathematically bounding the information leaked about any single
@@ -71,15 +71,15 @@
       </p>
 
       <div class="callout">
-        <p>The core question: which DP synthesis approach best preserves the utility of
-        production SQL workloads on multi-table relational data?</p>
+                <p>The core question we investigate is which DP synthesis approach best preserves the utility of
+                production SQL workloads on multi-table relational data.</p>
       </div>
 
       <h3>The privacy-utility tension</h3>
       <p>
         Differential privacy adds carefully calibrated noise so that an algorithm&rsquo;s output is nearly identical
         whether or not any single record is in the dataset. The privacy &ldquo;cost&rdquo; is measured by
-        a parameter &epsilon; (epsilon)&mdash;smaller &epsilon; means stronger privacy but potentially lower utility.
+        a parameter &epsilon; (epsilon). Smaller &epsilon; means stronger privacy but potentially lower utility.
         We use (&epsilon;,&nbsp;&delta;)-differential privacy with &epsilon;&nbsp;=&nbsp;4.0 and
         &delta;&nbsp;=&nbsp;10<sup>&minus;5</sup>, matched across all methods for fair comparison.
       </p>
@@ -89,7 +89,7 @@
         <div>
           <p>A randomized mechanism <em>M</em> satisfies (&epsilon;,&nbsp;&delta;)-DP if for all
           neighboring datasets <em>D</em>, <em>D&prime;</em> (differing in one record) and all measurable
-          sets <em>S</em>:</p>
+          sets <em>S</em>.</p>
           <p style="text-align:center;font-family:var(--mono);">
             Pr[M(D) &isin; S] &le; e<sup>&epsilon;</sup> &middot; Pr[M(D&prime;) &isin; S] + &delta;
           </p>
@@ -99,11 +99,11 @@
       </details>
 
       <h3>Two paradigms for synthetic data</h3>
-      <ul>
-        <li>Training-based methods inject calibrated noise during model optimization (e.g., DP-SGD with VAEs).</li>
-        <li>Training-free methods leverage foundation models through black-box API access (e.g., Private Evolution with LLMs).</li>
-      </ul>
-      <p>We compare four concrete instantiations of these paradigms on a realistic multi-table telemetry benchmark.</p>
+      <p>
+        Training-based methods inject calibrated noise during model optimization, as in DP-SGD with VAEs.
+        Training-free methods leverage foundation models through black-box API access, as in Private Evolution with LLMs.
+        We compare four concrete instantiations of these paradigms on a realistic multi-table telemetry benchmark.
+      </p>
     </section>
 
     <hr>
@@ -138,7 +138,7 @@
       </div>
       <p class="small">
         Tables are linked by a shared <code>system_id</code> foreign key. This relational structure is central
-        to our evaluation&mdash;many benchmark queries require joining 2&ndash;3 tables.
+        to our evaluation, and many benchmark queries require joining 2 to 3 tables.
       </p>
 
       <h3>The 21-query SQL benchmark</h3>
@@ -169,10 +169,10 @@
             <tr><th>Metric</th><th>Applies to</th><th>Pass threshold</th><th>Interpretation</th></tr>
           </thead>
           <tbody>
-            <tr><td>Relative Error</td><td>Aggregates</td><td>&le;&nbsp;0.3 (median)</td><td>Lower is better; synthetic aggregates close to real</td></tr>
-            <tr><td>Total Variation</td><td>Distributions</td><td>&le;&nbsp;0.15</td><td>Lower is better; distributions overlap well</td></tr>
-            <tr><td>Jaccard Similarity</td><td>Group coverage</td><td>&ge;&nbsp;0.5</td><td>Higher is better; same groups appear in both</td></tr>
-            <tr><td>Spearman Rho</td><td>Rankings</td><td>&ge;&nbsp;0.7</td><td>Higher is better; same items ranked similarly</td></tr>
+            <tr><td>Relative Error</td><td>Aggregates</td><td>&le;&nbsp;0.3 (median)</td><td>Lower is better. Synthetic aggregates close to real.</td></tr>
+            <tr><td>Total Variation</td><td>Distributions</td><td>&le;&nbsp;0.15</td><td>Lower is better. Distributions overlap well.</td></tr>
+            <tr><td>Jaccard Similarity</td><td>Group coverage</td><td>&ge;&nbsp;0.5</td><td>Higher is better. Same groups appear in both.</td></tr>
+            <tr><td>Spearman Rho</td><td>Rankings</td><td>&ge;&nbsp;0.7</td><td>Higher is better. Same items ranked similarly.</td></tr>
           </tbody>
         </table>
       </div>
@@ -181,11 +181,12 @@
       </p>
 
       <h3>Data handling</h3>
-      <ul>
-        <li>No data leakage: synthetic data is generated from the full dataset; benchmark queries test statistical fidelity, not prediction.</li>
-        <li>No private data in outputs: all published results are aggregate statistics or synthetic data. No individual records are exposed.</li>
-        <li>Preprocessing: continuous columns normalized to [0,&nbsp;1]; categorical columns label-encoded. Missing values imputed per table.</li>
-      </ul>
+      <p>
+        There is no data leakage in our setup. Synthetic data is generated from the full dataset, and benchmark
+        queries test statistical fidelity rather than prediction. All published results are aggregate statistics
+        or synthetic data, and no individual records are ever exposed. During preprocessing, continuous columns
+        are normalized to [0,&nbsp;1] and categorical columns are label-encoded. Missing values are imputed per table.
+      </p>
     </section>
 
     <hr>
@@ -200,41 +201,34 @@
         Variational Autoencoder (VAE) with DP-SGD. The VAE learns a compressed latent representation and
         generates synthetic records that preserve cross-table structure.
       </p>
-      <ul>
-        <li>Strength: preserves foreign-key relationships by design.</li>
-        <li>Weakness: extreme sparsity (most columns are null after flattening) causes zero-inflation and mode collapse.</li>
-      </ul>
+      <p>
+        This approach preserves foreign-key relationships by design. However, extreme sparsity from flattening (most columns are null) causes zero-inflation and mode collapse.
+      </p>
 
       <h3>2. Per-table DP-SGD</h3>
       <p>
         Train a separate VAE for each table independently using DP-SGD. This avoids the sparsity problem
         of wide-table flattening but breaks cross-table relationships.
       </p>
-      <ul>
-        <li>Strength: high within-table fidelity; each model is simpler and faster to train.</li>
-        <li>Weakness: foreign-key mismatches&mdash;a synthetic CPU record may reference a non-existent system.</li>
-      </ul>
+      <p>
+        This approach achieves high within-table fidelity, and each model is simpler and faster to train. The downside is foreign-key mismatches, where a synthetic CPU record may reference a non-existent system.
+      </p>
 
       <h3>3. MST (Maximum Spanning Tree)</h3>
       <p>
-        A histogram-based baseline: estimate low-dimensional marginals under DP, build a dependency graph
-        (Chow-Liu tree), and sample synthetic records that are consistent with the noisy marginals.
+        MST is a histogram-based baseline. It estimates low-dimensional marginals under DP, builds a dependency graph
+        (Chow-Liu tree), and samples synthetic records that are consistent with the noisy marginals.
+        It is interpretable, fast, and works well for categorical data with clear dependencies. On the other hand,
+        it scales exponentially in table width and struggles with many continuous or high-cardinality columns.
       </p>
-      <ul>
-        <li>Strength: interpretable, fast, works well for categorical data with clear dependencies.</li>
-        <li>Weakness: exponential in table width; struggles with many continuous or high-cardinality columns.</li>
-      </ul>
 
       <h3>4. Private Evolution</h3>
       <p>
-        A training-free approach: use a large language model (LLM) to generate candidate synthetic records,
-        then use the exponential mechanism (a DP algorithm) to select candidates that best match real data
-        distributions.
+        Private Evolution is a training-free approach. A large language model (LLM) generates candidate synthetic records,
+        and the exponential mechanism (a DP algorithm) selects candidates that best match real data
+        distributions. No training is required, and the method can target specific query workloads.
+        The limitation is that it depends on the LLM's training data, so categories or values unseen by the model cannot be synthesized.
       </p>
-      <ul>
-        <li>Strength: no training required; can target specific query workloads.</li>
-        <li>Weakness: limited by the LLM&rsquo;s training data&mdash;categories or values unseen by the model cannot be synthesized.</li>
-      </ul>
 
       <h3>Privacy budget comparison</h3>
       <p>
@@ -244,14 +238,14 @@
       </p>
 
       <h3>What the team built vs. reused</h3>
-      <ul>
-        <li>Built: the 21-query benchmark, the per-table DP-SGD pipeline, the Private Evolution integration, and the evaluation harness.</li>
-        <li>Reused: the MST implementation from the
-          <a href="https://github.com/ryan112358/private-pgm">private-pgm</a> library,
-          the VAE architecture adapted from
-          <a href="https://github.com/sdv-dev/SDV">SDV</a>, and
-          Opacus for DP-SGD gradient clipping.</li>
-      </ul>
+      <p>
+        The team built the 21-query benchmark, the per-table DP-SGD pipeline, the Private Evolution integration, and the evaluation harness.
+        We reused the MST implementation from the
+        <a href="https://github.com/ryan112358/private-pgm">private-pgm</a> library,
+        the VAE architecture adapted from
+        <a href="https://github.com/sdv-dev/SDV">SDV</a>, and
+        Opacus for DP-SGD gradient clipping.
+      </p>
     </section>
 
     <hr>
@@ -308,7 +302,7 @@
       </p>
 
       <h3>Per-query breakdown</h3>
-      <p>Full scores for all 21 queries. Green = pass, red = fail, amber = partial, gray = not evaluated.</p>
+      <p>Full scores for all 21 queries are shown below. Green indicates a pass, red indicates a fail, amber indicates a partial result, and gray means the query was not evaluated.</p>
       <div class="table-wrapper" id="queryTable">
         <p class="small">Loading query scores&hellip;</p>
       </div>
@@ -327,22 +321,22 @@
       <h3>Key insights</h3>
 
       <h4>What worked</h4>
-      <ul>
-        <li>Simple distributions: histogram queries (browser usage, RAM utilization) passed for MST and per-table DP-SGD. Total Variation distances were low (&lt;&nbsp;0.15).</li>
-        <li>Single-table aggregates: queries on independent features within one table were well-preserved by per-table DP-SGD.</li>
-        <li>MST on structured data: marginal-based synthesis excelled at queries with high-cardinality group-by keys.</li>
-      </ul>
+      <p>
+        Simple distributions like histogram queries for browser usage and RAM utilization passed for MST and per-table DP-SGD, with Total Variation distances below 0.15.
+        Single-table aggregates on independent features within one table were well-preserved by per-table DP-SGD.
+        MST also excelled at queries with high-cardinality group-by keys, where marginal-based synthesis proved effective.
+      </p>
 
       <h4>What failed</h4>
-      <ul>
-        <li>Join-heavy aggregates: queries requiring cross-table joins failed across all methods due to foreign-key mismatches.</li>
-        <li>Wide-table sparsity: DP-VAE on the wide table suffered from zero-inflation&mdash;continuous distributions collapsed to near-zero values.</li>
-        <li>LLM knowledge gaps (PE): Private Evolution could not synthesize categories unseen in the LLM&rsquo;s training data.</li>
-      </ul>
+      <p>
+        Join-heavy aggregates requiring cross-table joins failed across all methods due to foreign-key mismatches.
+        DP-VAE on the wide table suffered from zero-inflation, and continuous distributions collapsed to near-zero values.
+        Private Evolution could not synthesize categories unseen in the LLM's training data, leaving knowledge gaps for rare values.
+      </p>
 
       <div class="callout">
-        <p>Interpretation guide: differences in pass rates of 2+ queries are significant. Score differences &lt;&nbsp;0.05 are within noise.
-        The gap between Per-table/MST (6/21) and Wide/PE (1&ndash;2/8) reflects a fundamental structural limitation, not just noise.</p>
+          <p>Differences in pass rates of 2 or more queries are significant, while score differences below 0.05 are within noise.
+          The gap between Per-table/MST (6/21) and Wide/PE (1 to 2 out of 8) reflects a fundamental structural limitation, not just noise.</p>
       </div>
 
       <h3>Failure modes</h3>
@@ -364,13 +358,13 @@
          vs. power consumption) and rare subgroups.</p>
 
       <h3>What changed after early attempts</h3>
-      <ul>
-        <li>Initial approach: we started with only the wide-table DP-VAE. Pass rate was 1/8, prompting us to explore per-table splitting.</li>
-        <li>Adding per-table: splitting improved single-table queries dramatically but revealed the join problem.</li>
-        <li>Adding MST: the histogram baseline matched per-table DP-SGD on pass rate (6/21) but with different query strengths.</li>
-        <li>Adding Private Evolution: the training-free method showed promise on targeted workloads but was limited by LLM knowledge.</li>
-        <li>Takeaway: no single method dominates. A hybrid routing strategy (different methods for different query types) is the most promising path forward.</li>
-      </ul>
+      <p>
+        We started with only the wide-table DP-VAE, which achieved a pass rate of just 1 out of 8 and prompted us to explore per-table splitting.
+        Splitting improved single-table queries dramatically but revealed the join problem. Adding the MST histogram baseline matched per-table DP-SGD
+        on pass rate (6/21) but with different query strengths. Adding Private Evolution showed promise on targeted workloads but was limited by LLM knowledge.
+        The overarching takeaway is that no single method dominates, and a hybrid routing strategy using different methods for different query types
+        is the most promising path forward.
+      </p>
     </section>
 
     <hr>
@@ -385,7 +379,7 @@
       <p>Per-table DP-SGD and MST generated high-fidelity data within individual tables but failed on queries
          joining multiple tables. Foreign-key mismatches caused inflated relative errors and low Jaccard overlap.</p>
       <div class="callout">
-        <p>Lesson: protecting per-table privacy is not sufficient for relational workloads.
+        <p>Protecting per-table privacy is not sufficient for relational workloads.
         Future methods must reason about foreign-key relationships directly.</p>
       </div>
 
@@ -407,18 +401,15 @@
          Query-specific privacy budgets via advanced composition may help allocate noise more efficiently.</p>
 
       <h3>Limitations</h3>
-      <ul>
-        <li>Single privacy budget: we only evaluated at &epsilon;&nbsp;=&nbsp;4.0. Performance at
-            stricter budgets (&epsilon;&nbsp;&lt;&nbsp;1) may differ substantially.</li>
-        <li>One dataset: results are specific to the Intel DCA corpus. Other domains (healthcare,
-            finance) may show different method rankings.</li>
-        <li>No relational DP: we did not implement methods that reason about foreign keys
-            during synthesis (e.g., DP joins, relational GANs).</li>
-        <li>LLM not fine-tuned: Private Evolution used a general-purpose LLM. Domain-specific
-            fine-tuning could improve category coverage.</li>
-        <li>Benchmark design: our 21 queries, while diverse, may not cover all production
-            workload patterns. Results should be interpreted as indicative, not exhaustive.</li>
-      </ul>
+      <p>
+        We only evaluated at a single privacy budget of &epsilon;&nbsp;=&nbsp;4.0, and performance at
+        stricter budgets (&epsilon;&nbsp;&lt;&nbsp;1) may differ substantially. Our results are also specific to the Intel DCA corpus,
+        and other domains like healthcare or finance may show different method rankings.
+        We did not implement methods that reason about foreign keys during synthesis, such as DP joins or relational GANs.
+        Private Evolution used a general-purpose LLM, and domain-specific fine-tuning could improve category coverage.
+        Finally, our 21 queries, while diverse, may not cover all production workload patterns, so results should be
+        interpreted as indicative rather than exhaustive.
+      </p>
 
       <h3>Method comparison</h3>
       <div class="table-wrapper">
@@ -438,13 +429,13 @@
       </div>
 
       <h3>Recommendations for practitioners</h3>
-      <p>No single method dominates. We recommend routing queries to different methods based on type:</p>
-      <ul>
-        <li>Simple aggregates and distributions: MST (fast, interpretable, good TV scores).</li>
-        <li>Row-level analytics: per-table DP-SGD (best within-table fidelity).</li>
-        <li>Ranking queries: MST (good Jaccard overlap on top-k items).</li>
-        <li>Cross-table joins: requires future relational DP methods; current approaches are insufficient.</li>
-      </ul>
+      <p>
+        No single method dominates. We recommend routing queries to different methods based on type.
+        For simple aggregates and distributions, MST is fast, interpretable, and achieves good TV scores.
+        For row-level analytics, per-table DP-SGD offers the best within-table fidelity.
+        For ranking queries, MST provides good Jaccard overlap on top-k items.
+        Cross-table joins remain an open challenge that requires future relational DP methods, as current approaches are insufficient.
+      </p>
 
       <h3>Future directions</h3>
 
@@ -466,16 +457,13 @@
 
       <div class="callout" style="border-left-width:4px;">
         <p style="font-weight:500;margin-bottom:8px;">Conclusion</p>
-        <p style="margin-bottom:12px;">
-          Training-based and training-free DP approaches each have strengths and weaknesses.
-          There is no silver bullet. Our evaluation shows that:
+        <p>
+          Training-based and training-free DP approaches each have strengths and weaknesses,
+          and there is no silver bullet. Our evaluation shows that simple distributions are tractable
+          while complex joins are not yet solved. Per-table and wide-table synthesis represent opposite trade-offs.
+          Hybrid query-aware routing significantly improves overall performance. Future work in relational DP
+          and workload-aware composition will be critical for closing the remaining gaps.
         </p>
-        <ul style="max-width:none;">
-          <li>Simple distributions are tractable; complex joins are not (yet).</li>
-          <li>Per-table and wide-table synthesis represent opposite trade-offs.</li>
-          <li>Hybrid query-aware routing significantly improves overall performance.</li>
-          <li>Future work in relational DP and workload-aware composition is critical.</li>
-        </ul>
       </div>
     </section>
 
@@ -484,14 +472,22 @@
     <!-- ==================== REFERENCES ==================== -->
     <section id="references">
       <h2>References</h2>
-      <ul>
-        <li>Dwork, C., and Roth, A. (2014). <em>The Algorithmic Foundations of Differential Privacy.</em> Foundations and Trends in Theoretical Computer Science.</li>
-        <li>Abadi, M., et al. (2016). <em>Deep Learning with Differential Privacy.</em> CCS 2016.</li>
-        <li>McKenna, R., Miklau, G., and Sheldon, D. (2021). <em>Winning the NIST Contest: A Scalable and General Approach to Differentially Private Synthetic Data.</em> VLDB 2021.</li>
-        <li>Xie, Z., et al. (2024). <em>Private Evolution: Training-Free Differentially Private Synthetic Data via LLMs.</em></li>
-        <li><a href="https://github.com/jktrns/DSC180B-Q2">Project GitHub repository</a></li>
-        <li><a href="https://github.com/jktrns/DSC180B-Q2/raw/main/report/q2-report.pdf">Full technical report (PDF)</a></li>
-      </ul>
+      <p>
+        Dwork, C., and Roth, A. (2014). <em>The Algorithmic Foundations of Differential Privacy.</em> Foundations and Trends in Theoretical Computer Science.
+      </p>
+      <p>
+        Abadi, M., et al. (2016). <em>Deep Learning with Differential Privacy.</em> CCS 2016.
+      </p>
+      <p>
+        McKenna, R., Miklau, G., and Sheldon, D. (2021). <em>Winning the NIST Contest: A Scalable and General Approach to Differentially Private Synthetic Data.</em> VLDB 2021.
+      </p>
+      <p>
+        Xie, Z., et al. (2024). <em>Private Evolution: Training-Free Differentially Private Synthetic Data via LLMs.</em>
+      </p>
+      <p>
+        <a href="https://github.com/jktrns/DSC180B-Q2">Project GitHub repository</a> |
+        <a href="https://github.com/jktrns/DSC180B-Q2/raw/main/report/q2-report.pdf">Full technical report (PDF)</a>
+      </p>
     </section>
   </main>
 
