@@ -224,8 +224,6 @@ h3 {
   font-weight: 500;
   color: var(--text);
   margin: 1.8rem 0 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 h4 {
@@ -235,8 +233,6 @@ h4 {
   font-style: italic;
   color: var(--text);
   margin: 1.3rem 0 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 /* --- Figures --- */
