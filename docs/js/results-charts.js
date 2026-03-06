@@ -62,7 +62,7 @@
 
   function renderPassRateChart(data) {
     const el = document.getElementById('chartPassRate');
-    if (!el) return;
+    if (!el || typeof Plotly === 'undefined') return;
 
     const counts = {};
     const totals = {};
@@ -93,7 +93,7 @@
 
   function renderByTypeChart(data) {
     const el = document.getElementById('chartByType');
-    if (!el) return;
+    if (!el || typeof Plotly === 'undefined') return;
 
     const types = [...new Set(data.map(q => q.type).filter(Boolean))];
     const traces = METHODS.map((m, i) => {
