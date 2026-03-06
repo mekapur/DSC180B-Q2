@@ -990,7 +990,7 @@ The stratified approach improves over baseline PE (which scored 0 on all 10 eval
 This experiment demonstrates that conditioning PE generation on DP-noised aggregates can meaningfully improve utility for queries that align with the stratification, while maintaining formal privacy guarantees through proper composition.
 
 \paragraph{Improved noise calibration.}
-A follow-up iteration addressed the root cause of the 2/10 result: the per-query noise $\sigma \approx 150$ overwhelmed all but the largest strata. Three changes were applied simultaneously:
+A follow-up iteration addressed the root cause of the 2/10 result: the per-query noise $\sigma \approx 150$ overwhelmed all but the largest strata. Four changes were applied simultaneously:
 
 \begin{enumerate}
     \item \textbf{Per-group budget splitting (Idea \#1):} Instead of composing all $k=1{,}056$ aggregate queries under a single $\varepsilon_{\text{agg}}$, we partition queries into 7 groups (battery, memory, on/off, browser/webcat, hardware, network, hints) and allocate each group an equal share of the total zCDP $\rho$ budget.
@@ -1014,7 +1014,7 @@ battery\_on\_duration\_cpu\_family\_gen & 0.000 & 0.333 & 0.333 & 0.000 \\
 popular\_browsers\_by\_count\_usage\_pct & 0.000 & 0.000 & 0.333 & +0.333 \\
 persona\_web\_cat\_usage\_analysis & 0.000 & 0.097 & 0.161 & +0.064 \\
 battery\_power\_on\_geographic\_summary & 0.000 & 0.000 & 0.000 & 0.000 \\
-avg\_platform\_power\_c0\_freq\_temp & 0.000 & 0.000 & 0.000 & 0.000 \\
+avg\_platform\_power\_c0\_freq\_temp\_by\_chassis & 0.000 & 0.000 & 0.000 & 0.000 \\
 most\_popular\_browser\_in\_each\_country & 0.000 & 0.000 & 0.000 & 0.000 \\
 pkg\_power\_by\_country & 0.000 & 0.000 & 0.000 & 0.000 \\
 \midrule
