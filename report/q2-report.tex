@@ -1157,6 +1157,86 @@ Hybrid routed outputs & 21 & 8 & 38.1\% & 0.404 \\
 \label{tab:additive-followup}
 \end{table}
 
+\subsubsection{Stratified PE with DP-noised aggregates}
+
+The third intervention redesigns the PE generation pipeline to condition on aggregate statistics derived from the real query results. Instead of generating records independently (as in the baseline PE), we:
+\begin{enumerate}
+    \item Read aggregate statistics per stratum from the real benchmark CSVs (e.g., average battery duration per CPU generation, RAM utilization per memory size, webcat distributions per persona).
+    \item Add calibrated Gaussian noise to every aggregate query via the Gaussian mechanism, spending a privacy budget of $\varepsilon_{\text{agg}} = 1.0$. Per-query noise is calibrated via advanced composition: $\sigma_{\text{per-query}} = \sqrt{2k\ln(1.25/\delta)}/\varepsilon_{\text{agg}}$ where $k = 958$ is the total number of aggregate queries across all CSVs.
+    \item Use the noisy aggregates to construct per-stratum prompts (e.g., ``generate 55 Notebook records where batt\_duration\_mins averages ${\sim}187$''). Since these prompts are deterministic functions of the DP-released aggregates, this step is free post-processing under DP.
+    \item Generate a $3\times$ candidate pool (15{,}000 records across 104 strata) and select 5{,}000 via the DP nearest-neighbor histogram mechanism, spending $\varepsilon_{\text{hist}} = 3.0$.
+\end{enumerate}
+
+The total privacy cost is $\varepsilon_{\text{agg}} + \varepsilon_{\text{hist}} = 4.0$ by basic composition, matching the baseline PE budget. The key insight is that noising the aggregates before embedding them in prompts restores the independence assumption required for the histogram's sensitivity-1 analysis: since the candidate pool depends only on the DP-released aggregates (not the raw data), changing one record in the private dataset changes at most one vote in the histogram.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.50\textwidth}YYY}
+\toprule
+\textbf{Query} & \textbf{PE baseline} & \textbf{Stratified PE} & \textbf{Delta} \\
+\midrule
+ram\_utilization\_histogram & 0.000 & \cellcolor{scorehi}1.000 & +1.000 \\
+on\_off\_mods\_sleep\_summary & 0.000 & \cellcolor{scorehi}0.636 & +0.636 \\
+battery\_on\_duration\_cpu\_family\_gen & 0.000 & 0.333 & +0.333 \\
+persona\_web\_cat\_usage\_analysis & 0.000 & 0.097 & +0.097 \\
+battery\_power\_on\_geographic\_summary & 0.000 & 0.000 & 0.000 \\
+Xeon\_network\_consumption & 0.000 & 0.000 & 0.000 \\
+avg\_platform\_power\_c0\_freq\_temp\_by\_chassis & 0.000 & 0.000 & 0.000 \\
+most\_popular\_browser\_in\_each\_country & 0.000 & 0.000 & 0.000 \\
+pkg\_power\_by\_country & 0.000 & 0.000 & 0.000 \\
+popular\_browsers\_by\_count\_usage\_pct & 0.000 & 0.000 & 0.000 \\
+\midrule
+\textbf{Passed ($\geq 0.5$)} & \textbf{0/10} & \textbf{2/10} & \\
+\textbf{Average score} & \textbf{0.000} & \textbf{0.207} & \\
+\bottomrule
+\end{tabularx}
+\caption{Stratified PE with DP-noised aggregates ($\varepsilon_{\text{agg}}=1.0 + \varepsilon_{\text{hist}}=3.0 = 4.0$ total). Results shown only for the 10 evaluable queries (11 queries require reporting tables not producible from the wide table). The stratified approach improves over baseline PE on RAM utilization and on/off/sleep queries where per-stratum conditioning aligns well with the query structure.}
+\label{tab:stratified-pe}
+\end{table}
+
+The stratified approach improves over baseline PE (which scored 0 on all 10 evaluable queries at $\varepsilon = 4.0$) by passing 2 of 10 queries with an average score of 0.207. The gains concentrate on queries whose structure matches the stratification: RAM utilization (stratified by memory size) achieves a perfect 1.0, and the on/off/sleep summary (stratified by CPU market code name) passes at 0.636. Country-stratified and browser queries remain at 0 because the DP noise on per-country counts (sensitivity = 1 per system) overwhelms the small per-country populations, producing effectively uniform country distributions in the prompts.
+
+This experiment demonstrates that conditioning PE generation on DP-noised aggregates can meaningfully improve utility for queries that align with the stratification, while maintaining formal privacy guarantees through proper composition.
+
+\paragraph{Improved noise calibration.}
+A follow-up iteration addressed the root cause of the 2/10 result: the per-query noise $\sigma \approx 150$ overwhelmed all but the largest strata. Four changes were applied simultaneously:
+
+\begin{enumerate}
+    \item \textbf{Per-group budget splitting (Idea \#1):} Instead of composing all $k=1{,}056$ aggregate queries under a single $\varepsilon_{\text{agg}}$, we partition queries into 7 groups (battery, memory, on/off, browser/webcat, hardware, network, hints) and allocate each group an equal share of the total zCDP $\rho$ budget.
+    \item \textbf{zCDP composition (Idea \#2):} We replace basic advanced composition with zero-concentrated DP~\cite{bun2016concentrated}. We convert the total $(\varepsilon_{\text{agg}}, \delta)$ budget to a zCDP parameter $\rho_{\text{total}}$ via $\varepsilon = \rho + 2\sqrt{\rho \ln(1/\delta)}$, split $\rho$ equally across groups, then derive per-query $\sigma_g = \sqrt{k_g / (2\rho_g)}$ for each group $g$ with $k_g$ queries.
+    \item \textbf{Budget rebalancing (Idea \#3):} We shift budget from the histogram to aggregates: $\varepsilon_{\text{agg}} = 3.5$, $\varepsilon_{\text{hist}} = 0.5$ (total unchanged at 4.0). Since stratified generation already conditions the pool on targets, the histogram adds less marginal value than accurate aggregates.
+    \item \textbf{Post-processing consistency (Idea \#6):} After noising, webcat percentage targets are normalized to sum to 100 and all noisy counts are clamped to $[0, \infty)$. This is free under DP (deterministic post-processing).
+\end{enumerate}
+
+The combined effect reduces per-query $\sigma$ from ${\sim}150$ (global composition) to ${\sim}25\text{--}68$ depending on group size, a 2.3--6.4$\times$ improvement. Battery ($k=42$, $\sigma=25.2$), hardware ($k=48$, $\sigma=26.9$), and network ($k=40$, $\sigma=24.6$) benefit most because their small query counts receive the same $\rho$ budget as larger groups.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.42\textwidth}YYYY}
+\toprule
+\textbf{Query} & \textbf{PE base} & \textbf{Strat v1} & \textbf{Strat v2} & \textbf{$\Delta$} \\
+\midrule
+ram\_utilization\_histogram & 0.000 & \cellcolor{scorehi}1.000 & \cellcolor{scorehi}1.000 & 0.000 \\
+on\_off\_mods\_sleep\_summary & 0.000 & \cellcolor{scorehi}0.636 & \cellcolor{scorehi}0.636 & 0.000 \\
+Xeon\_network\_consumption & 0.000 & 0.000 & \cellcolor{scorehi}0.500 & +0.500 \\
+battery\_on\_duration\_cpu\_family\_gen & 0.000 & 0.333 & 0.333 & 0.000 \\
+popular\_browsers\_by\_count\_usage\_pct & 0.000 & 0.000 & 0.333 & +0.333 \\
+persona\_web\_cat\_usage\_analysis & 0.000 & 0.097 & 0.161 & +0.064 \\
+battery\_power\_on\_geographic\_summary & 0.000 & 0.000 & 0.000 & 0.000 \\
+avg\_platform\_power\_c0\_freq\_temp\_by\_chassis & 0.000 & 0.000 & 0.000 & 0.000 \\
+most\_popular\_browser\_in\_each\_country & 0.000 & 0.000 & 0.000 & 0.000 \\
+pkg\_power\_by\_country & 0.000 & 0.000 & 0.000 & 0.000 \\
+\midrule
+\textbf{Passed ($\geq 0.5$)} & \textbf{0/10} & \textbf{2/10} & \textbf{3/10} & \\
+\textbf{Average score} & \textbf{0.000} & \textbf{0.207} & \textbf{0.296} & \\
+\bottomrule
+\end{tabularx}
+\caption{Stratified PE improvement: ``Strat v1'' uses basic advanced composition ($\varepsilon_{\text{agg}}=1.0$, $\sigma \approx 150$); ``Strat v2'' uses zCDP with per-group budget splitting ($\varepsilon_{\text{agg}}=3.5$, $\sigma \approx 25\text{--}68$). Both maintain $\varepsilon_{\text{total}}=4.0$.}
+\label{tab:stratified-pe-v2}
+\end{table}
+
+The improved calibration lifts performance from 2/10 to 3/10 passed queries (average 0.207 $\to$ 0.296). The newly passing query is Xeon network consumption ($0.500$), which benefits directly from the reduced $\sigma_{\text{net}}=24.6$ (vs.\ $\sigma=150$ in v1). Browser popularity also improves to 0.333. Country-stratified queries remain at 0: even with $\sigma \approx 65$ for the hints group, the per-country populations (1--128 systems) are still below the noise floor. This confirms that DP noise calibration is the binding constraint on stratified PE utility, and further gains would require either reducing the number of queries per group or fundamentally different approaches to country-level conditioning.
+
 \newpage
 
 \section{Discussion}
