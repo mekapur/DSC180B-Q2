@@ -60,12 +60,12 @@ def main():
     )
     # Privacy parameters
     parser.add_argument(
-        "--epsilon-agg", type=float, default=1.0,
-        help="Privacy budget for DP-noised aggregates (default: 1.0)",
+        "--epsilon-agg", type=float, default=3.5,
+        help="Privacy budget for DP-noised aggregates (default: 3.5)",
     )
     parser.add_argument(
-        "--epsilon-hist", type=float, default=3.0,
-        help="Privacy budget for DP histogram selection (default: 3.0)",
+        "--epsilon-hist", type=float, default=0.5,
+        help="Privacy budget for DP histogram selection (default: 0.5)",
     )
     parser.add_argument(
         "--delta", type=float, default=1e-5,

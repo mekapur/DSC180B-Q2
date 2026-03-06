@@ -309,38 +309,81 @@ _FIELD_RANGES: dict[str, float] = {
 }
 
 
-def _count_aggregate_queries(real_results_dir: Path) -> int:
-    """Count total number of aggregate queries we will make.
+# ---------------------------------------------------------------------------
+# Per-group query counts: maps group name -> (csv_filename, n_numeric_per_row)
+# Used for per-group budget splitting (Idea #1).
+# ---------------------------------------------------------------------------
 
-    This is needed to calibrate per-query sigma via advanced composition.
-    Each CSV row contributes: 1 count query + K mean/pct queries.
-    We conservatively estimate this from the CSVs.
-    """
-    total = 0
-    # We'll count: for each CSV, rows * (1 count + N numeric targets)
-    for name, n_numeric in [
-        ("battery_on_duration_cpu_family_gen.csv", 2),  # count + 2 means
-        ("ram_utilization_histogram.csv", 3),  # count + 3 means
-        ("on_off_mods_sleep_summary_by_cpu_marketcodename_gen.csv", 5),
-        ("persona_web_cat_usage_analysis.csv", 27),  # count + ~26 webcat pcts
-        ("avg_platform_power_c0_freq_temp_by_chassis.csv", 11),  # count + 10
-        ("Xeon_network_consumption.csv", 4),  # count + 3 means
-        ("battery_power_on_geographic_summary.csv", 1),  # count only (hints)
-        ("popular_browsers_by_count_usage_percentage.csv", 1),  # pct
+_GROUP_CSV_QUERIES: dict[str, list[tuple[str, int]]] = {
+    "batt": [("battery_on_duration_cpu_family_gen.csv", 2)],
+    "mem": [("ram_utilization_histogram.csv", 3)],
+    "onoff": [("on_off_mods_sleep_summary_by_cpu_marketcodename_gen.csv", 5)],
+    "browser_webcat": [("persona_web_cat_usage_analysis.csv", 27)],
+    "hw": [("avg_platform_power_c0_freq_temp_by_chassis.csv", 11)],
+    "net": [("Xeon_network_consumption.csv", 4)],
+    # Secondary hint CSVs (counts only, shared across groups)
+    "_hints": [
+        ("battery_power_on_geographic_summary.csv", 1),
+        ("popular_browsers_by_count_usage_percentage.csv", 1),
         ("most_popular_browser_in_each_country_by_system_count.csv", 1),
-        ("pkg_power_by_country.csv", 1),  # count only (hints)
-    ]:
-        path = real_results_dir / name
-        if path.exists():
-            df = pd.read_csv(path)
-            total += len(df) * (1 + n_numeric)
-    return max(total, 1)
+        ("pkg_power_by_country.csv", 1),
+    ],
+}
+
+
+def _count_group_queries(
+    real_results_dir: Path,
+) -> dict[str, int]:
+    """Count aggregate queries per group for per-group budget splitting.
+
+    Returns a dict mapping group name -> number of queries for that group.
+    """
+    counts: dict[str, int] = {}
+    for group, csv_list in _GROUP_CSV_QUERIES.items():
+        total = 0
+        for name, n_numeric in csv_list:
+            path = real_results_dir / name
+            if path.exists():
+                df = pd.read_csv(path)
+                total += len(df) * (1 + n_numeric)
+        counts[group] = max(total, 1)
+    return counts
+
+
+def _eps_delta_to_rho(epsilon: float, delta: float) -> float:
+    """Convert (epsilon, delta)-DP budget to zCDP rho parameter.
+
+    Solves: epsilon = rho + 2*sqrt(rho * ln(1/delta)) for rho.
+    Uses the quadratic formula on u = sqrt(rho).
+    """
+    log_inv_delta = math.log(1.0 / delta)
+    # u^2 + 2*sqrt(log_inv_delta)*u - epsilon = 0
+    b = 2.0 * math.sqrt(log_inv_delta)
+    discriminant = b * b + 4.0 * epsilon
+    if discriminant < 0:
+        return 0.0
+    u = (-b + math.sqrt(discriminant)) / 2.0
+    if u <= 0:
+        return 0.0
+    return u * u
+
+
+def _zcdp_sigma_from_rho(rho: float, k: int) -> float:
+    """Given a zCDP rho budget for k queries, return per-query sigma.
+
+    Each Gaussian query with sigma gives per-query rho_q = 1/(2*sigma^2).
+    k queries compose to total rho = k/(2*sigma^2).
+    So sigma = sqrt(k / (2*rho)).
+    """
+    if rho <= 0:
+        return 1e6
+    return math.sqrt(k / (2.0 * rho))
 
 
 def build_generation_plan(
     real_results_dir: Path,
     n_total: int = 5000,
-    epsilon_agg: float = 1.0,
+    epsilon_agg: float = 3.5,
     delta: float = 1e-5,
     seed: int = 42,
 ) -> tuple[GenerationPlan, dict]:
@@ -349,6 +392,11 @@ def build_generation_plan(
     All aggregate statistics (counts, means, percentages) are noised
     via the Gaussian mechanism before being embedded in prompts.
 
+    Uses per-group budget splitting with zCDP composition:
+    - Each group gets an equal share of epsilon_agg
+    - Within each group, queries are composed using zCDP (tighter bounds)
+    - Total cost across all groups sums to epsilon_agg via basic composition
+
     Parameters
     ----------
     real_results_dir : Path
@@ -356,8 +404,7 @@ def build_generation_plan(
     n_total : int
         Target number of synthetic records.
     epsilon_agg : float
-        Privacy budget for aggregate queries.  Noise is calibrated via
-        advanced composition over all queries.
+        Privacy budget for aggregate queries (default: 3.5).
     delta : float
         Delta parameter for (epsilon, delta)-DP.
     seed : int
@@ -370,32 +417,54 @@ def build_generation_plan(
     """
     rng = np.random.default_rng(seed)
 
-    # Count total aggregate queries for composition
-    n_queries = _count_aggregate_queries(real_results_dir)
-    # Advanced composition: per-query sigma so total is (epsilon_agg, delta)-DP
-    # Under advanced composition (Dwork et al.), k queries each at
-    # (eps_i, delta_i) compose to (sqrt(2k ln(1/delta')) * eps_i + k*eps_i*(e^eps_i - 1), k*delta_i + delta')
-    # We use a simpler RDP-style calibration: sigma_per_query = sqrt(2 * n_queries * ln(1.25/delta)) / epsilon_agg
-    sigma_per_query = math.sqrt(2.0 * n_queries * math.log(1.25 / delta)) / epsilon_agg
-    logger.info(
-        "DP aggregates: epsilon_agg=%.2f, delta=%.1e, n_queries=%d, "
-        "sigma_per_query=%.4f",
-        epsilon_agg, delta, n_queries, sigma_per_query,
-    )
-    print(
-        f"DP aggregates: epsilon_agg={epsilon_agg}, delta={delta}, "
-        f"n_queries={n_queries}, sigma_per_query={sigma_per_query:.4f}"
-    )
+    # --- Unified zCDP composition (Ideas #1 + #2) ---
+    # Convert total (epsilon_agg, delta) to zCDP rho, then split across groups.
+    # This is tighter than splitting epsilon via basic composition.
+    group_query_counts = _count_group_queries(real_results_dir)
+    n_budget_groups = len(group_query_counts)  # all groups including _hints
 
-    privacy_info = {
+    # Convert total budget to zCDP rho
+    rho_total = _eps_delta_to_rho(epsilon_agg, delta)
+
+    # Split rho equally across groups
+    rho_per_group = rho_total / n_budget_groups
+
+    # Derive per-query sigma for each group
+    group_sigmas: dict[str, float] = {}
+    for group, k in group_query_counts.items():
+        sigma = _zcdp_sigma_from_rho(rho_per_group, k)
+        group_sigmas[group] = sigma
+
+    # Total queries for reporting
+    n_queries_total = sum(group_query_counts.values())
+
+    # Log per-group noise levels
+    print(f"DP aggregates: epsilon_agg={epsilon_agg}, delta={delta}")
+    print(f"  zCDP: rho_total={rho_total:.6f}, "
+          f"rho_per_group={rho_per_group:.6f} ({n_budget_groups} groups)")
+    print(f"  Composition: unified zCDP (rho splitting across groups)")
+    print(f"  Total queries: {n_queries_total}")
+    for group, k in sorted(group_query_counts.items()):
+        sigma = group_sigmas[group]
+        print(f"    {group:20s}: k={k:4d}, sigma={sigma:.4f}")
+
+    privacy_info: dict = {
         "epsilon_agg": epsilon_agg,
         "delta": delta,
-        "n_aggregate_queries": n_queries,
-        "sigma_per_query": sigma_per_query,
+        "n_aggregate_queries": n_queries_total,
+        "composition": "unified_zCDP",
+        "n_budget_groups": n_budget_groups,
+        "rho_total": rho_total,
+        "rho_per_group": rho_per_group,
+        "group_sigmas": {g: round(s, 4) for g, s in group_sigmas.items()},
+        "group_query_counts": group_query_counts,
     }
 
     group_alloc = _compute_group_allocation(n_total)
     allocations: list[StratumAllocation] = []
+
+    # Sigma for secondary hints (shared across groups)
+    sigma_hints = group_sigmas["_hints"]
 
     # -- Secondary / cross-query data ------------------------------------
     # These hints use DP-noised counts for distributions.
@@ -406,7 +475,7 @@ def build_generation_plan(
     if "number_of_systems" in batt_country_df.columns:
         batt_country_df["number_of_systems"] = batt_country_df[
             "number_of_systems"
-        ].apply(lambda x: _dp_noise_count(x, sigma_per_query, rng))
+        ].apply(lambda x: _dp_noise_count(x, sigma_hints, rng))
     batt_country_hint = _country_distribution_hint(batt_country_df, "country")
 
     browser_df = _read_csv(
@@ -417,7 +486,7 @@ def build_generation_plan(
     # the CSV only contains percentages, not raw counts.
     n_browser_systems = 1_000_000
     browser_df["percent_systems"] = browser_df["percent_systems"].apply(
-        lambda x: _dp_noise_percentage(x, n_browser_systems, sigma_per_query, rng)
+        lambda x: _dp_noise_percentage(x, n_browser_systems, sigma_hints, rng)
     )
     browser_hint = _browser_distribution_hint(browser_df)
 
@@ -430,25 +499,26 @@ def build_generation_plan(
     if "system_count" in browser_country_df.columns:
         browser_country_df["system_count"] = browser_country_df[
             "system_count"
-        ].apply(lambda x: _dp_noise_count(x, sigma_per_query, rng))
+        ].apply(lambda x: _dp_noise_count(x, sigma_hints, rng))
     browser_country_hint = _browser_country_hint(browser_country_df)
 
     pkg_country_df = _read_csv(real_results_dir, "pkg_power_by_country.csv")
     if "number_of_systems" in pkg_country_df.columns:
         pkg_country_df["number_of_systems"] = pkg_country_df[
             "number_of_systems"
-        ].apply(lambda x: _dp_noise_count(x, sigma_per_query, rng))
+        ].apply(lambda x: _dp_noise_count(x, sigma_hints, rng))
     hw_country_hint = _country_distribution_hint(
         pkg_country_df, "countryname_normalized"
     )
 
     # ---- BATT group ----------------------------------------------------
+    sigma_batt = group_sigmas["batt"]
     batt_df = _read_csv(
         real_results_dir, "battery_on_duration_cpu_family_gen.csv"
     )
     # Noise counts before scaling
     noisy_batt_counts = batt_df["number_of_systems"].apply(
-        lambda x: _dp_noise_count(x, sigma_per_query, rng)
+        lambda x: _dp_noise_count(x, sigma_batt, rng)
     )
     batt_scaled = _scale_counts(noisy_batt_counts, group_alloc["batt"])
     for i, row in batt_df.iterrows():
@@ -469,11 +539,11 @@ def build_generation_plan(
                 "batt_duration_mins": _dp_noise_mean(
                     float(row["avg_duration_mins_on_battery"]),
                     n_pub, _FIELD_RANGES["batt_duration_mins"],
-                    sigma_per_query, rng,
+                    sigma_batt, rng,
                 ),
                 "batt_num_power_ons": _dp_noise_mean(
                     3.0, n_pub, _FIELD_RANGES["batt_num_power_ons"],
-                    sigma_per_query, rng,
+                    sigma_batt, rng,
                 ),
             },
             secondary_hints=(
@@ -483,9 +553,10 @@ def build_generation_plan(
         ))
 
     # ---- MEM group -----------------------------------------------------
+    sigma_mem = group_sigmas["mem"]
     mem_df = _read_csv(real_results_dir, "ram_utilization_histogram.csv")
     noisy_mem_counts = mem_df["count(DISTINCT guid)"].apply(
-        lambda x: _dp_noise_count(x, sigma_per_query, rng)
+        lambda x: _dp_noise_count(x, sigma_mem, rng)
     )
     mem_scaled = _scale_counts(noisy_mem_counts, group_alloc["mem"])
     for i, row in mem_df.iterrows():
@@ -502,23 +573,24 @@ def build_generation_plan(
                 "mem_avg_pct_used": _dp_noise_mean(
                     float(row["avg_percentage_used"]),
                     n_pub, _FIELD_RANGES["mem_avg_pct_used"],
-                    sigma_per_query, rng,
+                    sigma_mem, rng,
                 ),
                 "mem_nrs": _dp_noise_mean(
                     5000.0, n_pub, _FIELD_RANGES["mem_nrs"],
-                    sigma_per_query, rng,
+                    sigma_mem, rng,
                 ),
                 "mem_sysinfo_ram": ram_gb * 1024,  # deterministic from ram_gb
             },
         ))
 
     # ---- ONOFF group ---------------------------------------------------
+    sigma_onoff = group_sigmas["onoff"]
     onoff_df = _read_csv(
         real_results_dir,
         "on_off_mods_sleep_summary_by_cpu_marketcodename_gen.csv",
     )
     noisy_onoff_counts = onoff_df["number_of_systems"].apply(
-        lambda x: _dp_noise_count(x, sigma_per_query, rng)
+        lambda x: _dp_noise_count(x, sigma_onoff, rng)
     )
     onoff_scaled = _scale_counts(noisy_onoff_counts, group_alloc["onoff"])
     for i, row in onoff_df.iterrows():
@@ -537,22 +609,22 @@ def build_generation_plan(
                 "onoff_on_time": _dp_noise_mean(
                     float(row["avg_on_time"]),
                     n_pub, _FIELD_RANGES["onoff_on_time"],
-                    sigma_per_query, rng,
+                    sigma_onoff, rng,
                 ),
                 "onoff_off_time": _dp_noise_mean(
                     float(row["avg_off_time"]),
                     n_pub, _FIELD_RANGES["onoff_off_time"],
-                    sigma_per_query, rng,
+                    sigma_onoff, rng,
                 ),
                 "onoff_mods_time": _dp_noise_mean(
                     float(row["avg_modern_sleep_time"]),
                     n_pub, _FIELD_RANGES["onoff_mods_time"],
-                    sigma_per_query, rng,
+                    sigma_onoff, rng,
                 ),
                 "onoff_sleep_time": _dp_noise_mean(
                     float(row["avg_sleep_time"]),
                     n_pub, _FIELD_RANGES["onoff_sleep_time"],
-                    sigma_per_query, rng,
+                    sigma_onoff, rng,
                 ),
             },
         ))
@@ -565,11 +637,12 @@ def build_generation_plan(
     webcat_sample_col = "content_creation_photo_edit_creation"
     persona_with_webcat = persona_df.dropna(subset=[webcat_sample_col])
 
+    sigma_bw = group_sigmas["browser_webcat"]
     if len(persona_with_webcat) > 0:
         noisy_bw_counts = persona_with_webcat[
             "number_of_systems"
         ].reset_index(drop=True).apply(
-            lambda x: _dp_noise_count(x, sigma_per_query, rng)
+            lambda x: _dp_noise_count(x, sigma_bw, rng)
         )
         bw_scaled = _scale_counts(noisy_bw_counts, group_alloc["browser_webcat"])
         for i, (_, row) in enumerate(persona_with_webcat.iterrows()):
@@ -585,8 +658,16 @@ def build_generation_plan(
                 val = row.get(csv_col)
                 if pd.notna(val):
                     webcat_targets[record_col] = _dp_noise_percentage(
-                        float(val), n_pub, sigma_per_query, rng,
+                        float(val), n_pub, sigma_bw, rng,
                     )
+
+            # Post-processing consistency (Idea #6): normalize webcat
+            # percentages to sum to ~100.  This is free under DP
+            # (deterministic post-processing of a DP release).
+            webcat_sum = sum(webcat_targets.values())
+            if webcat_sum > 0:
+                for k in webcat_targets:
+                    webcat_targets[k] = webcat_targets[k] / webcat_sum * 100.0
 
             allocations.append(StratumAllocation(
                 active_group="browser_webcat",
@@ -605,12 +686,13 @@ def build_generation_plan(
             ))
 
     # ---- HW group ------------------------------------------------------
+    sigma_hw = group_sigmas["hw"]
     hw_df = _read_csv(
         real_results_dir,
         "avg_platform_power_c0_freq_temp_by_chassis.csv",
     )
     noisy_hw_counts = hw_df["number_of_systems"].apply(
-        lambda x: _dp_noise_count(x, sigma_per_query, rng)
+        lambda x: _dp_noise_count(x, sigma_hw, rng)
     )
     hw_scaled = _scale_counts(noisy_hw_counts, group_alloc["hw"])
     for i, row in hw_df.iterrows():
@@ -626,59 +708,60 @@ def build_generation_plan(
                 "psys_rap_avg": _dp_noise_mean(
                     float(row["avg_psys_rap_watts"]),
                     n_pub, _FIELD_RANGES["psys_rap_avg"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
                 "pkg_c0_avg": _dp_noise_mean(
                     float(row["avg_pkg_c0"]),
                     n_pub, _FIELD_RANGES["pkg_c0_avg"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
                 "avg_freq_avg": _dp_noise_mean(
                     float(row["avg_freq_mhz"]),
                     n_pub, _FIELD_RANGES["avg_freq_avg"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
                 "temp_avg": _dp_noise_mean(
                     float(row["avg_temp_centigrade"]),
                     n_pub, _FIELD_RANGES["temp_avg"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
                 # nrs defaults — noise them too
                 "psys_rap_nrs": _dp_noise_mean(
                     500.0, n_pub, _FIELD_RANGES["psys_rap_nrs"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
                 "pkg_c0_nrs": _dp_noise_mean(
                     500.0, n_pub, _FIELD_RANGES["pkg_c0_nrs"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
                 "avg_freq_nrs": _dp_noise_mean(
                     500.0, n_pub, _FIELD_RANGES["avg_freq_nrs"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
                 "temp_nrs": _dp_noise_mean(
                     500.0, n_pub, _FIELD_RANGES["temp_nrs"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
                 "pkg_power_nrs": _dp_noise_mean(
                     500.0, n_pub, _FIELD_RANGES["pkg_power_nrs"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
                 "pkg_power_avg": _dp_noise_mean(
                     10.0, n_pub, _FIELD_RANGES["pkg_power_avg"],
-                    sigma_per_query, rng,
+                    sigma_hw, rng,
                 ),
             },
             secondary_hints=f"Country distribution: {hw_country_hint}",
         ))
 
     # ---- NET group -----------------------------------------------------
+    sigma_net = group_sigmas["net"]
     net_df = _read_csv(real_results_dir, "Xeon_network_consumption.csv")
     # Handle 'n/a' OS values - skip them
     net_df = net_df[net_df["os"].notna() & (net_df["os"] != "n/a")].copy()
     noisy_net_counts = net_df["number_of_systems"].reset_index(
         drop=True
-    ).apply(lambda x: _dp_noise_count(x, sigma_per_query, rng))
+    ).apply(lambda x: _dp_noise_count(x, sigma_net, rng))
     net_scaled = _scale_counts(noisy_net_counts, group_alloc["net"])
     for i, (_, row) in enumerate(net_df.iterrows()):
         count = int(net_scaled.iloc[i])
@@ -704,16 +787,16 @@ def build_generation_plan(
                 "net_received_bytes": _dp_noise_mean(
                     float(row["avg_bytes_received"]),
                     n_pub, _FIELD_RANGES["net_received_bytes"],
-                    sigma_per_query, rng,
+                    sigma_net, rng,
                 ),
                 "net_sent_bytes": _dp_noise_mean(
                     float(row["avg_bytes_sent"]),
                     n_pub, _FIELD_RANGES["net_sent_bytes"],
-                    sigma_per_query, rng,
+                    sigma_net, rng,
                 ),
                 "net_nrs": _dp_noise_mean(
                     5000.0, n_pub, _FIELD_RANGES["net_nrs"],
-                    sigma_per_query, rng,
+                    sigma_net, rng,
                 ),
             },
         ))
