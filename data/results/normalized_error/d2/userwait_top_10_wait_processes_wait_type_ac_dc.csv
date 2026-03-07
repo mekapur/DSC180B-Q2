@@ -1,0 +1,61 @@
+event_name,acdc,proc_name,total_duration_sec_per_instance,rank
+APPSTARTING,AC,2 Reminder(s),35171.77,1
+APPSTARTING,AC,setup_ruined_king_a_league_of_legends_storytm_v.58287_(51680).tmp,5560.3,2
+APPSTARTING,AC,AnyMP4 Screen Recorder.exe,5478.51,3
+APPSTARTING,AC,EAC_MW_klient.exe,2181.82,4
+APPSTARTING,AC,openscad.exe,1951.54,5
+APPSTARTING,AC,._cache_halor.exe,1932.07,6
+APPSTARTING,AC,House Chores - Beta 0.6.2.exe,1864.87,7
+APPSTARTING,AC,itdrveu.exe,1452.26,8
+APPSTARTING,AC,Yard.exe,1024.61,9
+APPSTARTING,AC,DreamwinTemplete.exe,967.16,10
+WAIT,AC,HaozipMiniPage.exe,12647.82,1
+WAIT,AC,SBUp_d.exe,11727.22,2
+WAIT,AC,anydesk-5-5-3.exe,5910.78,3
+WAIT,AC,BL.exe,5586.42,4
+WAIT,AC,SouthPark_TFBW.exe,4560.79,5
+WAIT,AC,TiltWheel.exe,4255.81,6
+WAIT,AC,3dyd64.exe,2963.04,7
+WAIT,AC,HoracesHoarseHorseWhores.exe,2530.91,8
+WAIT,AC,AdobeGCClient.exe,2231.7,9
+WAIT,AC,LCT.exe,2166.58,10
+APPSTARTING,DC,fjava.exe,18813.4,1
+APPSTARTING,DC,Jigsaw.exe,9562.18,2
+APPSTARTING,DC,RpcDND_Console.exe,7835.77,3
+APPSTARTING,DC,PC_SIMU.exe,5732.49,4
+APPSTARTING,DC,PfuSshMain.exe,4702.57,5
+APPSTARTING,DC,Xelion.exe,3003.93,6
+APPSTARTING,DC,AmazonPhotos.exe,2019.56,7
+APPSTARTING,DC,语雀.exe,1723.23,8
+APPSTARTING,DC,MQTT Explorer.exe,1466.38,9
+APPSTARTING,DC,RelicCardinal_ws.exe,1458.1,10
+WAIT,DC,id_tray.exe,2818.44,1
+WAIT,DC,ClashOfHeroes.exe,2785.12,2
+WAIT,DC,ataraxiaclient.exe,2708.51,3
+WAIT,DC,HaozipMiniPage.exe,2200.24,4
+WAIT,DC,Injustice.exe,2171.2,5
+WAIT,DC,gh3.exe,1353.29,6
+WAIT,DC,SMARTInk.exe,1213.31,7
+WAIT,DC,ModernWarfare.exe,802.31,8
+WAIT,DC,powerdb.exe,670.9,9
+WAIT,DC,UE4Editor.exe,415.87,10
+APPSTARTING,UN,WinStart.exe,49108.61,1
+APPSTARTING,UN,Dell.SecurityManager.SystrayApp.exe,16695.57,2
+APPSTARTING,UN,PTUpdater.exe,14373.72,3
+APPSTARTING,UN,LimeChat2.exe,11865.84,4
+APPSTARTING,UN,BrawlBox.exe,11381.75,5
+APPSTARTING,UN,WIIScrubber.exe,3616.02,6
+APPSTARTING,UN,online.exe,3168.55,7
+APPSTARTING,UN,Video Download Capture 6.exe,2496.61,8
+APPSTARTING,UN,ACMS XP.exe,2459.15,9
+APPSTARTING,UN,ZapyaAdaptor.exe,2449.32,10
+WAIT,UN,FFX&X-2_LAUNCHER.exe,648808.22,1
+WAIT,UN,MySQLInstallerConsole.exe,11786.56,2
+WAIT,UN,BingPopup.exe,11546.97,3
+WAIT,UN,SavUI.exe,11234.24,4
+WAIT,UN,metro2033.exe,4642.31,5
+WAIT,UN,SDRuno.exe,4375.74,6
+WAIT,UN,Tibia.exe,3499.93,7
+WAIT,UN,HaozipMiniPage.exe,3469.95,8
+WAIT,UN,Bitrix24.exe,2407.95,9
+WAIT,UN,GoldExperience.exe,1693.2,10
