@@ -1179,33 +1179,6 @@ title style={font=\small},
 
 The calibration patterns differ by method. Wide-table DP-SGD collapses toward near-zero synthetic outputs regardless of real magnitude. Per-table DP-SGD and PE both show horizontal banding (outputs plateau rather than tracking real values). MST has wider spread but follows the diagonal more closely, consistent with higher pointwise noise but better overall calibration.
 
-\subsection{Additive experiments}
-
-We ran a second round of additive experiments to test whether lightweight interventions can improve utility without changing any of the original methods.
-
-The first intervention was post-processing on top of existing synthetic reporting tables. We enforced numeric constraints and canonicalized selected categorical values to real-data vocabularies. This intervention produced no measurable gain. Per-table DP-SGD, MST, and PE all had unchanged pass counts and unchanged average scores.
-
-The second intervention was workload routing. This intervention does not generate new synthetic data. It selects query outputs from the method that performs better for that query type. We routed aggregate and histogram queries to per-table DP-SGD, then routed distribution and ranking queries to MST. This lifted the benchmark from 6 of 21 passed queries to 8 of 21 with an average score of 0.404.
-
-\begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.42\textwidth}YYYY}
-\toprule
-\textbf{Run} & \textbf{Evaluated} & \textbf{Passed} & \textbf{Pass rate} & \textbf{Avg score} \\
-\midrule
-Per-table DP-SGD baseline & 21 & 6 & 28.6\% & 0.303 \\
-MST baseline & 21 & 6 & 28.6\% & 0.328 \\
-Postprocessed per-table DP-SGD & 21 & 6 & 28.6\% & 0.303 \\
-Postprocessed MST & 21 & 6 & 28.6\% & 0.328 \\
-Hybrid routed outputs & 21 & 8 & 38.1\% & 0.404 \\
-\bottomrule
-\end{tabularx}
-\caption{Additive follow-up experiment results. The routing policy combines existing query outputs by query type and improves overall benchmark utility.}
-\label{tab:additive-followup}
-\end{table}
-
-The conditional PE variant described in Section~\ref{sec:methods-cond-pe} subsumes the stratified generation experiments originally planned as additive interventions. Its methodology (zCDP composition across 7 query groups, budget rebalancing with $\varepsilon_{\text{agg}}=3.5$ and $\varepsilon_{\text{hist}}=0.5$, and per-stratum prompting from DP-noised aggregates) is reported in full in the PE results section above.
-
 \newpage
 
 \section{Discussion}
@@ -1241,20 +1214,11 @@ This question remains open in the current report. The benchmark queries are anal
 \textit{(5) What are the wall-clock and resource tradeoffs for each method?}
 \end{quote}
 
-There are clear differences in resource costs between methods. The wide-table DP-VAE has no external API bill, but it is the most compute intensive option and requires 360 minutes on CPU (20 epochs, 1M rows, 307 features). Per-table synthesis also avoids APIs and completes in approximately 90 minutes total (two VAEs at $\sim$30 minutes each, plus histogram synthesis for 17 smaller tables). MST is the lightest local compute path in this study and runs in under 10 minutes per table. PE is the only method with explicit out-of-pocket cost because it depends on a paid foundation-model API. Vanilla PE completes in approximately 52 minutes (2{,}000 async structured-output calls to gpt-5-mini generating 10{,}000 candidates, followed by DP histogram selection). Conditional PE completes in approximately 37 minutes with fewer total API calls because per-stratum generation produces a tighter candidate pool. Both PE variants cost under \$5 USD per run at current API pricing.
+Wall-clock costs vary substantially: wide-table DP-VAE requires 360 minutes (CPU), per-table synthesis completes in $\sim$90 minutes, MST runs in under 10 minutes per table, and PE variants finish in 37--52 minutes but incur API costs (under \$5 USD per run).
 
 \subsubsection{Overall interpretation}
 
-The PE results confirm that foundation models import their own distributional priors rather than learning the target distribution. Vanilla PE passes only 1 of 10 evaluable queries with an average score of 0.137. Conditional PE, which guides generation using DP-noised aggregate statistics (Section~\ref{sec:methods-cond-pe}), improves to 3 of 10 passed queries with an average score of 0.306. The gains concentrate on queries whose structure aligns with the stratification, particularly RAM utilization (1.000) and the on/off/sleep summary (0.818), while country-level queries remain at zero because per-country populations fall below the DP noise floor. Although structured output constraints eliminate out-of-vocabulary categorical values, the distributional mismatch between the foundation model's prior and the real data still reduces the effective candidate pool for the nearest-neighbor histogram. This aligns with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals.
-
-Several mitigation strategies warrant investigation.
-
-\begin{itemize}
-    \item A two-stage model in which a Bernoulli model predicts zero vs.\ nonzero per column, followed by a conditional model for nonzero values only.
-    \item Relational DP synthesis methods that handle multi-table structure directly, eliminating the zero-inflation problem while preserving cross-table correlations.
-    \item Method ensembling, using per-table DP-SGD for queries requiring continuous accuracy and MST for queries requiring ranking preservation, selecting per query type.
-    \item Post-processing the synthetic data with mode patching and constraint enforcement, as proposed by recent work on model-agnostic DP post-processing.
-\end{itemize}
+Foundation models import their own distributional priors rather than learning the target distribution. Conditional PE improves over vanilla PE (3/10 vs.\ 1/10 passed) by guiding generation with DP-noised aggregates, but gains concentrate on queries aligned with the stratification. The distributional mismatch between the model's prior and the real data reduces the effective candidate pool, consistent with \citeauthor{swanberg2025apiaccessllmsuseful}'s finding that LLMs capture 1-way marginals reasonably but are inaccurate on $k$-way marginals. Promising mitigations include two-stage zero/nonzero models, relational DP synthesis that handles multi-table structure directly, and per-query-type method ensembling.
 
 \subsection{Sensitivity to evaluation thresholds}
 
@@ -1372,13 +1336,11 @@ The relative error threshold has the largest effect: per-table DP-SGD's pass rat
 
 We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing four synthesis approaches, namely a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, MST marginal-based synthesis, and Private Evolution via foundation model APIs.
 
-All four methods have completed evaluation against the 21-query benchmark. Under binary pass-rate scoring, per-table DP-SGD and MST each pass 6 of 21 queries (28.6\%), the wide-table DP-VAE passes 1 of 10 (10.0\%), and conditional PE passes 3 of 10 (30.0\%). The normalized error metric (Section~\ref{sec:normalized-error}), which calibrates each query's synthesis error against the natural variation from a 50/50 data split, provides further differentiation across all four methods: per-table DP-SGD achieves a median normalized error of 2.93$\times$, meaning its typical distortion is under 3 times the variation expected from halving the real dataset, followed by conditional PE at 3.79$\times$, MST at 10.76$\times$, and wide-table DP-VAE at 15.34$\times$. Per-table DP-SGD achieves normalized errors below 5$\times$ on 10 of 20 queries, while conditional PE achieves the lowest normalized error on 4 of its 9 evaluated queries, including RAM utilization (1.5$\times$), Xeon network consumption (3.5$\times$), sleep pivot (9.5$\times$), and battery demographics (10.9$\times$). MST excels specifically on ranking queries (achieving near-unity normalized errors on \texttt{WaitRank} and \texttt{WaitModeRank}) but suffers extreme errors on multi-table aggregate joins.
+Under binary pass-rate scoring, per-table DP-SGD and MST each pass 6 of 21 queries (28.6\%), the wide-table DP-VAE passes 1 of 10 (10.0\%), and conditional PE passes 3 of 10 (30.0\%). The normalized error metric (Section~\ref{sec:normalized-error}) provides further differentiation. Per-table DP-SGD achieves a median normalized error of 2.93$\times$, followed by conditional PE at 3.79$\times$, MST at 10.76$\times$, and wide-table DP-VAE at 15.34$\times$. Per-table DP-SGD achieves errors below 5$\times$ on half the benchmark, while conditional PE achieves the lowest error on 4 of its 9 evaluated queries. MST excels on ranking queries but suffers extreme errors on multi-table joins.
 
-Two structural findings emerge. First, wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide table has 93--99.9\% zero values in metric columns, and the VAE collapses these to their mode. Second, per-table independence destroys cross-table correlations. The 5-way chassis join produces empty or random results under both per-table methods, while the wide-table approaches (DP-VAE and PE) at least preserve some cross-table structure. Conditional PE partially addresses the sparsity problem through per-stratum prompting, achieving the lowest histogram error (0.051) and a competitive aggregate relative error (1.60) among all methods.
+Two structural findings emerge. First, wide-table sparsity (93--99.9\% zeros), not the choice of algorithm, is the dominant failure mode. Second, per-table independence destroys cross-table correlations, while the wide-table approaches at least preserve some relational structure. Conditional PE partially addresses sparsity through per-stratum prompting.
 
-Our PE results are consistent with \citet{swanberg2025apiaccessllmsuseful}. Vanilla PE underperforms the training-based methods, but conditional PE demonstrates that guiding generation with DP-noised aggregates can close much of the gap, particularly on queries whose structure aligns with the stratification. The broader lesson is that structure in the data representation and workload alignment matter more than model class alone.
-
-The most promising next step is relational DP synthesis that models linked tables directly, so sparsity and cross-table dependence are handled in the same mechanism. In parallel, a practical benchmark strategy is to combine methods by query type, using each method where it is most reliable while preserving a single, auditable privacy accounting framework.
+Our PE results are consistent with \citet{swanberg2025apiaccessllmsuseful}. Vanilla PE underperforms training-based methods, but conditional PE closes much of the gap on queries aligned with the stratification. The broader lesson is that data representation and workload alignment matter more than model class alone. The most promising next step is relational DP synthesis that models linked tables directly, handling sparsity and cross-table dependence in a single mechanism.
 
 \newpage
 
