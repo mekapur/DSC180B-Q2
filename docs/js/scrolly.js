@@ -236,16 +236,29 @@
 
     const summarizeQuestion = (text) => {
       if (!text || typeof text !== 'string') return '';
+
       const clean = text.replace(/\s+/g, ' ').trim();
       if (!clean) return '';
-      const firstSentence = clean.split('. ')[0].replace(/\.$/, '');
-      let out = firstSentence
-        .replace(/^(provide me with|provide me|provide an|provide a|i want to|please)\s+/i, '')
-        .replace(/^the\s+report\s+should\s+contain\s*/i, '')
+
+      let out = clean
+        .replace(/^\s*(provide me with|provide me|provide an|provide a|i want to|please)\s+/i, '')
+        .replace(/\b(do not|don't|ignore|throw out)\b[\s\S]*$/i, '')
+        .replace(/\b(the metrics to summarize|the metrics of interest|the metrics to be provided|the report should contain|round all|round averages|round the percentage|allow for ties|as measured by|also ignore)\b[\s\S]*$/i, '')
+        .replace(/\bbroke out by\b/gi, 'grouped by')
+        .replace(/\bby the different\b/gi, 'grouped by')
+        .replace(/\benumerate the based on\b/gi, 'grouped by')
+        .replace(/\bprovide (me )?a summary\b/gi, 'summary')
+        .replace(/\bprovide (me )?with a summary\b/gi, 'summary')
+        .replace(/\bprovide (me )?a statistical summary\b/gi, 'statistical summary')
+        .replace(/\bprovide (me )?ranked lists?\b/gi, 'ranked lists')
+        .replace(/\s+,/g, ',')
+        .replace(/\s+/g, ' ')
         .trim();
+
       if (!out) out = clean;
-      const words = out.split(' ');
-      if (words.length > 18) out = `${words.slice(0, 18).join(' ')}…`;
+
+      out = out.replace(/[;,:\-\s]+$/, '');
+      if (!/[.!?]$/.test(out)) out += '.';
       return out.charAt(0).toUpperCase() + out.slice(1);
     };
 
