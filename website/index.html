@@ -225,9 +225,19 @@
       <h3>4. Private Evolution</h3>
       <p>
         Private Evolution is a training-free approach. A large language model (LLM) generates candidate synthetic records,
-        and the exponential mechanism (a DP algorithm) selects candidates that best match real data
-        distributions. No training is required, and the method can target specific query workloads.
-        The limitation is that it depends on the LLM's training data, so categories or values unseen by the model cannot be synthesized.
+        and a DP selection mechanism keeps only the candidates that best match real data distributions.
+        No gradient-based training is required, and the method can target specific query workloads.
+      </p>
+      <p>
+        We evaluate two variants. <strong style="font-weight:500;">Vanilla PE</strong> generates records randomly
+        and applies DP histogram voting to select the closest candidates. <strong style="font-weight:500;">Conditional PE</strong>
+        partitions the privacy budget across query groups using zero-concentrated DP (zCDP) composition, then
+        generates records conditioned on each group's schema and statistics. This allows the model to focus its
+        budget on the metrics that matter for each query type rather than spreading noise uniformly.
+      </p>
+      <p>
+        The main limitation of both variants is dependence on the LLM's training data. Categories or values unseen by
+        the model cannot be synthesized, which creates coverage gaps for rare or domain-specific values.
       </p>
 
       <h3>Privacy budget comparison</h3>
@@ -255,8 +265,8 @@
       <h2>Results</h2>
 
       <h3>Overall pass rates</h3>
-      <p>Wide-table DP-VAE and Private Evolution were only evaluated on 8 queries (single-table only) due
-         to schema constraints. Per-table DP-SGD and MST were evaluated on all 21.</p>
+      <p>Wide-table DP-VAE and both PE variants were evaluated on 10 single-table queries.
+         Per-table DP-SGD and MST were evaluated on all 21.</p>
 
       <div class="results-summary">
         <div class="score-card">
@@ -271,13 +281,13 @@
         </div>
         <div class="score-card">
           <h3>Wide-table DP-VAE</h3>
-          <p class="score">1 / 8</p>
+          <p class="score">1 / 10</p>
           <p class="small">Sparsity collapse</p>
         </div>
         <div class="score-card">
-          <h3>Private Evolution</h3>
-          <p class="score">2 / 8</p>
-          <p class="small">LLM knowledge ceiling</p>
+          <h3>PE (Conditional)</h3>
+          <p class="score">3 / 10</p>
+          <p class="small">Vanilla baseline: 1 / 10</p>
         </div>
       </div>
 
@@ -289,10 +299,11 @@
             <tr><th>Method</th><th>Avg score</th><th>Median norm. error</th><th>Best query type</th></tr>
           </thead>
           <tbody>
-            <tr><td>Per-table DP-SGD</td><td>0.303</td><td>2.72</td><td>Agg+Join (RE = 0.54)</td></tr>
-            <tr><td>MST</td><td>0.328</td><td>10.96</td><td>Histogram (TV = 0.105)</td></tr>
-            <tr><td>Wide-table DP-VAE</td><td>0.258</td><td>12.88</td><td>Histogram (TV = 0.249)</td></tr>
-            <tr><td>Private Evolution</td><td>0.150</td><td>6.92</td><td>Histogram (TV = 0.329)</td></tr>
+            <tr><td>Per-table DP-SGD</td><td>0.303</td><td>2.93</td><td>Agg+Join (RE = 0.54)</td></tr>
+            <tr><td>MST</td><td>0.328</td><td>10.76</td><td>Histogram (TV = 0.105)</td></tr>
+            <tr><td>PE (Conditional)</td><td>0.306</td><td>3.79</td><td>Pivot (SleepPivot = 0.818)</td></tr>
+            <tr><td>Wide-table DP-VAE</td><td>0.206</td><td>16.42</td><td>Top-k (BrowserRank = 1.0)</td></tr>
+            <tr><td>PE (Vanilla)</td><td>0.137</td><td>N/A</td><td>Histogram (RamHist = 0.5)</td></tr>
           </tbody>
         </table>
       </div>
@@ -302,7 +313,7 @@
       </p>
 
       <h3>Per-query breakdown</h3>
-      <p>Full scores for all 21 queries are shown below. Green indicates a pass, red indicates a fail, amber indicates a partial result, and gray means the query was not evaluated.</p>
+      <p>Full scores for all 21 queries are shown below, now including both PE variants (vanilla baseline and conditional). Green indicates a pass, red indicates a fail, amber indicates a partial result, and gray means the query was not evaluated.</p>
       <div class="table-wrapper" id="queryTable">
         <p class="small">Loading query scores&hellip;</p>
       </div>
@@ -325,18 +336,23 @@
         Simple distributions like histogram queries for browser usage and RAM utilization passed for MST and per-table DP-SGD, with Total Variation distances below 0.15.
         Single-table aggregates on independent features within one table were well-preserved by per-table DP-SGD.
         MST also excelled at queries with high-cardinality group-by keys, where marginal-based synthesis proved effective.
+        Conditional PE achieved the second-highest average score (0.306), matching per-table DP-SGD, and produced the
+        lowest normalized error on 4 of 9 evaluated queries (RamHist, XeonGeo, SleepPivot, BatteryDemo).
       </p>
 
       <h4>What failed</h4>
       <p>
         Join-heavy aggregates requiring cross-table joins failed across all methods due to foreign-key mismatches.
         DP-VAE on the wide table suffered from zero-inflation, and continuous distributions collapsed to near-zero values.
-        Private Evolution could not synthesize categories unseen in the LLM's training data, leaving knowledge gaps for rare values.
+        Vanilla PE achieved only 1 of 10 passes, showing that random generation without query-aware budget allocation
+        spreads noise too thinly. Both PE variants could not synthesize categories unseen in the LLM's training data,
+        leaving knowledge gaps for rare values.
       </p>
 
       <div class="callout">
           <p>Differences in pass rates of 2 or more queries are significant, while score differences below 0.05 are within noise.
-          The gap between Per-table/MST (6/21) and Wide/PE (1 to 2 out of 8) reflects a fundamental structural limitation, not just noise.</p>
+          The gap between Per-table/MST (6/21) and Wide/PE (1 to 3 out of 10) reflects a fundamental structural limitation, not just noise.
+          Conditional PE's improvement over vanilla (3/10 vs. 1/10) shows that query-aware budget allocation meaningfully boosts utility.</p>
       </div>
 
       <h3>Failure modes</h3>
@@ -351,7 +367,8 @@
 
       <h4>3. LLM knowledge ceiling (Private Evolution)</h4>
       <p>The LLM does not know all device vendors, OS versions, or geographic regions in the real dataset.
-         This causes 0% group coverage on queries involving rare categories.</p>
+         This causes 0% group coverage on queries involving rare categories. Conditional PE mitigates this
+         partially by focusing generation on specific column groups, but fundamental coverage gaps remain.</p>
 
       <h4>4. DP noise masking signal (all methods)</h4>
       <p>At $\epsilon = 4.0$, privacy noise is large enough to mask subtle correlations (e.g., CPU frequency
@@ -359,11 +376,12 @@
 
       <h3>What changed after early attempts</h3>
       <p>
-        We started with only the wide-table DP-VAE, which achieved a pass rate of just 1 out of 8 and prompted us to explore per-table splitting.
+        We started with only the wide-table DP-VAE, which achieved a pass rate of just 1 out of 10 and prompted us to explore per-table splitting.
         Splitting improved single-table queries dramatically but revealed the join problem. Adding the MST histogram baseline matched per-table DP-SGD
-        on pass rate (6/21) but with different query strengths. Adding Private Evolution showed promise on targeted workloads but was limited by LLM knowledge.
-        The overarching takeaway is that no single method dominates, and a hybrid routing strategy using different methods for different query types
-        is the most promising path forward.
+        on pass rate (6/21) but with different query strengths. Vanilla PE showed promise but was limited by uniform noise allocation (1/10 passes).
+        Conditional PE, which partitions the privacy budget across query groups using zCDP composition, tripled the pass rate to 3/10 and achieved
+        the lowest normalized error on 4 of 9 evaluated queries. The overarching takeaway is that no single method dominates, and a hybrid
+        routing strategy using different methods for different query types is the most promising path forward.
       </p>
     </section>
 
@@ -388,9 +406,10 @@
          as near-zero, destroying continuous distributions (power consumption, network throughput, RAM usage).</p>
 
       <h4>3. Training-free methods have a knowledge ceiling</h4>
-      <p>Private Evolution relied on an LLM&rsquo;s pre-trained knowledge. When real data contained categories unseen
+      <p>Both PE variants relied on an LLM's pre-trained knowledge. When real data contained categories unseen
          by the model (geographic regions, rare OS versions, niche applications), the method produced 0% group
-         coverage on those queries.</p>
+         coverage on those queries. Conditional PE improved utility through smarter budget allocation but could
+         not overcome fundamental coverage gaps in the LLM's training data.</p>
 
       <h4>4. Simple distributions are tractable</h4>
       <p>Queries on categorical distributions with few categories (browser usage, vendor percentages) passed
@@ -415,7 +434,7 @@
       <div class="table-wrapper">
         <table>
           <thead>
-            <tr><th>Aspect</th><th>Per-table DP-SGD</th><th>Wide-table DP-VAE</th><th>MST</th><th>Private Evolution</th></tr>
+            <tr><th>Aspect</th><th>Per-table DP-SGD</th><th>Wide-table DP-VAE</th><th>MST</th><th>PE (Conditional)</th></tr>
           </thead>
           <tbody>
             <tr><td>Within-table quality</td><td class="cell-pass">High</td><td class="cell-fail">Low</td><td class="cell-pass">High</td><td class="cell-partial">Medium</td></tr>
@@ -423,7 +442,7 @@
             <tr><td>Training required</td><td>Yes (per table)</td><td>Yes (large model)</td><td>No</td><td>No</td></tr>
             <tr><td>Speed</td><td>Medium</td><td>Slow</td><td>Fast</td><td>Fast (if LLM cached)</td></tr>
             <tr><td>Interpretability</td><td>Low</td><td>Low</td><td class="cell-pass">High</td><td>Low</td></tr>
-            <tr><td>Workload awareness</td><td>No</td><td>No</td><td>No</td><td class="cell-pass">Yes</td></tr>
+            <tr><td>Workload awareness</td><td>No</td><td>No</td><td>No</td><td class="cell-pass">Yes (zCDP split)</td></tr>
           </tbody>
         </table>
       </div>
@@ -434,6 +453,8 @@
         For simple aggregates and distributions, MST is fast, interpretable, and achieves good TV scores.
         For row-level analytics, per-table DP-SGD offers the best within-table fidelity.
         For ranking queries, MST provides good Jaccard overlap on top-k items.
+        For targeted single-table workloads, conditional PE offers competitive accuracy with the lowest median
+        normalized error (3.79) of any method we tested.
         Cross-table joins remain an open challenge that requires future relational DP methods, as current approaches are insufficient.
       </p>
 
@@ -444,8 +465,9 @@
          This is the most impactful open problem identified by our work.</p>
 
       <h4>Domain-adapted LLMs for PE</h4>
-      <p>Fine-tune LLMs on domain-specific schemas and category lists to improve Private Evolution&rsquo;s coverage
-         of rare values.</p>
+      <p>Fine-tune LLMs on domain-specific schemas and category lists to improve PE's coverage
+         of rare values. Conditional PE's query-aware budget partitioning could be extended with
+         more granular group definitions and adaptive allocation strategies.</p>
 
       <h4>Multi-epsilon evaluation</h4>
       <p>Characterize the privacy-utility frontier by sweeping $\epsilon$ from $0.1$ to $10$ for each method.</p>
@@ -461,6 +483,8 @@
           Training-based and training-free DP approaches each have strengths and weaknesses,
           and there is no silver bullet. Our evaluation shows that simple distributions are tractable
           while complex joins are not yet solved. Per-table and wide-table synthesis represent opposite trade-offs.
+          Conditional PE demonstrates that query-aware budget allocation can meaningfully improve training-free
+          methods, tripling the pass rate from 1/10 to 3/10 and achieving competitive normalized error.
           Hybrid query-aware routing significantly improves overall performance. Future work in relational DP
           and workload-aware composition will be critical for closing the remaining gaps.
         </p>

@@ -5,8 +5,8 @@
 (function () {
   'use strict';
 
-  var METHODS = ['Wide DP-SGD', 'Per-table DP-SGD', 'MST', 'Private Evolution'];
-  var COLORS  = ['#a8a49a', '#7a766e', '#e0ddd5', '#5c5955'];
+  var METHODS = ['Wide DP-SGD', 'Per-table DP-SGD', 'MST', 'PE Vanilla', 'PE Conditional'];
+  var COLORS  = ['#a8a49a', '#7a766e', '#e0ddd5', '#8c8880', '#5c5955'];
 
   function buildQueryTable(data) {
     var container = document.getElementById('queryTable');
@@ -14,7 +14,7 @@
 
     var html = '<table><thead><tr>';
     html += '<th>Query</th><th>Type</th>';
-    METHODS.forEach(function(m) { html += '<th>' + m.replace('Wide DP-SGD', 'Wide DP-VAE') + '</th>'; });
+    METHODS.forEach(function(m) { html += '<th>' + m.replace('Wide DP-SGD', 'Wide DP-VAE').replace('PE Vanilla', 'PE (Vanilla)').replace('PE Conditional', 'PE (Conditional)') + '</th>'; });
     html += '</tr></thead><tbody>';
 
     data.forEach(function(q) {
@@ -57,7 +57,7 @@
       });
     });
 
-    var labels = METHODS.map(function(m) { return m.replace('Wide DP-SGD', 'Wide DP-VAE'); });
+    var labels = METHODS.map(function(m) { return m.replace('Wide DP-SGD', 'Wide DP-VAE').replace('PE Vanilla', 'PE (Vanilla)').replace('PE Conditional', 'PE (Cond.)'); });
     var values = METHODS.map(function(m) { return counts[m] || 0; });
     var text = METHODS.map(function(m) { return (counts[m] || 0) + '/' + (totals[m] || 0); });
 
@@ -91,7 +91,7 @@
         return scores.length ? scores.reduce(function(a, b) { return a + b; }, 0) / scores.length : 0;
       });
       return {
-        x: types, y: yVals, name: m.replace('Wide DP-SGD', 'Wide DP-VAE'),
+        x: types, y: yVals, name: m.replace('Wide DP-SGD', 'Wide DP-VAE').replace('PE Vanilla', 'PE (Vanilla)').replace('PE Conditional', 'PE (Cond.)'),
         type: 'bar', marker: { color: COLORS[i] }
       };
     });
