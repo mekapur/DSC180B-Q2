@@ -195,50 +195,147 @@
     <section id="methods">
       <h2>Methods</h2>
 
-      <h3>1. Wide-table DP-VAE</h3>
-      <p>
-        Flatten all tables into a single wide table (left-join on <code>system_id</code>), then train a
-        Variational Autoencoder (VAE) with DP-SGD. The VAE learns a compressed latent representation and
-        generates synthetic records that preserve cross-table structure.
-      </p>
-      <p>
-        This approach preserves foreign-key relationships by design. However, extreme sparsity from flattening (most columns are null) causes zero-inflation and mode collapse.
-      </p>
+      <div class="scroll-break">
+        <div class="scroll-section">
+          <div class="scroll-text">
+            <h3>1. Wide-table DP-VAE</h3>
+            <p>
+              Flatten all tables into a single wide table (left-join on <code>system_id</code>), then train a
+              Variational Autoencoder (VAE) with DP-SGD. The VAE learns a compressed latent representation and
+              generates synthetic records that preserve cross-table structure.
+            </p>
+            <p>
+              This approach preserves foreign-key relationships by design. However, extreme sparsity from flattening (most columns are null) causes zero-inflation and mode collapse.
+            </p>
+          </div>
+          <div class="scroll-figure">
+            <div class="method-spec" data-method="wide">
+              <div class="spec-header">
+                <span class="spec-name">Wide-table DP-VAE</span>
+                <span class="spec-score">1 / 10</span>
+              </div>
+              <dl class="spec-list">
+                <dt>Approach</dt><dd>Training-based</dd>
+                <dt>Strategy</dt><dd>Flatten all tables, train single model</dd>
+                <dt>Mechanism</dt><dd>VAE encoder-decoder + DP-SGD</dd>
+                <dt>Strength</dt><dd>Preserves cross-table joins</dd>
+                <dt>Weakness</dt><dd>Extreme sparsity, mode collapse</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <h3>2. Per-table DP-SGD</h3>
-      <p>
-        Train a separate VAE for each table independently using DP-SGD. This avoids the sparsity problem
-        of wide-table flattening but breaks cross-table relationships.
-      </p>
-      <p>
-        This approach achieves high within-table fidelity, and each model is simpler and faster to train. The downside is foreign-key mismatches, where a synthetic CPU record may reference a non-existent system.
-      </p>
+      <div class="scroll-break">
+        <div class="scroll-section reverse">
+          <div class="scroll-text">
+            <h3>2. Per-table DP-SGD</h3>
+            <p>
+              Train a separate VAE for each table independently using DP-SGD. This avoids the sparsity problem
+              of wide-table flattening but breaks cross-table relationships.
+            </p>
+            <p>
+              This approach achieves high within-table fidelity, and each model is simpler and faster to train. The downside is foreign-key mismatches, where a synthetic CPU record may reference a non-existent system.
+            </p>
+          </div>
+          <div class="scroll-figure">
+            <div class="method-spec" data-method="pertable">
+              <div class="spec-header">
+                <span class="spec-name">Per-table DP-SGD</span>
+                <span class="spec-score">6 / 21</span>
+              </div>
+              <dl class="spec-list">
+                <dt>Approach</dt><dd>Training-based</dd>
+                <dt>Strategy</dt><dd>Independent model per table</dd>
+                <dt>Mechanism</dt><dd>Per-table VAE + DP-SGD</dd>
+                <dt>Strength</dt><dd>High within-table fidelity</dd>
+                <dt>Weakness</dt><dd>Breaks foreign-key joins</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <h3>3. MST (Maximum Spanning Tree)</h3>
-      <p>
-        MST is a histogram-based baseline. It estimates low-dimensional marginals under DP, builds a dependency graph
-        (Chow-Liu tree), and samples synthetic records that are consistent with the noisy marginals.
-        It is interpretable, fast, and works well for categorical data with clear dependencies. On the other hand,
-        it scales exponentially in table width and struggles with many continuous or high-cardinality columns.
-      </p>
+      <div class="scroll-break">
+        <div class="scroll-section">
+          <div class="scroll-text">
+            <h3>3. MST (Maximum Spanning Tree)</h3>
+            <p>
+              MST is a histogram-based baseline. It estimates low-dimensional marginals under DP, builds a dependency graph
+              (Chow-Liu tree), and samples synthetic records that are consistent with the noisy marginals.
+              It is interpretable, fast, and works well for categorical data with clear dependencies. On the other hand,
+              it scales exponentially in table width and struggles with many continuous or high-cardinality columns.
+            </p>
+          </div>
+          <div class="scroll-figure">
+            <div class="method-spec" data-method="mst">
+              <div class="spec-header">
+                <span class="spec-name">MST</span>
+                <span class="spec-score">6 / 21</span>
+              </div>
+              <dl class="spec-list">
+                <dt>Approach</dt><dd>Statistical (training-free)</dd>
+                <dt>Strategy</dt><dd>Marginal estimation + dependency tree</dd>
+                <dt>Mechanism</dt><dd>Noisy marginals + Chow-Liu tree</dd>
+                <dt>Strength</dt><dd>Fast, interpretable</dd>
+                <dt>Weakness</dt><dd>Scales poorly with high-cardinality</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <h3>4. Private Evolution</h3>
-      <p>
-        Private Evolution is a training-free approach. A large language model (LLM) generates candidate synthetic records,
-        and a DP selection mechanism keeps only the candidates that best match real data distributions.
-        No gradient-based training is required, and the method can target specific query workloads.
-      </p>
-      <p>
-        We evaluate two variants. <strong style="font-weight:500;">Vanilla PE</strong> generates records randomly
-        and applies DP histogram voting to select the closest candidates. <strong style="font-weight:500;">Conditional PE</strong>
-        partitions the privacy budget across query groups using zero-concentrated DP (zCDP) composition, then
-        generates records conditioned on each group's schema and statistics. This allows the model to focus its
-        budget on the metrics that matter for each query type rather than spreading noise uniformly.
-      </p>
-      <p>
-        The main limitation of both variants is dependence on the LLM's training data. Categories or values unseen by
-        the model cannot be synthesized, which creates coverage gaps for rare or domain-specific values.
-      </p>
+      <div class="scroll-break">
+        <div class="scroll-section reverse">
+          <div class="scroll-text">
+            <h3>4. Private Evolution</h3>
+            <p>
+              Private Evolution is a training-free approach. A large language model (LLM) generates candidate synthetic records,
+              and a DP selection mechanism keeps only the candidates that best match real data distributions.
+              No gradient-based training is required, and the method can target specific query workloads.
+            </p>
+            <p>
+              We evaluate two variants. <strong style="font-weight:500;">Vanilla PE</strong> generates records randomly
+              and applies DP histogram voting to select the closest candidates. <strong style="font-weight:500;">Conditional PE</strong>
+              partitions the privacy budget across query groups using zero-concentrated DP (zCDP) composition, then
+              generates records conditioned on each group's schema and statistics. This allows the model to focus its
+              budget on the metrics that matter for each query type rather than spreading noise uniformly.
+            </p>
+            <p>
+              The main limitation of both variants is dependence on the LLM's training data. Categories or values unseen by
+              the model cannot be synthesized, which creates coverage gaps for rare or domain-specific values.
+            </p>
+          </div>
+          <div class="scroll-figure">
+            <div class="method-spec" data-method="pe-vanilla">
+              <div class="spec-header">
+                <span class="spec-name">PE (Vanilla)</span>
+                <span class="spec-score">1 / 10</span>
+              </div>
+              <dl class="spec-list">
+                <dt>Approach</dt><dd>LLM-based (training-free)</dd>
+                <dt>Strategy</dt><dd>Random generation + DP selection</dd>
+                <dt>Mechanism</dt><dd>LLM candidates + histogram voting</dd>
+                <dt>Strength</dt><dd>No training required</dd>
+                <dt>Weakness</dt><dd>Noise spread uniformly</dd>
+              </dl>
+            </div>
+            <div class="method-spec" data-method="pe-cond">
+              <div class="spec-header">
+                <span class="spec-name">PE (Conditional)</span>
+                <span class="spec-score">3 / 10</span>
+              </div>
+              <dl class="spec-list">
+                <dt>Approach</dt><dd>LLM-based (training-free)</dd>
+                <dt>Strategy</dt><dd>Query-aware generation + zCDP split</dd>
+                <dt>Mechanism</dt><dd>Conditioned LLM + budget partitioning</dd>
+                <dt>Strength</dt><dd>Workload-aware, lowest norm. error</dd>
+                <dt>Weakness</dt><dd>LLM knowledge ceiling</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <h3>Privacy budget comparison</h3>
       <p>
@@ -318,61 +415,66 @@
         <p class="small">Loading query scores&hellip;</p>
       </div>
 
-      <h3>Visualizations</h3>
-      <div class="chart-container">
-        <p class="chart-title">Pass rate by method</p>
-        <div id="chartPassRate" style="width:100%;height:300px;" role="img" aria-label="Bar chart showing pass rates by method"></div>
+      <div class="scroll-break">
+        <div class="scroll-section">
+          <div class="scroll-text">
+            <h3>Key insights</h3>
+
+            <h4>What worked</h4>
+            <p>
+              Simple distributions like histogram queries for browser usage and RAM utilization passed for MST and per-table DP-SGD, with Total Variation distances below 0.15.
+              Single-table aggregates on independent features within one table were well-preserved by per-table DP-SGD.
+              MST also excelled at queries with high-cardinality group-by keys, where marginal-based synthesis proved effective.
+              Conditional PE achieved the second-highest average score (0.306), matching per-table DP-SGD, and produced the
+              lowest normalized error on 4 of 9 evaluated queries (RamHist, XeonGeo, SleepPivot, BatteryDemo).
+            </p>
+
+            <h4>What failed</h4>
+            <p>
+              Join-heavy aggregates requiring cross-table joins failed across all methods due to foreign-key mismatches.
+              DP-VAE on the wide table suffered from zero-inflation, and continuous distributions collapsed to near-zero values.
+              Vanilla PE achieved only 1 of 10 passes, showing that random generation without query-aware budget allocation
+              spreads noise too thinly. Both PE variants could not synthesize categories unseen in the LLM's training data,
+              leaving knowledge gaps for rare values.
+            </p>
+
+            <div class="callout">
+                <p>Differences in pass rates of 2 or more queries are significant, while score differences below 0.05 are within noise.
+                The gap between Per-table/MST (6/21) and Wide/PE (1 to 3 out of 10) reflects a fundamental structural limitation, not just noise.
+                Conditional PE's improvement over vanilla (3/10 vs. 1/10) shows that query-aware budget allocation meaningfully boosts utility.</p>
+            </div>
+
+            <h3>Failure modes</h3>
+
+            <h4>1. Sparsity collapse (Wide-table DP-VAE)</h4>
+            <p>Flattening 8 tables into one wide table creates extreme sparsity. The VAE encodes most columns
+               as near-zero, collapsing continuous metrics (power, network bytes, RAM) to degenerate distributions.</p>
+
+            <h4>2. Independence assumption (Per-table DP-SGD, MST)</h4>
+            <p>Generating each table independently destroys foreign-key relationships. Cross-table joins produce
+               mismatched groups, inflating relative error and reducing Jaccard similarity below thresholds.</p>
+
+            <h4>3. LLM knowledge ceiling (Private Evolution)</h4>
+            <p>The LLM does not know all device vendors, OS versions, or geographic regions in the real dataset.
+               This causes 0% group coverage on queries involving rare categories. Conditional PE mitigates this
+               partially by focusing generation on specific column groups, but fundamental coverage gaps remain.</p>
+
+            <h4>4. DP noise masking signal (all methods)</h4>
+            <p>At $\epsilon = 4.0$, privacy noise is large enough to mask subtle correlations (e.g., CPU frequency
+               vs. power consumption) and rare subgroups.</p>
+          </div>
+          <div class="scroll-figure">
+            <div class="chart-container">
+              <p class="chart-title">Pass rate by method</p>
+              <div id="chartPassRate" style="width:100%;height:280px;" role="img" aria-label="Bar chart showing pass rates by method"></div>
+            </div>
+            <div class="chart-container" style="margin-top:2rem;">
+              <p class="chart-title">Average score by query type</p>
+              <div id="chartByType" style="width:100%;height:320px;" role="img" aria-label="Grouped bar chart showing average scores by query type"></div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div class="chart-container">
-        <p class="chart-title">Average score by query type</p>
-        <div id="chartByType" style="width:100%;height:350px;" role="img" aria-label="Grouped bar chart showing average scores by query type"></div>
-      </div>
-
-      <h3>Key insights</h3>
-
-      <h4>What worked</h4>
-      <p>
-        Simple distributions like histogram queries for browser usage and RAM utilization passed for MST and per-table DP-SGD, with Total Variation distances below 0.15.
-        Single-table aggregates on independent features within one table were well-preserved by per-table DP-SGD.
-        MST also excelled at queries with high-cardinality group-by keys, where marginal-based synthesis proved effective.
-        Conditional PE achieved the second-highest average score (0.306), matching per-table DP-SGD, and produced the
-        lowest normalized error on 4 of 9 evaluated queries (RamHist, XeonGeo, SleepPivot, BatteryDemo).
-      </p>
-
-      <h4>What failed</h4>
-      <p>
-        Join-heavy aggregates requiring cross-table joins failed across all methods due to foreign-key mismatches.
-        DP-VAE on the wide table suffered from zero-inflation, and continuous distributions collapsed to near-zero values.
-        Vanilla PE achieved only 1 of 10 passes, showing that random generation without query-aware budget allocation
-        spreads noise too thinly. Both PE variants could not synthesize categories unseen in the LLM's training data,
-        leaving knowledge gaps for rare values.
-      </p>
-
-      <div class="callout">
-          <p>Differences in pass rates of 2 or more queries are significant, while score differences below 0.05 are within noise.
-          The gap between Per-table/MST (6/21) and Wide/PE (1 to 3 out of 10) reflects a fundamental structural limitation, not just noise.
-          Conditional PE's improvement over vanilla (3/10 vs. 1/10) shows that query-aware budget allocation meaningfully boosts utility.</p>
-      </div>
-
-      <h3>Failure modes</h3>
-
-      <h4>1. Sparsity collapse (Wide-table DP-VAE)</h4>
-      <p>Flattening 8 tables into one wide table creates extreme sparsity. The VAE encodes most columns
-         as near-zero, collapsing continuous metrics (power, network bytes, RAM) to degenerate distributions.</p>
-
-      <h4>2. Independence assumption (Per-table DP-SGD, MST)</h4>
-      <p>Generating each table independently destroys foreign-key relationships. Cross-table joins produce
-         mismatched groups, inflating relative error and reducing Jaccard similarity below thresholds.</p>
-
-      <h4>3. LLM knowledge ceiling (Private Evolution)</h4>
-      <p>The LLM does not know all device vendors, OS versions, or geographic regions in the real dataset.
-         This causes 0% group coverage on queries involving rare categories. Conditional PE mitigates this
-         partially by focusing generation on specific column groups, but fundamental coverage gaps remain.</p>
-
-      <h4>4. DP noise masking signal (all methods)</h4>
-      <p>At $\epsilon = 4.0$, privacy noise is large enough to mask subtle correlations (e.g., CPU frequency
-         vs. power consumption) and rare subgroups.</p>
 
       <h3>What changed after early attempts</h3>
       <p>

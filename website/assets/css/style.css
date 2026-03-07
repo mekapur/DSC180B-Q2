@@ -43,6 +43,7 @@
 html {
   scroll-behavior: smooth;
   color-scheme: dark;
+  overflow-x: hidden;
 }
 
 body {
@@ -456,6 +457,103 @@ hr {
   line-height: 1.5;
 }
 
+/* --- Scroll sections (two-column sticky layout) --- */
+
+.scroll-break {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+}
+
+.scroll-section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 40px;
+  display: flex;
+  gap: 60px;
+  align-items: flex-start;
+}
+
+.scroll-section.reverse {
+  flex-direction: row-reverse;
+}
+
+.scroll-text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.scroll-text h3:first-child,
+.scroll-text h4:first-child {
+  margin-top: 0;
+}
+
+.scroll-figure {
+  flex: 0 0 380px;
+  position: sticky;
+  top: 70px;
+  align-self: flex-start;
+}
+
+/* --- Method spec cards --- */
+
+.method-spec {
+  border-left: 3px solid var(--rule);
+  padding: 1.2rem 1.5rem;
+  background: var(--bg-alt);
+  margin-bottom: 1rem;
+}
+
+.method-spec:last-child {
+  margin-bottom: 0;
+}
+
+.method-spec[data-method="wide"]       { border-left-color: var(--c-wide); }
+.method-spec[data-method="pertable"]   { border-left-color: var(--c-pertable); }
+.method-spec[data-method="mst"]        { border-left-color: var(--c-mst); }
+.method-spec[data-method="pe-vanilla"] { border-left-color: var(--c-pe-vanilla); }
+.method-spec[data-method="pe-cond"]    { border-left-color: var(--c-pe-cond); }
+
+.spec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.spec-name {
+  font-family: var(--heading);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.spec-score {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text-muted);
+  font-family: var(--heading);
+}
+
+.spec-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 0.8rem;
+  font-size: 13px;
+  margin: 0;
+  padding: 0;
+}
+
+.spec-list dt {
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.spec-list dd {
+  margin: 0;
+  color: var(--text-muted);
+}
+
 /* --- Footer --- */
 
 footer {
@@ -469,6 +567,21 @@ footer {
 }
 
 /* --- Responsive --- */
+
+@media (max-width: 900px) {
+  .scroll-section,
+  .scroll-section.reverse {
+    flex-direction: column;
+    padding: 1rem 20px;
+    gap: 1.5rem;
+  }
+
+  .scroll-figure {
+    position: static;
+    flex: none;
+    width: 100%;
+  }
+}
 
 @media (max-width: 700px) {
   main {
