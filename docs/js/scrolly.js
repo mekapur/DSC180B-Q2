@@ -234,6 +234,15 @@
 
     const fmt = (v) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(3) : '—');
 
+    const summarizeQuestion = (text) => {
+      if (!text || typeof text !== 'string') return '';
+      const clean = text.replace(/\s+/g, ' ').trim();
+      if (!clean) return '';
+      const words = clean.split(' ');
+      if (words.length <= 26) return clean;
+      return `${words.slice(0, 26).join(' ')}…`;
+    };
+
     fetch('data/benchmark_slider.json')
       .then((r) => {
         if (!r.ok) throw new Error('data/benchmark_slider.json');
@@ -264,6 +273,7 @@
           const bestText = best ? `Best method: ${best.label} (${best.value.toFixed(3)})` : 'Best method: not available';
 
           const passCount = METHOD_ORDER.filter(([key]) => rec.passed?.[key] === true).length;
+          const description = summarizeQuestion(rec.question);
           const scoreList = METHOD_ORDER.map(([key, label]) => {
             const err = rec.errors?.[key] ? ` · ${rec.errors[key]}` : '';
             return `<li><strong>${label}:</strong> ${fmt(rec.scores?.[key])}${err}</li>`;
@@ -278,7 +288,8 @@
           detailEl.innerHTML = `
             <h4 style="margin:0 0 6px;">${rec.query}</h4>
             <p class="small" style="margin:0 0 6px;"><strong>Type:</strong> ${rec.type || 'unknown'}</p>
-            <p class="small" style="margin:0 0 10px;">${bestText} · Pass across methods: ${passCount}/4</p>
+            <p class="small" style="margin:0 0 6px;">${bestText} · Pass across methods: ${passCount}/4</p>
+            ${description ? `<p class="small benchmark-desc">${description}</p>` : ''}
             <ul class="bench-score-list">${scoreList}</ul>
             <div class="bench-bars">${bars}</div>
           `;

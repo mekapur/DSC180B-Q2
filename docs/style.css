@@ -594,6 +594,14 @@ table tr:hover {
   border-radius: 10px;
   background: #fff;
   padding: 10px;
+  min-height: 360px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.benchmark-desc {
+  color: var(--muted);
+  margin: 0 0 10px;
 }
 
 .bench-score-list {
@@ -634,6 +642,11 @@ table tr:hover {
   .bench-bar-row {
     grid-template-columns: 1fr;
     gap: 3px;
+  }
+
+  .benchmark-detail {
+    min-height: 320px;
+    max-height: 320px;
   }
 }
 
