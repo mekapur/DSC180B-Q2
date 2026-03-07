@@ -283,6 +283,11 @@ figcaption {
   padding: 0 40px;
 }
 
+/* Fixed-layout tables with equal method columns */
+.table-wide table.fixed-cols {
+  table-layout: fixed;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

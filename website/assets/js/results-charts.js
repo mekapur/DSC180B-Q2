@@ -12,7 +12,10 @@
     var container = document.getElementById('queryTable');
     if (!container) return;
 
-    var html = '<table><thead><tr>';
+    var html = '<table class="fixed-cols"><colgroup>';
+    html += '<col style="width:15%"><col style="width:10%">';
+    METHODS.forEach(function() { html += '<col style="width:15%">'; });
+    html += '</colgroup><thead><tr>';
     html += '<th>Query</th><th>Type</th>';
     METHODS.forEach(function(m) { html += '<th>' + m.replace('Wide DP-SGD', 'Wide DP-VAE').replace('PE Vanilla', 'PE (Vanilla)').replace('PE Conditional', 'PE (Conditional)') + '</th>'; });
     html += '</tr></thead><tbody>';
