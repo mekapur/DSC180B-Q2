@@ -75,7 +75,7 @@ SYNTH_METHODS = {
     "widetable": RESULTS_DIR / "synthetic",
     "pertable": RESULTS_DIR / "synth_pertable",
     "mst": RESULTS_DIR / "synth_mst",
-    "pe": RESULTS_DIR / "synth_pe",
+    "pe_conditional": RESULTS_DIR / "pe_conditional" / "query_results",
 }
 
 

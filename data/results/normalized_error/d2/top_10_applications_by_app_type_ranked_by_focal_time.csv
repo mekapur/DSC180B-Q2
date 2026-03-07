@@ -1,0 +1,151 @@
+app_type,exe_name,average_focal_sec_per_day,rank
+Communication,zoomrooms.exe,42064.0,1
+Communication,zello.exe,26474.0,2
+Communication,bittitandmaoutlookconfiguratorapplication.exe,25599.0,3
+Communication,scriptcommunicator.exe,23319.0,4
+Communication,fs.exe,21009.0,5
+Communication,controller.exe,18103.0,6
+Communication,gamecenter@mail.ru.exe,13474.0,7
+Communication,contacam.exe,12320.0,8
+Communication,devoutlooksrv64.exe,11879.0,9
+Communication,gridtracker.exe,9659.0,10
+Developer tools,bsp.exe,54591.0,1
+Developer tools,deleaker.exe,37280.0,2
+Developer tools,xray.exe,28132.0,3
+Developer tools,netterm.exe,25560.0,4
+Developer tools,electron.exe,17005.0,5
+Developer tools,mainframe.exe,15135.0,6
+Developer tools,the sandbox.exe,14434.0,7
+Developer tools,ttk3_gui.exe,14059.0,8
+Developer tools,raptor.exe,13326.0,9
+Developer tools,finsql.exe,11631.0,10
+Entertainment,ehshell.exe,37682.0,1
+Entertainment,cubase9.5.exe,24808.0,2
+Entertainment,wintv8.exe,21555.0,3
+Entertainment,plex htpc.exe,20426.0,4
+Entertainment,jcam-main.exe,15708.0,5
+Entertainment,mhtab.exe,15376.0,6
+Entertainment,直播伴侣.exe,12856.0,7
+Entertainment,kartina_tv.exe,12578.0,8
+Entertainment,nba2k23.exe,11821.0,9
+Entertainment,youku.exe,11098.0,10
+Gaming,헂7뮪놾ퟷ뺫,66727.0,1
+Gaming,mw.exe,61367.0,2
+Gaming,e튻h,48628.0,3
+Gaming,폐컄첳튻q뗄p늻풭,46102.0,4
+Gaming,t첳슼쯹뒴r풭싛틔s헂,43418.0,5
+Gaming,93폐,41292.0,6
+Gaming,쿠쯹닡폐폅w,39344.0,7
+Gaming,럇.쿠f.벰뗄,37295.0,8
+Gaming,sammax200.exe,37004.0,9
+Gaming,뗄pt,35704.0,10
+Gaming auxiliary,mir4g.exe,32394.0,1
+Gaming auxiliary,pspluslauncher.exe,17581.0,2
+Gaming auxiliary,foxwq.exe,16265.0,3
+Gaming auxiliary,gamebox.exe,15418.0,4
+Gaming auxiliary,fivem_b2612_gtaprocess.exe,15215.0,5
+Gaming auxiliary,mir4s.exe,14734.0,6
+Gaming auxiliary,san14pk_ko.exe,13988.0,7
+Gaming auxiliary,rustclient.exe,13766.0,8
+Gaming auxiliary,fahcontrol.exe,12809.0,9
+Gaming auxiliary,firestormos-releasex64.exe,12732.0,10
+Installers + Updaters,dbupgradeo.exe,52011.0,1
+Installers + Updaters,nwsapsetupusernotificationtool.exe,39594.0,2
+Installers + Updaters,asysautoupdate.exe,37862.0,3
+Installers + Updaters,chipupdater.exe,35010.0,4
+Installers + Updaters,verizonwirelessupgradeassistantupdate.exe,34563.0,5
+Installers + Updaters,rave-x64-setup-1.8.1-alpha.19.exe,34432.0,6
+Installers + Updaters,msi7e22.tmp,33937.0,7
+Installers + Updaters,days gone setup.exe,28880.0,8
+Installers + Updaters,onrush - install.exe,27127.0,9
+Installers + Updaters,hmc.exe,25797.0,10
+Lifestyle,sunsetscreen.exe,36396.0,1
+Lifestyle,webmed.exe,29389.0,2
+Lifestyle,eaglesoft.exe,22778.0,3
+Lifestyle,timezero.exe,22226.0,4
+Lifestyle,intuitdataprotect.exe,19677.0,5
+Lifestyle,m42t.exe,19556.0,6
+Lifestyle,chia.exe,17685.0,7
+Lifestyle,orplat.exe,15859.0,8
+Lifestyle,stock.exe,10993.0,9
+Lifestyle,matriks.exe,9930.0,10
+Multimedia,expephoto.exe,56227.0,1
+Multimedia,vlc,38921.0,2
+Multimedia,scene.exe,32228.0,3
+Multimedia,gphotoshow.scr,29325.0,4
+Multimedia,mediaviewer.exe,20897.0,5
+Multimedia,arena.exe,17764.0,6
+Multimedia,awesomephotoproject.exe,17357.0,7
+Multimedia,avermedia stream engine.exe,17185.0,8
+Multimedia,pdr12.exe,16152.0,9
+Multimedia,mediaswitcher.exe,15993.0,10
+Other,psale.exe,80487.0,1
+Other,afifarm.exe,77396.0,2
+Other,appspace app.exe,75476.0,3
+Other,usra.exe,73602.0,4
+Other,fdonair3.exe,73110.0,5
+Other,patientportal.exe,73092.0,6
+Other,msinsctl.exe,72866.0,7
+Other,sysradsoundworks.exe,70562.0,8
+Other,[vrp repacks] half-life alyx.exe,70222.0,9
+Other,padsviewer.exe,69733.0,10
+Productivity,signageplayer.exe,46261.0,1
+Productivity,digitalsignage.exe,33254.0,2
+Productivity,anydesk - 2020-07-27t104127.097.exe,32763.0,3
+Productivity,xsi.exe,31500.0,4
+Productivity,anydesk (65).exe,29269.0,5
+Productivity,cccone.exe,27754.0,6
+Productivity,anydesk - 2020-07-13t090838.877.exe,22606.0,7
+Productivity,qbposshell.exe,22267.0,8
+Productivity,eco.exe,21678.0,9
+Productivity,vmconnect.exe,21386.0,10
+Security,ivms-4200.exe,46646.0,1
+Security,passwarekitforensic.exe,44546.0,2
+Security,edvrclient.exe,40667.0,3
+Security,nanominer.exe,24915.0,4
+Security,simnext.exe,23605.0,5
+Security,ispy.exe,20155.0,6
+Security,securityclient.exe,19513.0,7
+Security,nbminer.exe,18939.0,8
+Security,phoenixminer.exe,17595.0,9
+Security,accentepr.exe,16780.0,10
+Social,sotgame.exe,8720.0,1
+Social,哔哩哔哩.exe,6912.0,2
+Social,discordcanary.exe,6052.0,3
+Social,paltalk.exe,5034.0,4
+Social,camfrog video chat.exe,4494.0,5
+Social,douyulive.exe,4469.0,6
+Social,mirc.exe,4191.0,7
+Social,ts3client_win32.exe,3765.0,8
+Social,line.exe,3674.0,9
+Social,discordptb.exe,3244.0,10
+System,avfingerprint.exe,35782.0,1
+System,servermanager.exe,30690.0,2
+System,tsclient.exe,29355.0,3
+System,xyz.exe,26932.0,4
+System,vnc-viewer-5.0.5-windows-32bit.exe,25945.0,5
+System,printhubnotify.exe,21457.0,6
+System,karys_bot_4.6_-_windows_-pandoras_box.exe,18140.0,7
+System,ufs-explorer-pro.exe,17511.0,8
+System,spacedeskwindowsviewer.exe,16004.0,9
+System,pvxwin32.exe,14737.0,10
+Utilities + tools,mxmanagementcenter.exe,34690.0,1
+Utilities + tools,chemis32ui.exe,30119.0,2
+Utilities + tools,desktoprestsa.exe,29220.0,3
+Utilities + tools,chatterino.exe,27647.0,4
+Utilities + tools,mainapp.exe,23486.0,5
+Utilities + tools,videodownloaderultimate.exe,20814.0,6
+Utilities + tools,dwto.exe,19531.0,7
+Utilities + tools,ph.exe,18464.0,8
+Utilities + tools,endless-slideshow.exe,18380.0,9
+Utilities + tools,3.5.5_45770.exe,17294.0,10
+Web Browsing,"chrome,,.exe",32760.0,1
+Web Browsing,"chrome,,,,.exe",32389.0,2
+Web Browsing,dude.exe,24535.0,3
+Web Browsing,chrome.....exe,24326.0,4
+Web Browsing,chrome (radeon).exe,20708.0,5
+Web Browsing,chrome......exe,20084.0,6
+Web Browsing,flsecurebrowser.exe,19101.0,7
+Web Browsing,webisida.browser.exe,17659.0,8
+Web Browsing,onair company.exe,15988.0,9
+Web Browsing,pcsecurebrowser (1).exe,15741.0,10

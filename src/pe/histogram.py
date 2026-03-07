@@ -208,7 +208,7 @@ async def private_evolution(
         if t == resume_iter and resume_stage == PECheckpoint.STAGE_HISTOGRAM:
             histogram = ckpt.load_histogram(t)
             if histogram is not None:
-                print(f"Loaded histogram from checkpoint")
+                print("Loaded histogram from checkpoint")
                 iter_info["histogram_time"] = 0
 
         if histogram is None:

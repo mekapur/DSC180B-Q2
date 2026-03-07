@@ -1,4 +1,4 @@
-"""Stratified PE benchmark: conditional generation from real query targets.
+"""Conditional PE benchmark: generation from real query targets.
 
 Instead of generating records independently, this script:
 1. Reads real query results to compute per-stratum targets (with DP noise)
@@ -10,8 +10,8 @@ Privacy budget:  epsilon_agg (aggregate noise) + epsilon_hist (histogram)
                  composed via basic composition.
 
 Usage:
-    python scripts/run_stratified_benchmark.py --n-records 5000
-    python scripts/run_stratified_benchmark.py --skip-generation  # re-run eval only
+    python scripts/run_conditional_benchmark.py --n-records 5000
+    python scripts/run_conditional_benchmark.py --skip-generation  # re-run eval only
 """
 
 from __future__ import annotations
@@ -39,19 +39,19 @@ from src.pe.api import PEApi, _NUMERIC_GROUPS
 from src.pe.distance import WorkloadDistance
 from src.pe.histogram import dp_nn_histogram, select_candidates
 from src.pe.privacy import calibrate_sigma, compute_epsilon
-from src.pe.stratified import build_generation_plan
+from src.pe.conditional import build_generation_plan
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Stratified PE benchmark (conditional generation + DP)"
+        description="Conditional PE benchmark (generation + DP)"
     )
     parser.add_argument("--n-records", type=int, default=5000)
-    parser.add_argument("--batch-size", type=int, default=10)
+    parser.add_argument("--batch-size", type=int, default=5)
     parser.add_argument("--model", type=str, default="gpt-5-mini")
     parser.add_argument("--max-concurrent", type=int, default=50)
     parser.add_argument(
-        "--output-dir", type=str, default="data/results/pe_stratified"
+        "--output-dir", type=str, default="data/results/pe_conditional"
     )
     parser.add_argument(
         "--skip-generation",
@@ -95,7 +95,7 @@ def main():
           f"delta={args.delta}")
 
     # ---- Step 1: Build generation plan (with DP-noised aggregates) ------
-    print("\n=== BUILDING STRATIFIED GENERATION PLAN (DP-noised) ===")
+    print("\n=== BUILDING CONDITIONAL GENERATION PLAN (DP-noised) ===")
     plan, privacy_info = build_generation_plan(
         real_results_dir,
         n_total=args.n_records,
@@ -110,7 +110,7 @@ def main():
         synth_df = pd.read_parquet(output_dir / "synth_wide.parquet")
         print(f"Loaded: {synth_df.shape}")
     else:
-        print("\n=== GENERATING SYNTHETIC DATA (STRATIFIED) ===")
+        print("\n=== GENERATING SYNTHETIC DATA (CONDITIONAL) ===")
         real_df_path = Path("data/reporting/pe_wide_table.parquet")
         if not real_df_path.exists():
             # Fallback to legacy path
@@ -141,7 +141,7 @@ def main():
 
         t0 = time.time()
         pool_df = asyncio.run(
-            api.stratified_api(pool_plan, batch_size=args.batch_size)
+            api.conditional_api(pool_plan, batch_size=args.batch_size)
         )
         gen_time = time.time() - t0
         print(f"Generated pool: {len(pool_df)} records in {gen_time:.0f}s")
@@ -284,7 +284,7 @@ def _run_evaluation(
         "total_epsilon", privacy_info.get("epsilon_agg", "?")
     )
     print(
-        f"STRATIFIED BENCHMARK RESULTS "
+        f"CONDITIONAL BENCHMARK RESULTS "
         f"({len(synth_df)} records, {args.model}, {dp_status}, "
         f"epsilon={total_eps})"
     )
@@ -304,7 +304,7 @@ def _run_evaluation(
     valid = eval_df[eval_df["error"] == ""]
     skipped = eval_df[eval_df["error"] != ""]
     passed = valid[valid["passed"]]
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"  Queries run:     {len(valid)}/{len(eval_df)}")
     print(f"  Queries skipped: {len(skipped)} (missing reporting tables)")
     print(f"  Passed (>=0.5):  {len(passed)}/{len(valid)}")
@@ -312,7 +312,7 @@ def _run_evaluation(
         print(f"  Average score:   {valid['score'].mean():.3f}")
         print(f"  Median score:    {valid['score'].median():.3f}")
 
-    print(f"\nPrivacy accounting:")
+    print("\nPrivacy accounting:")
     print(f"  epsilon_agg (aggregates):  "
           f"{privacy_info.get('epsilon_agg', 'N/A')}")
     print(f"  epsilon_hist (histogram):  "
@@ -332,7 +332,7 @@ def _run_evaluation(
 
         print(f"  Previous: {len(prev_passed)}/{len(prev_valid)} passed, "
               f"avg={prev_valid['score'].mean():.3f}")
-        print(f"  Stratified: {len(passed)}/{len(valid)} passed, "
+        print(f"  Conditional: {len(passed)}/{len(valid)} passed, "
               f"avg={valid['score'].mean():.3f}")
 
         merged = valid.merge(

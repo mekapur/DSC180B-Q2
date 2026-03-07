@@ -1,4 +1,4 @@
-"""Conditional / stratified PE generation with DP-noised aggregates.
+"""Conditional PE generation with DP-noised aggregates.
 
 Instead of generating records independently, this module:
 1. Reads real query results from ``data/results/real/``
@@ -16,7 +16,6 @@ batt group active, batt_duration_mins averaging ~187"
 
 from __future__ import annotations
 
-import json
 import logging
 import math
 from dataclasses import dataclass, field
@@ -45,7 +44,7 @@ class StratumAllocation:
 
 @dataclass
 class GenerationPlan:
-    """Complete stratified generation plan."""
+    """Complete conditional generation plan."""
 
     allocations: list[StratumAllocation] = field(default_factory=list)
 
@@ -387,7 +386,7 @@ def build_generation_plan(
     delta: float = 1e-5,
     seed: int = 42,
 ) -> tuple[GenerationPlan, dict]:
-    """Build a stratified generation plan from real query results.
+    """Build a conditional generation plan from real query results.
 
     All aggregate statistics (counts, means, percentages) are noised
     via the Gaussian mechanism before being embedded in prompts.
@@ -442,7 +441,7 @@ def build_generation_plan(
     print(f"DP aggregates: epsilon_agg={epsilon_agg}, delta={delta}")
     print(f"  zCDP: rho_total={rho_total:.6f}, "
           f"rho_per_group={rho_per_group:.6f} ({n_budget_groups} groups)")
-    print(f"  Composition: unified zCDP (rho splitting across groups)")
+    print("  Composition: unified zCDP (rho splitting across groups)")
     print(f"  Total queries: {n_queries_total}")
     for group, k in sorted(group_query_counts.items()):
         sigma = group_sigmas[group]
@@ -841,7 +840,7 @@ def build_stratum_prompt(alloc: StratumAllocation, batch_size: int) -> str:
     for key, val in alloc.cat_constraints.items():
         if key == "_processor_class":
             if val == "Intel Xeon":
-                lines.append(f"- cpuname: Intel Xeon")
+                lines.append("- cpuname: Intel Xeon")
             else:
                 lines.append(
                     "- cpuname: any value EXCEPT Intel Xeon "
@@ -873,7 +872,7 @@ def build_stratum_prompt(alloc: StratumAllocation, batch_size: int) -> str:
 
     # Zero groups
     zero_groups = [g for g in _ALL_GROUPS if g != alloc.active_group]
-    lines.append(f"\nALL OTHER NUMERIC GROUPS MUST BE EXACTLY 0:")
+    lines.append("\nALL OTHER NUMERIC GROUPS MUST BE EXACTLY 0:")
     for zg in zero_groups:
         fields = _GROUP_FIELDS[zg]
         if zg == "browser_webcat":
@@ -883,7 +882,7 @@ def build_stratum_prompt(alloc: StratumAllocation, batch_size: int) -> str:
 
     # Secondary hints
     if alloc.secondary_hints:
-        lines.append(f"\nADDITIONAL CONSTRAINTS:")
+        lines.append("\nADDITIONAL CONSTRAINTS:")
         lines.append(alloc.secondary_hints)
 
     # General categorical distribution hints (for non-fixed categoricals)
