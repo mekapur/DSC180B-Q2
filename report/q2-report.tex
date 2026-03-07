@@ -230,7 +230,7 @@ A natural first attempt at an aggregate score is a binary threshold:
 $\text{Score}_{\text{binary}}(\tilde{D}) = \frac{1}{|\mathcal{Q}|} \sum_j \mathbf{1}[\Delta_j \leq \tau_j]$,
 but this has two shortcomings. First, the choice of each threshold $\tau_j$ is arbitrary and must be justified. Second, binary thresholding discards information: if two methods $A$ and $B$ both exceed (or both fall below) $\tau_j$, the indicator cannot distinguish them.
 
-Following the suggestion of our advisor, we instead normalize each query discrepancy by the \emph{natural sampling variation} of the non-private data itself. We randomly split the real database $D$ into two disjoint halves $D_1, D_2$ of equal size and compute the baseline discrepancy $\Delta_j(D_1, D_2) = d_j(q_j(D_1), q_j(D_2))$. The \textit{normalized error} for query $j$ is then:
+We instead normalize each query discrepancy by the \emph{natural sampling variation} of the non-private data itself. We randomly split the real database $D$ into two disjoint halves $D_1, D_2$ of equal size and compute the baseline discrepancy $\Delta_j(D_1, D_2) = d_j(q_j(D_1), q_j(D_2))$. The \textit{normalized error} for query $j$ is then:
 \begin{equation}
     \label{eq:normalized-error}
     \hat{\Delta}_j(\tilde{D}) = \frac{\Delta_j(D, \tilde{D})}{|\Delta_j(D_1, D_2)|}, \quad |\Delta_j(D_1, D_2)| > 0,
@@ -513,7 +513,14 @@ $S \gets$ top $N_{\text{synth}}$ candidates ranked by $\tilde{h}_j$\tcp*{rank-ba
 
 We extend the vanilla PE pipeline with a conditional generation variant that guides the foundation model using aggregate statistics derived from the real data under differential privacy. Rather than generating records independently from the model's prior, conditional PE provides per-stratum targets that steer generation toward the true data distribution.
 
-The approach proceeds in four phases. First, we compute aggregate statistics per stratum from the real data, where each stratum corresponds to a unique combination of categorical values and active numeric groups. Second, we add calibrated Gaussian noise to every aggregate query via the Gaussian mechanism, spending a privacy budget of $\varepsilon_{\text{agg}} = 3.5$. We employ zero-concentrated differential privacy (zCDP) composition \citep{bun2016concentrated}, converting the total $(\varepsilon_{\text{agg}}, \delta)$ budget to a zCDP parameter $\rho_{\text{total}}$ and splitting $\rho$ equally across 7 query groups (battery, memory, on/off, browser/webcat, hardware, network, and hints). This yields per-query noise scales $\sigma_g = \sqrt{k_g / (2\rho_g)}$ ranging from 24.6 (network, $k=40$ queries) to 68.2 (browser/webcat, $k=308$ queries), substantially tighter than the $\sigma \approx 150$ that naive advanced composition would require across all 1{,}056 queries jointly. Third, we use the noisy aggregates to construct per-stratum prompts that specify target counts and averages for each numeric group. Since these prompts are deterministic functions of the DP-released aggregates, this step is free post-processing under DP. Fourth, we generate a $2\times$ candidate pool across all strata and select $N_{\text{synth}} = 5{,}000$ records via the DP nearest-neighbor histogram mechanism, spending $\varepsilon_{\text{hist}} = 0.5$.
+The approach proceeds in four phases.
+
+\begin{enumerate}
+    \item Compute aggregate statistics per stratum from the real data, where each stratum corresponds to a unique combination of categorical values and active numeric groups.
+    \item Add calibrated Gaussian noise to every aggregate query via the Gaussian mechanism, spending a privacy budget of $\varepsilon_{\text{agg}} = 3.5$. We employ zero-concentrated differential privacy (zCDP) composition \citep{bun2016concentrated}, converting the total $(\varepsilon_{\text{agg}}, \delta)$ budget to a zCDP parameter $\rho_{\text{total}}$ and splitting $\rho$ equally across 7 query groups (battery, memory, on/off, browser/webcat, hardware, network, and hints). This yields per-query noise scales $\sigma_g = \sqrt{k_g / (2\rho_g)}$ ranging from 24.6 (network, $k=40$ queries) to 68.2 (browser/webcat, $k=308$ queries), substantially tighter than the $\sigma \approx 150$ that naive advanced composition would require across all 1{,}056 queries jointly.
+    \item Use the noisy aggregates to construct per-stratum prompts that specify target counts and averages for each numeric group. Since these prompts are deterministic functions of the DP-released aggregates, this step is free post-processing under DP.
+    \item Generate a $2\times$ candidate pool across all strata and select $N_{\text{synth}} = 5{,}000$ records via the DP nearest-neighbor histogram mechanism, spending $\varepsilon_{\text{hist}} = 0.5$.
+\end{enumerate}
 
 The total privacy cost is $\varepsilon_{\text{agg}} + \varepsilon_{\text{hist}} = 4.0$ by basic composition, matching the vanilla PE budget. The budget split favors the aggregates over the histogram ($3.5$ vs.\ $0.5$) because conditional generation already aligns the candidate pool with the target distribution, reducing the marginal value of the histogram selection step. The resulting histogram noise scale is $\sigma_{\text{hist}} \approx 7.03$, compared to $\sigma \approx 1.08$ in vanilla PE where the histogram receives the full budget.
 
@@ -543,11 +550,11 @@ As a non-neural baseline, we implement the Maximum Spanning Tree (MST) algorithm
     \item \textit{Synthetic generation via Private-PGM.} The noisy marginals define a graphical model whose structure is the selected tree. MST uses the Private-PGM algorithm \citep{mckenna2019graphical} to find a distribution over records that is maximally consistent with all noisy marginals simultaneously. Private-PGM solves this as a convex optimization problem (iterative proportional fitting on the junction tree), then samples $n$ synthetic records from the fitted distribution. Because the tree structure is sparse, the graphical model decomposes into tractable local computations even for tables with many columns.
 \end{enumerate}
 
-\paragraph{Discretization.} MST requires all columns to have finite cardinality. We discretize continuous columns into 20 quantile bins, computed on the nonzero values only, with a dedicated zero bin appended when the column has $> 5\%$ zero values (common in telemetry data where most metrics are sparse). Categorical columns are capped at 50 categories using the same top-$k$ binning applied for the DP-VAE; values outside the top 50 are grouped into an ``Other'' bin. After synthesis, continuous values are reconstructed by sampling uniformly within each bin's range. This introduces quantization noise that is typically small relative to the DP noise, but can affect tail values.
+MST requires all columns to have finite cardinality. We discretize continuous columns into 20 quantile bins, computed on the nonzero values only, with a dedicated zero bin appended when the column has $> 5\%$ zero values (common in telemetry data where most metrics are sparse). Categorical columns are capped at 50 categories using the same top-$k$ binning applied for the DP-VAE; values outside the top 50 are grouped into an ``Other'' bin. After synthesis, continuous values are reconstructed by sampling uniformly within each bin's range. This introduces quantization noise that is typically small relative to the DP noise, but can affect tail values.
 
-\paragraph{Instantiation via SmartNoise.} We use the \texttt{MSTSynthesizer} class from the SmartNoise Synth library (v1.0.6), which wraps the original MST implementation. We initialize with \texttt{epsilon=4.0}, \texttt{delta=1e-5}, and the default split ratio between selection and measurement budgets. The synthesizer handles the discretization, marginal selection, noise injection, PGM fitting, and sampling steps internally. For each table, we call \texttt{fit()} on the preprocessed (binned) DataFrame, then \texttt{sample(n)} to produce $n$ synthetic rows matching the real table's row count. Synthesis for a single table takes under 10 minutes on CPU, and the full 19-table pipeline completes in approximately 90 minutes.
+We use the \texttt{MSTSynthesizer} class from the SmartNoise Synth library (v1.0.6), which wraps the original MST implementation. We initialize with \texttt{epsilon=4.0}, \texttt{delta=1e-5}, and the default split ratio between selection and measurement budgets. The synthesizer handles the discretization, marginal selection, noise injection, PGM fitting, and sampling steps internally. For each table, we call \texttt{fit()} on the preprocessed (binned) DataFrame, then \texttt{sample(n)} to produce $n$ synthetic rows matching the real table's row count. Synthesis for a single table takes under 10 minutes on CPU, and the full 19-table pipeline completes in approximately 90 minutes.
 
-\paragraph{Per-table composition.} Like the per-table DP-SGD approach, MST synthesizes each of the 19 reporting tables independently at $\varepsilon = 4.0$ per table, $\delta = 10^{-5}$, with guid assignment proportional to each table's real join rate against the sysinfo anchor. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, identical to the per-table DP-SGD baseline. This is a conservative bound; advanced composition theorems or privacy amplification via subsampling could tighten it, but we use basic composition for simplicity and comparability.
+Like the per-table DP-SGD approach, MST synthesizes each of the 19 reporting tables independently at $\varepsilon = 4.0$ per table, $\delta = 10^{-5}$, with guid assignment proportional to each table's real join rate against the sysinfo anchor. The total privacy budget under basic composition is $19 \times 4.0 = 76.0$, identical to the per-table DP-SGD baseline. This is a conservative bound; advanced composition theorems or privacy amplification via subsampling could tighten it, but we use basic composition for simplicity and comparability.
 
 Marginal-based methods represent the current state of the art for tabular DP synthesis \citep{swanberg2025apiaccessllmsuseful} and provide the reference point against which both DP-SGD and PE should be measured.
 
@@ -661,14 +668,18 @@ To foreground per-query fidelity, Table~\ref{tab:wide-dpsgd-scores} reports the 
 \toprule
 \textbf{Query codename} & \textbf{Type} & \textbf{Wide DP-VAE score} \\
 \midrule
-\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
+\texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.167 \\
+\midrule
+\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
 \texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 \\
 \texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
-\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
-\texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.167 \\
-\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.065 \\
+\midrule
 \texttt{BrowserHist} & Histogram & \cellcolor{scorelo}0.000 \\
 \texttt{RamHist} & Histogram & \cellcolor{scorelo}0.000 \\
+\midrule
+\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.065 \\
+\midrule
+\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
 \bottomrule
 \end{tabular*}
 \caption{Wide-table DP-VAE query scores on a 0--1 fidelity scale, color-coded as in Table~\ref{tab:per-query-scores}: \tightlegendbox{scorehi}{$\geq 0.5$}, \tightlegendbox{scoremid}{$0.25$--$0.49$}, \tightlegendbox{scorelo}{$< 0.25$}.}
@@ -750,22 +761,26 @@ Per-table DP-SGD passes 6 of 21 queries, with average score 0.303 and median sco
 \endfoot
 \bottomrule
 \endlastfoot
-\texttt{VendorAgg} & Agg+Join & \cellcolor{scorehi}1.000 \\
-\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scorehi}1.000 \\
-\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
-\texttt{SleepPivot} & Pivot & \cellcolor{scorehi}0.636 \\
-\texttt{RamHist} & Histogram & \cellcolor{scorehi}0.500 \\
-\texttt{DetectionRank} & Top-$k$ & \cellcolor{scorehi}0.500 \\
-\texttt{PersonaPivot} & Pivot & \cellcolor{scoremid}0.419 \\
-\texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 \\
-\texttt{BrowserHist} & Histogram & \cellcolor{scoremid}0.333 \\
 \texttt{BlockerAgg} & Agg+Join & \cellcolor{scoremid}0.250 \\
-\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
-\texttt{NetAsymAgg} & Agg+Join & \cellcolor{scorelo}0.143 \\
 \texttt{BlockerDurAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
 \texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
 \texttt{DisplayAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
+\texttt{NetAsymAgg} & Agg+Join & \cellcolor{scorelo}0.143 \\
+\texttt{VendorAgg} & Agg+Join & \cellcolor{scorehi}1.000 \\
+\midrule
 \texttt{BatteryDemo} & Geo/Demo & \cellcolor{scorelo}0.000 \\
+\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scorehi}1.000 \\
+\texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 \\
+\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
+\midrule
+\texttt{BrowserHist} & Histogram & \cellcolor{scoremid}0.333 \\
+\texttt{RamHist} & Histogram & \cellcolor{scorehi}0.500 \\
+\midrule
+\texttt{PersonaPivot} & Pivot & \cellcolor{scoremid}0.419 \\
+\texttt{SleepPivot} & Pivot & \cellcolor{scorehi}0.636 \\
+\midrule
+\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
+\texttt{DetectionRank} & Top-$k$ & \cellcolor{scorehi}0.500 \\
 \texttt{FocalRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
 \texttt{SystemRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
 \texttt{WaitModeRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
@@ -797,24 +812,28 @@ MST passes 6 of 21 queries, with average score 0.328 and median score 0.250. Lik
 \endfoot
 \bottomrule
 \endlastfoot
-\texttt{VendorAgg} & Agg+Join & \cellcolor{scorehi}1.000 \\
-\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
-\texttt{DetectionRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
-\texttt{SystemRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
-\texttt{BrowserHist} & Histogram & \cellcolor{scorehi}0.667 \\
-\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scorehi}0.500 \\
-\texttt{NetAsymAgg} & Agg+Join & \cellcolor{scoremid}0.429 \\
-\texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 \\
-\texttt{SleepPivot} & Pivot & \cellcolor{scoremid}0.273 \\
 \texttt{BlockerAgg} & Agg+Join & \cellcolor{scoremid}0.250 \\
-\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
-\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.194 \\
 \texttt{BlockerDurAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
 \texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
 \texttt{DisplayAgg} & Agg+Join & \cellcolor{scorelo}0.000 \\
+\texttt{NetAsymAgg} & Agg+Join & \cellcolor{scoremid}0.429 \\
+\texttt{VendorAgg} & Agg+Join & \cellcolor{scorehi}1.000 \\
+\midrule
 \texttt{BatteryDemo} & Geo/Demo & \cellcolor{scorelo}0.000 \\
+\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scorehi}0.500 \\
+\texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 \\
+\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 \\
+\midrule
+\texttt{BrowserHist} & Histogram & \cellcolor{scorehi}0.667 \\
 \texttt{RamHist} & Histogram & \cellcolor{scorelo}0.000 \\
+\midrule
+\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.194 \\
+\texttt{SleepPivot} & Pivot & \cellcolor{scoremid}0.273 \\
+\midrule
+\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
+\texttt{DetectionRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
 \texttt{FocalRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
+\texttt{SystemRank} & Top-$k$ & \cellcolor{scorehi}1.000 \\
 \texttt{WaitModeRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
 \texttt{WaitRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
 \texttt{WaitStateRank} & Top-$k$ & \cellcolor{scorelo}0.000 \\
@@ -837,16 +856,20 @@ Conditional PE (Section~\ref{sec:methods-cond-pe}) improves to 3 of 10 passing q
 \toprule
 \textbf{Query} & \textbf{Type} & \textbf{Vanilla PE} & \textbf{Conditional PE} & \textbf{$\Delta$} \\
 \midrule
-\texttt{RamHist} & Histogram & \cellcolor{scorehi}0.500 & \cellcolor{scorehi}1.000 & +0.500 \\
-\texttt{SleepPivot} & Pivot & \cellcolor{scorelo}0.091 & \cellcolor{scorehi}0.818 & +0.727 \\
-\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scorehi}0.500 & +0.250 \\
-\texttt{BatteryDemo} & Geo/Demo & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.333 & +0.333 \\
-\texttt{BrowserHist} & Histogram & \cellcolor{scoremid}0.333 & \cellcolor{scorelo}0.000 & $-$0.333 \\
-\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.250 & +0.250 \\
 \texttt{ChassisAgg} & Agg+Join & \cellcolor{scorelo}0.167 & \cellcolor{scorelo}0.000 & $-$0.167 \\
-\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.032 & \cellcolor{scorelo}0.161 & +0.129 \\
-\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & 0.000 \\
+\midrule
+\texttt{BatteryDemo} & Geo/Demo & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.333 & +0.333 \\
+\texttt{BatteryGeo} & Geo/Demo & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.250 & +0.250 \\
 \texttt{PowerGeo} & Geo/Demo & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & 0.000 \\
+\texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scorehi}0.500 & +0.250 \\
+\midrule
+\texttt{BrowserHist} & Histogram & \cellcolor{scoremid}0.333 & \cellcolor{scorelo}0.000 & $-$0.333 \\
+\texttt{RamHist} & Histogram & \cellcolor{scorehi}0.500 & \cellcolor{scorehi}1.000 & +0.500 \\
+\midrule
+\texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.032 & \cellcolor{scorelo}0.161 & +0.129 \\
+\texttt{SleepPivot} & Pivot & \cellcolor{scorelo}0.091 & \cellcolor{scorehi}0.818 & +0.727 \\
+\midrule
+\texttt{BrowserRank} & Top-$k$ & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & 0.000 \\
 \midrule
 \textbf{Passed ($\geq 0.5$)} & & \textbf{1/10} & \textbf{3/10} & \\
 \textbf{Average score} & & \textbf{0.137} & \textbf{0.306} & \\
@@ -912,60 +935,65 @@ Table~\ref{tab:normalized-error} reports the normalized error metric (Equation~\
 \toprule
 \textbf{Method} & \textbf{Mean $\hat{\Delta}$} & \textbf{Median $\hat{\Delta}$} & \textbf{Std} & \textbf{Metrics} \\
 \midrule
-Per-table DP-SGD & 15.45 & \textbf{2.72} & 39.70 & 82 \\
-MST baseline & 1{,}294.00 & 10.96 & 9{,}054.92 & 83 \\
-Wide-table DP-VAE & 133.38 & 12.88 & 371.57 & 51 \\
+Per-table DP-SGD & 14.38 & \textbf{2.93} & 32.78 & 85 \\
+PE (conditional) & 14.49 & 3.79 & 30.54 & 60 \\
+Wide-table DP-VAE & 558.67 & 16.42 & 3{,}252.95 & 51 \\
+MST baseline & 1{,}769.84 & 10.76 & 13{,}503.57 & 85 \\
 \bottomrule
 \end{tabular*}
-\caption{Normalized error summary across synthesis methods ($\hat{\Delta} = \Delta_j(D, \tilde{D}) / |\Delta_j(D_1, D_2)|$, lower is better). Metrics with zero baseline variation are excluded (see text). Per-table DP-SGD achieves the best median normalized error (2.72), meaning its typical metric-level distortion is under 3$\times$ the natural half-sample variation. Bold indicates best.}
+\caption{Normalized error summary across synthesis methods ($\hat{\Delta} = \Delta_j(D, \tilde{D}) / |\Delta_j(D_1, D_2)|$, lower is better). Metrics with zero baseline variation are excluded (see text). Per-table DP-SGD achieves the best median normalized error (2.93), meaning its typical metric-level distortion is under 3$\times$ the natural half-sample variation. Conditional PE achieves the second-best median (3.79). Bold indicates best.}
 \label{tab:normalized-error}
 \end{table}
 
-Per-table DP-SGD achieves the best median normalized error (2.72), followed by MST (10.96) and wide-table DP-VAE (12.88). This ranking differs from the binary pass-rate ranking, where per-table and MST were tied at 28.6\%. The normalized metric reveals that per-table DP-SGD's errors are consistently smaller relative to natural variation, while MST's high mean (1{,}294) is driven by extreme outliers on aggregate queries that involve multi-table joins (e.g., \texttt{SleepPivot} at 8{,}655$\times$ and \texttt{DisplayAgg} at 3{,}850$\times$). Normalized errors for PE are omitted because the baseline split evaluation was not rerun for the current PE experiments. Metrics where the baseline variation $|\Delta_j(D_1,D_2)|$ is below $10^{-8}$ (i.e., the two random halves produce identical values) are excluded, since they offer no natural variation to normalize against.
+Per-table DP-SGD achieves the best median normalized error (2.93), followed by conditional PE (3.79), MST (10.76), and wide-table DP-VAE (16.42). This ranking differs from the binary pass-rate ranking, where per-table and MST were tied at 28.6\%. The normalized metric reveals that per-table DP-SGD's errors are consistently smaller relative to natural variation, and that conditional PE achieves comparable per-metric fidelity despite evaluating fewer queries. MST's high mean (1{,}770) is driven by extreme outliers on aggregate queries that involve multi-table joins (e.g., \texttt{SleepPivot} at 8{,}655$\times$ and \texttt{DisplayAgg} at 3{,}927$\times$). Metrics where the baseline variation $|\Delta_j(D_1,D_2)|$ is below $10^{-8}$ (i.e., the two random halves produce identical values) are excluded, since they offer no natural variation to normalize against.
 
-Table~\ref{tab:normalized-error-per-query} provides per-query normalized errors for the three training-based methods.
+Table~\ref{tab:normalized-error-per-query} provides per-query normalized errors for all four methods.
 
 \begin{footnotesize}
-\begin{longtable}{>{\raggedright\arraybackslash}p{0.30\linewidth}>{\raggedright\arraybackslash}p{0.11\linewidth}*{3}{>{\centering\arraybackslash}p{0.14\linewidth}}}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.26\linewidth}>{\raggedright\arraybackslash}p{0.09\linewidth}*{4}{>{\centering\arraybackslash}p{0.12\linewidth}}}
 \caption{Per-query mean normalized error ($\hat{\Delta}$, lower is better). Bold indicates best per row. ``---'' means the method did not produce results for that query.}
 \label{tab:normalized-error-per-query} \\
 \toprule
-\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} \\
+\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} & \textbf{PE} \\
 \midrule
 \endfirsthead
 \toprule
-\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} \\
+\textbf{Query} & \textbf{Type} & \textbf{Wide} & \textbf{Per-table} & \textbf{MST} & \textbf{PE} \\
 \midrule
 \endhead
 \midrule
-\multicolumn{5}{r}{\textit{Continued on next page}} \\
+\multicolumn{6}{r}{\textit{Continued on next page}} \\
 \endfoot
 \bottomrule
 \endlastfoot
-\texttt{XeonGeo} & Geo & 96.5 & \textbf{6.5} & 593.4 \\
-\texttt{ChassisAgg} & Agg & 309.3 & \textbf{4.0} & \textbf{4.0} \\
-\texttt{BatteryDemo} & Geo & --- & \textbf{12.6} & 248.1 \\
-\texttt{BatteryGeo} & Geo & 139.1 & \textbf{2.5} & 320.5 \\
-\texttt{DisplayAgg} & Agg & --- & \textbf{13.7} & 3{,}850.4 \\
-\texttt{VendorAgg} & Agg & --- & 44.6 & \textbf{27.5} \\
-\texttt{BlockerAgg} & Agg & --- & \textbf{16.1} & 35.3 \\
-\texttt{BrowserRank} & Top-$k$ & 9.0 & 4.0 & \textbf{3.0} \\
-\texttt{SleepPivot} & Pivot & --- & \textbf{19.7} & 8{,}655.3 \\
-\texttt{PersonaPivot} & Pivot & 65.4 & \textbf{3.4} & 35.3 \\
-\texttt{PowerGeo} & Geo & 616.6 & 3.3 & \textbf{1.0} \\
-\texttt{BrowserHist} & Hist & 95.5 & 118.0 & \textbf{25.5} \\
-\texttt{RamHist} & Hist & 29.8 & \textbf{38.3} & 110.9 \\
-\texttt{NetAsymAgg} & Agg & --- & \textbf{35.3} & 46.9 \\
-\texttt{FocalRank} & Top-$k$ & --- & \textbf{1.0} & 1.1 \\
-\texttt{SystemRank} & Top-$k$ & --- & 45.9 & \textbf{9.7} \\
-\texttt{DetectionRank} & Top-$k$ & --- & 4.7 & \textbf{2.0} \\
-\texttt{BlockerDurAgg} & Agg & --- & \textbf{2.4} & 45.1 \\
-\texttt{WaitRank} & Top-$k$ & --- & \textbf{1.0} & \textbf{1.0} \\
-\texttt{WaitModeRank} & Top-$k$ & --- & \textbf{0.9} & \textbf{0.9} \\
+\texttt{BlockerAgg} & Agg & --- & \textbf{16.1} & 35.3 & --- \\
+\texttt{BlockerDurAgg} & Agg & --- & \textbf{2.4} & 45.1 & --- \\
+\texttt{ChassisAgg} & Agg & 309.3 & \textbf{4.0} & \textbf{4.0} & --- \\
+\texttt{DisplayAgg} & Agg & --- & \textbf{13.7} & 3{,}850.4 & --- \\
+\texttt{NetAsymAgg} & Agg & --- & \textbf{35.3} & 46.9 & --- \\
+\texttt{VendorAgg} & Agg & --- & 44.6 & \textbf{27.5} & --- \\
+\midrule
+\texttt{BatteryDemo} & Geo & --- & \textbf{12.6} & 248.1 & 10.9 \\
+\texttt{BatteryGeo} & Geo & 139.1 & \textbf{2.5} & 320.5 & 14.5 \\
+\texttt{PowerGeo} & Geo & 616.6 & 3.3 & \textbf{1.0} & 3.6 \\
+\texttt{XeonGeo} & Geo & 96.5 & 6.5 & 593.4 & \textbf{3.5} \\
+\midrule
+\texttt{BrowserHist} & Hist & 95.5 & 118.0 & \textbf{25.5} & 112.8 \\
+\texttt{RamHist} & Hist & 29.8 & 38.3 & 110.9 & \textbf{1.5} \\
+\midrule
+\texttt{PersonaPivot} & Pivot & 65.4 & \textbf{3.4} & 35.3 & 9.2 \\
+\texttt{SleepPivot} & Pivot & --- & \textbf{19.7} & 8{,}655.3 & 9.5 \\
+\midrule
+\texttt{BrowserRank} & Top-$k$ & 9.0 & 4.0 & \textbf{3.0} & 43.0 \\
+\texttt{DetectionRank} & Top-$k$ & --- & 4.7 & \textbf{2.0} & --- \\
+\texttt{FocalRank} & Top-$k$ & --- & \textbf{1.0} & 1.1 & --- \\
+\texttt{SystemRank} & Top-$k$ & --- & 45.9 & \textbf{9.7} & --- \\
+\texttt{WaitModeRank} & Top-$k$ & --- & \textbf{0.9} & \textbf{0.9} & --- \\
+\texttt{WaitRank} & Top-$k$ & --- & \textbf{1.0} & \textbf{1.0} & --- \\
 \end{longtable}
 \end{footnotesize}
 
-The per-query breakdown reveals several patterns. First, per-table DP-SGD achieves normalized errors below 5$\times$ on 10 of 20 queries, indicating that for half of the benchmark its synthesis error is within a small multiple of natural sampling variation. Second, MST excels on ranking queries (\texttt{WaitRank}, \texttt{DetectionRank}) where it achieves near-unity normalized errors, confirming its strength in preserving marginal orderings. Third, the wide-table methods show extreme normalized errors on aggregate queries (e.g., \texttt{PowerGeo} at 617$\times$, \texttt{ChassisAgg} at 309$\times$), driven by the zero-inflation problem discussed in Section~\ref{sec:methods-wide-dpsgd}.
+The per-query breakdown reveals several patterns. First, per-table DP-SGD achieves normalized errors below 5$\times$ on 10 of 20 queries, indicating that for half of the benchmark its synthesis error is within a small multiple of natural sampling variation. Second, conditional PE achieves the lowest normalized error on \texttt{RamHist} (1.5$\times$) and \texttt{XeonGeo} (3.5$\times$), confirming that conditioning on DP-noised aggregates yields strong per-metric fidelity on queries aligned with the stratification. Third, MST excels on ranking queries (\texttt{WaitRank}, \texttt{DetectionRank}) where it achieves near-unity normalized errors, confirming its strength in preserving marginal orderings. Fourth, the wide-table methods show extreme normalized errors on aggregate queries (e.g., \texttt{PowerGeo} at 617$\times$, \texttt{ChassisAgg} at 309$\times$), driven by the zero-inflation problem discussed in Section~\ref{sec:methods-wide-dpsgd}.
 
 Figure~\ref{fig:method-comparison} complements these tables with pass-count and average-score bars, and Figure~\ref{fig:method-by-type} breaks average score down by query type.
 
@@ -992,14 +1020,18 @@ Figure~\ref{fig:method-comparison} complements these tables with pass-count and 
 \texttt{DisplayAgg} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
 \texttt{NetAsymAgg} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorelo}0.143 & \cellcolor{scoremid}0.429 & \cellcolor{scorena}--- \\
 \texttt{VendorAgg} & Agg+Join & \cellcolor{scorena}--- & \cellcolor{scorehi}1.000 & \cellcolor{scorehi}1.000 & \cellcolor{scorena}--- \\
+\midrule
 \texttt{BatteryDemo} & Geo/Demo & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.333 \\
 \texttt{BatteryGeo} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scorehi}1.000 & \cellcolor{scorehi}0.500 & \cellcolor{scoremid}0.250 \\
 \texttt{PowerGeo} & Geo/Demo & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scoremid}0.333 & \cellcolor{scorelo}0.000 \\
 \texttt{XeonGeo} & Geo/Demo & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scoremid}0.250 & \cellcolor{scorehi}0.500 \\
+\midrule
 \texttt{BrowserHist} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scoremid}0.333 & \cellcolor{scorehi}0.667 & \cellcolor{scorelo}0.000 \\
 \texttt{RamHist} & Histogram & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}0.500 & \cellcolor{scorelo}0.000 & \cellcolor{scorehi}1.000 \\
+\midrule
 \texttt{PersonaPivot} & Pivot & \cellcolor{scorelo}0.065 & \cellcolor{scoremid}0.419 & \cellcolor{scorelo}0.194 & \cellcolor{scorelo}0.161 \\
 \texttt{SleepPivot} & Pivot & \cellcolor{scorena}--- & \cellcolor{scorehi}0.636 & \cellcolor{scoremid}0.273 & \cellcolor{scorehi}0.818 \\
+\midrule
 \texttt{BrowserRank} & Top-$k$ & \cellcolor{scorehi}1.000 & \cellcolor{scorehi}1.000 & \cellcolor{scorehi}1.000 & \cellcolor{scorelo}0.000 \\
 \texttt{DetectionRank} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorehi}0.500 & \cellcolor{scorehi}1.000 & \cellcolor{scorena}--- \\
 \texttt{FocalRank} & Top-$k$ & \cellcolor{scorena}--- & \cellcolor{scorelo}0.000 & \cellcolor{scorelo}0.000 & \cellcolor{scorena}--- \\
@@ -1332,7 +1364,7 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
 \end{axis}
 \end{tikzpicture}
 \end{minipage}
-\caption{Pass rate sensitivity to evaluation thresholds for the three training-based methods. Left: relative error threshold (TV = 0.15, $\rho$ = 0.5 fixed). Center: total variation threshold (RE = 0.25, $\rho$ = 0.5 fixed). Right: Spearman $\rho$ threshold (RE = 0.25, TV = 0.15 fixed). Dashed gray lines indicate the default thresholds. PE is omitted because the sensitivity sweep was not rerun for the current PE experiments.}
+\caption{Pass rate sensitivity to evaluation thresholds for the three training-based methods. Left: relative error threshold (TV = 0.15, $\rho$ = 0.5 fixed). Center: total variation threshold (RE = 0.25, $\rho$ = 0.5 fixed). Right: Spearman $\rho$ threshold (RE = 0.25, TV = 0.15 fixed). Dashed gray lines indicate the default thresholds.}
 \label{fig:sensitivity}
 \end{figure}
 
@@ -1342,7 +1374,7 @@ Total variation and Spearman $\rho$ thresholds have minimal effect on pass rates
 
 We presented an evaluation framework for differentially private synthetic data generation on Intel's DCA telemetry corpus, implementing four synthesis approaches, namely a wide-table DP-VAE trained with DP-SGD, per-table DP histogram synthesis, MST marginal-based synthesis, and Private Evolution via foundation model APIs.
 
-All four methods have completed evaluation against the 21-query benchmark. Under binary pass-rate scoring, per-table DP-SGD and MST each pass 6 of 21 queries (28.6\%), the wide-table DP-VAE passes 1 of 8 (12.5\%), and conditional PE passes 3 of 10 (30.0\%). The normalized error metric (Section~\ref{sec:normalized-error}), which calibrates each query's synthesis error against the natural variation from a 50/50 data split, provides further differentiation among the training-based methods: per-table DP-SGD achieves a median normalized error of 2.72$\times$, meaning its typical distortion is under 3 times the variation expected from halving the real dataset, followed by MST at 10.96$\times$ and wide-table DP-VAE at 12.88$\times$. Per-table DP-SGD achieves normalized errors below 5$\times$ on 10 of 20 queries, while MST excels specifically on ranking queries (achieving near-unity normalized errors on \texttt{WaitRank} and \texttt{WaitModeRank}) but suffers extreme errors on multi-table aggregate joins.
+All four methods have completed evaluation against the 21-query benchmark. Under binary pass-rate scoring, per-table DP-SGD and MST each pass 6 of 21 queries (28.6\%), the wide-table DP-VAE passes 1 of 8 (12.5\%), and conditional PE passes 3 of 10 (30.0\%). The normalized error metric (Section~\ref{sec:normalized-error}), which calibrates each query's synthesis error against the natural variation from a 50/50 data split, provides further differentiation across all four methods: per-table DP-SGD achieves a median normalized error of 2.93$\times$, meaning its typical distortion is under 3 times the variation expected from halving the real dataset, followed by conditional PE at 3.79$\times$, MST at 10.76$\times$, and wide-table DP-VAE at 16.42$\times$. Per-table DP-SGD achieves normalized errors below 5$\times$ on 10 of 20 queries, while conditional PE achieves the lowest normalized error on RAM utilization (1.5$\times$) and Xeon network consumption (3.5$\times$). MST excels specifically on ranking queries (achieving near-unity normalized errors on \texttt{WaitRank} and \texttt{WaitModeRank}) but suffers extreme errors on multi-table aggregate joins.
 
 Two structural findings emerge. First, wide-table sparsity, not the choice of synthesis algorithm, is the dominant failure mode. The wide table has 93--99.9\% zero values in metric columns, and the VAE collapses these to their mode. Second, per-table independence destroys cross-table correlations. The 5-way chassis join produces empty or random results under both per-table methods, while the wide-table approaches (DP-VAE and PE) at least preserve some cross-table structure. Conditional PE partially addresses the sparsity problem through per-stratum prompting, achieving the lowest histogram error (0.051) and a competitive aggregate relative error (1.60) among all methods.
 
@@ -1406,8 +1438,6 @@ Our central research question: \textit{can training-free methods match the stati
 
 Our investigation involves the Intel Driver and Client Applications (DCA) telemetry dataset, a large-scale collection of system-level signals from Windows client machines. Telemetry data is invaluable for product monitoring, performance optimization, and failure detection, yet contains sensitive behavioral patterns that could re-identify individual users. We describe the dataset structure and the analytical workload that synthetic data must preserve.
 
-\paragraph{Schema overview}
-
 The DCA telemetry corpus comprises $\approx 30$ interrelated tables, organized around a globally unique identifier (\texttt{guid}) assigned to each client system. Tables are indexed by \texttt{guid} and, where applicable, a date column (\texttt{dt}), The schema spans several categories:
 
 \begin{itemize}
@@ -1434,8 +1464,6 @@ The DCA telemetry corpus comprises $\approx 30$ interrelated tables, organized a
 \end{itemize}
 
 \newpage
-
-\paragraph{Analytical query workload}
 
 The practical utility of synthetic telemetry data is determined by its ability to support \textit{real analytical workloads}. We operationalize this through a benchmark suite of 22 SQL queries representative of business intelligence tasks performed on the DCA corpus. These queries, developed by Intel analysts, span several classes, where the following are examples of such:
 
@@ -1487,8 +1515,6 @@ GROUP BY sysinfo_ram ORDER BY sysinfo_ram;
     \item \textit{Complex multi-way pivots} involve high-dimensional joint distributions, e.g., web category usage percentages by persona across 28 browsing categories.
 \end{enumerate}
 
-\paragraph{Formal benchmark definition}
-
 Let $\mathcal{Q} = \{q_1, \ldots, q_{22}\}$ denote our SQL query benchmark. Each query $q_j$ maps a database instance to a result set $q_j(D) \in \mathcal{R}_j$, where $\mathcal{R}_j$ may be a scalar, vector, or table. The \textit{query discrepancy} for synthetic data $\tilde{D}$ is:
 \begin{equation}
     \Delta_j(D, \tilde{D}) = d_j(q_j(D), q_j(\tilde{D})),
@@ -1503,16 +1529,12 @@ where $\tau_j$ is a query-specific tolerance. A synthetic dataset ``passes'' the
 
 \subsubsection{Problem statement}
 
-\paragraph{Formal setup}
-
 Let $D = \{x_1, \ldots, x_n\}$ be a private dataset. Two datasets $D, D'$ are \textit{neighbors} if they differ by one record. A mechanism $M$ satisfies $(\varepsilon, \delta)$-differential privacy if for all neighbors $D \sim D'$ and all outputs $S$:
 \begin{equation}
     \Pr[M(D) \in S] \leq e^{\varepsilon} \Pr[M(D') \in S] + \delta.
 \end{equation}
 
 Our objective is to construct a synthetic data mechanism $M$ producing $\tilde{D} = M(D)$ that satisfies $(\varepsilon, \delta)$-DP while preserving utility (i.e., the synthetic distribution should approximate the real distribution sufficiently for downstream analytics).
-
-\paragraph{Limitations of existing approaches}
 
 Both paradigms exhibit known limitations:
 
@@ -1532,8 +1554,6 @@ Both paradigms exhibit known limitations:
         \item Limited theoretical understanding compared to optimization-based methods
     \end{itemize}
 \end{itemize}
-
-\paragraph{Research questions}
 
 Given these limitations and our 22-query SQL benchmark, we investigate:
 

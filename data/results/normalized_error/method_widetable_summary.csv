@@ -1,0 +1,9 @@
+query,type,score,passed,n_metrics,n_passed,error
+Xeon_network_consumption,aggregate,0.25,False,4,1,
+avg_platform_power_c0_freq_temp_by_chassis,aggregate,0.16666666666666666,False,6,1,
+battery_power_on_geographic_summary,aggregate,0.25,False,4,1,
+most_popular_browser_in_each_country_by_system_count,ranking_categorical,1.0,True,1,1,
+persona_web_cat_usage_analysis,aggregate,0.06451612903225806,False,31,2,
+pkg_power_by_country,aggregate,0.3333333333333333,False,3,1,
+popular_browsers_by_count_usage_percentage,distribution,0.0,False,3,0,
+ram_utilization_histogram,histogram,0.0,False,2,0,
