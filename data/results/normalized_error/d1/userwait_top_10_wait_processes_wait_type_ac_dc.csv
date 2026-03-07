@@ -1,0 +1,62 @@
+event_name,acdc,proc_name,total_duration_sec_per_instance,rank
+WAIT,,chrome.exe,5.81,1
+APPSTARTING,AC,Stark Meter Reader.exe,12277.24,1
+APPSTARTING,AC,AVDm.exe,9909.39,2
+APPSTARTING,AC,HDSentinel.exe,7645.95,3
+APPSTARTING,AC,icq.exe,6930.32,4
+APPSTARTING,AC,connex.exe,4317.6,5
+APPSTARTING,AC,pop5B87.tmp,3903.59,6
+APPSTARTING,AC,Roam Research.exe,3760.87,7
+APPSTARTING,AC,OutlookConverter.exe,3380.06,8
+APPSTARTING,AC,ddm.exe,2902.28,9
+APPSTARTING,AC,FreeStyle2.exe,1737.02,10
+WAIT,AC,Dishonored2_x64ShippingRetail.exe,4719.1,1
+WAIT,AC,keyemain.exe,3481.0,2
+WAIT,AC,ScreenRecorder.exe,3113.46,3
+WAIT,AC,DriverUpdate.exe,2752.24,4
+WAIT,AC,E_YARNJ5E.EXE,2499.82,5
+WAIT,AC,fnaf-world-0-1-24.exe,1842.2,6
+WAIT,AC,dsTermServ.exe,1765.78,7
+WAIT,AC,UnderMine.exe,1683.77,8
+WAIT,AC,Eastward.exe,1523.6,9
+WAIT,AC,Monkey_Business.exe,1500.58,10
+APPSTARTING,DC,WarningDialog.exe,76306.61,1
+APPSTARTING,DC,Application.exe,7733.94,2
+APPSTARTING,DC,start_wow.exe,6406.47,3
+APPSTARTING,DC,ServiceSetupManager.exe,4376.27,4
+APPSTARTING,DC,snk.exe,3733.54,5
+APPSTARTING,DC,GCMSANAL.EXE,2009.2,6
+APPSTARTING,DC,CodeSetup-stable-e18005f0f1b33c29e81d732535d8c0e47cafb0b5.tmp,1983.72,7
+APPSTARTING,DC,proLibro for Xerox.exe,1858.09,8
+APPSTARTING,DC,Stark Meter Reader.exe,1624.15,9
+APPSTARTING,DC,BrCcUxSys.exe,1122.22,10
+WAIT,DC,ImageMate.exe,2186.58,1
+WAIT,DC,TestEngine.exe,2139.59,2
+WAIT,DC,XOutput.exe,1847.92,3
+WAIT,DC,ddv.exe,1733.5,4
+WAIT,DC,pcsx2x64.exe,1514.47,5
+WAIT,DC,apc.exe,1307.9,6
+WAIT,DC,LockApp.exe,1245.57,7
+WAIT,DC,ApowerPDFCoreServices.exe,1162.36,8
+WAIT,DC,PathOfExileSteam.exe,1111.95,9
+WAIT,DC,Dashlane.exe,1087.5,10
+APPSTARTING,UN,VinylMaster.exe,68260.3,1
+APPSTARTING,UN,SSEXP.EXE,19616.57,2
+APPSTARTING,UN,Miracle Thunder_Cracked _loder_2.93.exe,11144.86,3
+APPSTARTING,UN,Glückwunsch_Druckerei_15.exe,4370.41,4
+APPSTARTING,UN,DDM.exe,2897.3,5
+APPSTARTING,UN,start_wow.exe,2521.76,6
+APPSTARTING,UN,InsightEMR.exe,1915.92,7
+APPSTARTING,UN,tracks.exe,1757.8,8
+APPSTARTING,UN,AVSVideoConverter.exe,1718.41,9
+APPSTARTING,UN,dwscanner.exe,1622.26,10
+WAIT,UN,GNAUTH.EXE,19381.66,1
+WAIT,UN,IntuiFacePlayerApp.exe,10226.87,2
+WAIT,UN,Hello Indigo.exe,8839.63,3
+WAIT,UN,DeSmuME_0.9.13_x64.exe,8616.9,4
+WAIT,UN,DownKyi.exe,5933.7,5
+WAIT,UN,Dishonored2_x64ShippingRetail.exe,4646.7,6
+WAIT,UN,MiCollab.exe,3899.7,7
+WAIT,UN,iFiskFangstrapportering.exe,3821.6,8
+WAIT,UN,DriverUpdate.exe,2614.72,9
+WAIT,UN,Yakuza6.exe,2588.59,10

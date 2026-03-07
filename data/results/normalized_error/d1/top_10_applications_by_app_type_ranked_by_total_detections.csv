@@ -1,0 +1,151 @@
+app_type,exe_name,total_number_of_detections,rank
+Communication,outlook.exe,43199517.0,1
+Communication,teams.exe,8947113.0,2
+Communication,zoom.exe,8327322.0,3
+Communication,thunderbird.exe,1907128.0,4
+Communication,slack.exe,1573079.0,5
+Communication,lync.exe,1344272.0,6
+Communication,atmgr.exe,495858.0,7
+Communication,ciscojabber.exe,338691.0,8
+Communication,dingtalk.exe,238853.0,9
+Communication,notes2.exe,158776.0,10
+Developer tools,xplatform.exe,2550850.0,1
+Developer tools,code.exe,2185105.0,2
+Developer tools,devenv.exe,2060373.0,3
+Developer tools,notepad++.exe,1887604.0,4
+Developer tools,putty.exe,717416.0,5
+Developer tools,eclipse.exe,556944.0,6
+Developer tools,idea64.exe,540756.0,7
+Developer tools,ssms.exe,530470.0,8
+Developer tools,virtualboxvm.exe,411331.0,9
+Developer tools,pycharm64.exe,394863.0,10
+Entertainment,vlc.exe,2910233.0,1
+Entertainment,spotify.exe,2219561.0,2
+Entertainment,wmplayer.exe,1014065.0,3
+Entertainment,mpc-hc64.exe,673048.0,4
+Entertainment,hd-player.exe,629473.0,5
+Entertainment,itunes.exe,502693.0,6
+Entertainment,gom.exe,462807.0,7
+Entertainment,potplayermini64.exe,457176.0,8
+Entertainment,cubase9.5.exe,263884.0,9
+Entertainment,linemediaplayer.exe,181042.0,10
+Gaming,leagueclientux.exe,3504945.0,1
+Gaming,robloxplayerbeta.exe,2231774.0,2
+Gaming,league of legends.exe,2145378.0,3
+Gaming,pokerstars.exe,2002095.0,4
+Gaming,wow.exe,1084461.0,5
+Gaming,nox.exe,1059200.0,6
+Gaming,valorant-win64-shipping.exe,957608.0,7
+Gaming,runelite.exe,937132.0,8
+Gaming,fortniteclient-win64-shipping.exe,742403.0,9
+Gaming,csgo.exe,720483.0,10
+Gaming auxiliary,steam.exe,7157864.0,1
+Gaming auxiliary,bluestacks.exe,1068477.0,2
+Gaming auxiliary,steamwebhelper.exe,1049616.0,3
+Gaming auxiliary,battle.net.exe,803598.0,4
+Gaming auxiliary,epicgameslauncher.exe,732218.0,5
+Gaming auxiliary,origin.exe,468312.0,6
+Gaming auxiliary,memu.exe,349003.0,7
+Gaming auxiliary,garena.exe,348451.0,8
+Gaming auxiliary,blitz.exe,229574.0,9
+Gaming auxiliary,mysinglemessenger.exe,164669.0,10
+Installers + Updaters,msiexec.exe,154862.0,1
+Installers + Updaters,setup.exe,41437.0,2
+Installers + Updaters,softwareupdatenotificationservice.exe,38866.0,3
+Installers + Updaters,intel-driver-and-support-assistant-installer.exe,24726.0,4
+Installers + Updaters,updater.exe,18613.0,5
+Installers + Updaters,installer.exe,16699.0,6
+Installers + Updaters,setup.tmp,14294.0,7
+Installers + Updaters,update.exe,13587.0,8
+Installers + Updaters,_iu14d2n.tmp,9359.0,9
+Installers + Updaters,googleupdate.exe,6654.0,10
+Lifestyle,eaglesoft.exe,656364.0,1
+Lifestyle,magic.exe,290680.0,2
+Lifestyle,terminal.exe,234004.0,3
+Lifestyle,tdxw.exe,191099.0,4
+Lifestyle,qw.exe,168019.0,5
+Lifestyle,tws.exe,164861.0,6
+Lifestyle,turbomed.exe,153014.0,7
+Lifestyle,wechatstore.exe,151820.0,8
+Lifestyle,profitchart.exe,121016.0,9
+Lifestyle,opendental.exe,109494.0,10
+Multimedia,photoshop.exe,8497016.0,1
+Multimedia,illustrator.exe,3354102.0,2
+Multimedia,adobe premiere pro.exe,2204024.0,3
+Multimedia,coreldrw.exe,1510226.0,4
+Multimedia,indesign.exe,1253483.0,5
+Multimedia,afterfx.exe,776560.0,6
+Multimedia,obs64.exe,649846.0,7
+Multimedia,ue4editor.exe,639346.0,8
+Multimedia,clipstudiopaint.exe,617379.0,9
+Multimedia,lightroom.exe,522924.0,10
+Other,shellexperiencehost.exe,11805567.0,1
+Other,applicationframehost.exe,11553032.0,2
+Other,startmenuexperiencehost.exe,2969109.0,3
+Other,rmpos.exe,2118103.0,4
+Other,rundll32.exe,877666.0,5
+Other,kmn1.exe,469911.0,6
+Other,clipper8.exe,457167.0,7
+Other,zalktis.exe,387477.0,8
+Other,screenclippinghost.exe,382348.0,9
+Other,eyecare.exe,357482.0,10
+Productivity,excel.exe,52162872.0,1
+Productivity,winword.exe,28863607.0,2
+Productivity,powerpnt.exe,8656872.0,3
+Productivity,acad.exe,7196110.0,4
+Productivity,acrord32.exe,6971320.0,5
+Productivity,mstsc.exe,6586837.0,6
+Productivity,acrobat.exe,6238822.0,7
+Productivity,notepad.exe,4106762.0,8
+Productivity,saplogon.exe,2451316.0,9
+Productivity,wfica32.exe,2209591.0,10
+Security,mcuicnt.exe,841924.0,1
+Security,mbamtray.exe,537974.0,2
+Security,vpnui.exe,257552.0,3
+Security,avastui.exe,201726.0,4
+Security,keepass.exe,199986.0,5
+Security,avpui.exe,128852.0,6
+Security,pulse.exe,127903.0,7
+Security,avgui.exe,101128.0,8
+Security,forticlient.exe,92514.0,9
+Security,pangpa.exe,84082.0,10
+Social,discord.exe,17569771.0,1
+Social,kakaotalk.exe,4403216.0,2
+Social,wechat.exe,3886077.0,3
+Social,telegram.exe,3420646.0,4
+Social,whatsapp.exe,3416826.0,5
+Social,line.exe,2579603.0,6
+Social,qq.exe,1540328.0,7
+Social,skype.exe,1446248.0,8
+Social,viber.exe,465081.0,9
+Social,zalo.exe,442103.0,10
+System,explorer.exe,23442994.0,1
+System,searchapp.exe,5583450.0,2
+System,searchui.exe,4376274.0,3
+System,javaw.exe,4118898.0,4
+System,searchhost.exe,732982.0,5
+System,java.exe,632367.0,6
+System,jp2launcher.exe,564853.0,7
+System,splwow64.exe,271171.0,8
+System,windowsterminal.exe,264051.0,9
+System,mshta.exe,193988.0,10
+Utilities + tools,snippingtool.exe,3509567.0,1
+Utilities + tools,winrar.exe,1609958.0,2
+Utilities + tools,mspaint.exe,1455980.0,3
+Utilities + tools,utorrent.exe,1049729.0,4
+Utilities + tools,cmd.exe,896181.0,5
+Utilities + tools,idman.exe,756508.0,6
+Utilities + tools,totalcmd64.exe,440950.0,7
+Utilities + tools,qbittorrent.exe,392453.0,8
+Utilities + tools,openwith.exe,345870.0,9
+Utilities + tools,onedrive.exe,305820.0,10
+Web Browsing,chrome.exe,115968198.0,1
+Web Browsing,msedge.exe,19759390.0,2
+Web Browsing,firefox.exe,19205405.0,3
+Web Browsing,opera.exe,9431270.0,4
+Web Browsing,iexplore.exe,6558357.0,5
+Web Browsing,brave.exe,3459977.0,6
+Web Browsing,browser.exe,1463515.0,7
+Web Browsing,whale.exe,664728.0,8
+Web Browsing,vivaldi.exe,524645.0,9
+Web Browsing,360se.exe,228338.0,10

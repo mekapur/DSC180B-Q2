@@ -1,0 +1,26 @@
+country,browser
+Brazil,chrome
+Canada,edge
+China,chrome
+France,chrome
+France,edge
+Germany,chrome
+India,chrome
+Japan,chrome
+Mexico,chrome
+Mexico,firefox
+Mexico,edge
+Netherlands,firefox
+Netherlands,chrome
+Netherlands,edge
+Spain,chrome
+Spain,edge
+Sweden,edge
+Sweden,chrome
+"Taiwan, Province of China",edge
+"Taiwan, Province of China",chrome
+United Kingdom of Great Britain and Northern Ireland,edge
+United Kingdom of Great Britain and Northern Ireland,chrome
+United States of America,firefox
+United States of America,edge
+United States of America,chrome

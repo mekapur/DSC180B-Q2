@@ -1,0 +1,151 @@
+app_type,exe_name,average_focal_sec_per_day,rank
+Communication,zoomrooms.exe,38626.0,1
+Communication,adiirc.exe,37539.0,2
+Communication,flex-communicator.exe,32278.0,3
+Communication,front.exe,23110.0,4
+Communication,bittitandmaoutlookconfiguratorapplication.exe,22963.0,5
+Communication,tcfemailminer22.exe,18892.0,6
+Communication,zrairhost.exe,13481.0,7
+Communication,emailparserui.exe,13375.0,8
+Communication,polymail.exe,11572.0,9
+Communication,register360.exe,11264.0,10
+Developer tools,bsp.exe,51581.0,1
+Developer tools,electron.exe,36862.0,2
+Developer tools,ifrun60.exe,20418.0,3
+Developer tools,prowc.exe,18099.0,4
+Developer tools,omnis.exe,15775.0,5
+Developer tools,hwx.exe,14576.0,6
+Developer tools,flowframes.exe,14484.0,7
+Developer tools,build.exe,12986.0,8
+Developer tools,miplatform320u.exe,12445.0,9
+Developer tools,xplatform.exe,9625.0,10
+Entertainment,player.exe,57376.0,1
+Entertainment,runic.exe,50593.0,2
+Entertainment,plex htpc.exe,44809.0,3
+Entertainment,plexmediaplayer.exe,42789.0,4
+Entertainment,winyl.exe,31778.0,5
+Entertainment,station.exe,29365.0,6
+Entertainment,kwailive.exe,28420.0,7
+Entertainment,flixgrab.exe,26644.0,8
+Entertainment,rfidtripodstr.exe,20863.0,9
+Entertainment,roon.exe,20040.0,10
+Gaming,apgame.exe,62356.0,1
+Gaming,btb game bay.exe,35088.0,2
+Gaming,evotvapp.exe,34816.0,3
+Gaming,dqb2.exe,33211.0,4
+Gaming,endlesswar.exe,32574.0,5
+Gaming,atlasgame.exe,28100.0,6
+Gaming,infraspace.exe,26351.0,7
+Gaming,sevenheroes.exe,24180.0,8
+Gaming,rf4s.exe,23434.0,9
+Gaming,fly corp.exe,23007.0,10
+Gaming auxiliary,7daystodieserver.exe,33010.0,1
+Gaming auxiliary,mir4g.exe,31458.0,2
+Gaming auxiliary,otclient_dx.exe,22144.0,3
+Gaming auxiliary,lotroclient64.exe,20351.0,4
+Gaming auxiliary,mobaxterm_personal_20.6.exe,19712.0,5
+Gaming auxiliary,fahcontrol.exe,19293.0,6
+Gaming auxiliary,bedrock_server.exe,17072.0,7
+Gaming auxiliary,es.exe,15781.0,8
+Gaming auxiliary,rustclient.exe,15116.0,9
+Gaming auxiliary,naverbooks.exe,14751.0,10
+Installers + Updaters,supernova.client.appinstaller.exe,55442.0,1
+Installers + Updaters,tra6fd3.tmp,49457.0,2
+Installers + Updaters,opera_77.0.4054.172_autoupdate_x64.exe,41043.0,3
+Installers + Updaters,install-sixbit-4.00.408.exe,39072.0,4
+Installers + Updaters,dispatchclient.exe,35914.0,5
+Installers + Updaters,launchbox-11.9-setup.tmp,30225.0,6
+Installers + Updaters,setup_cn_2052_11.1.0.9208_personaldownload_trial.exe,21782.0,7
+Installers + Updaters,bmbfinstaller.exe,21369.0,8
+Installers + Updaters,fwupdatecconnect.exe,20060.0,9
+Installers + Updaters,ntoolsinstaller.exe,18864.0,10
+Lifestyle,chia.exe,27673.0,1
+Lifestyle,opendental.exe,25403.0,2
+Lifestyle,m42t.exe,24542.0,3
+Lifestyle,turbomed.exe,21830.0,4
+Lifestyle,nnt.exe,21211.0,5
+Lifestyle,eaglesoft.exe,17381.0,6
+Lifestyle,dentaldesktop.exe,13404.0,7
+Lifestyle,profitchart.exe,11216.0,8
+Lifestyle,terminal.exe,11158.0,9
+Lifestyle,dexis.exe,10837.0,10
+Multimedia,emedia starter keyboard.exe,48917.0,1
+Multimedia,media center 26.exe,32804.0,2
+Multimedia,sambc.exe,28472.0,3
+Multimedia,application.network.studiomonitor.x64.exe,25380.0,4
+Multimedia,transcribe.exe,23468.0,5
+Multimedia,my quick converter.exe,21290.0,6
+Multimedia,media center 28.exe,21029.0,7
+Multimedia,3dxchat.exe,15080.0,8
+Multimedia,tmp3faa.tmp.exe,14963.0,9
+Multimedia,intellispacepacsmediaviewer.exe,14315.0,10
+Other,singleserver.exe,85630.0,1
+Other,timesync.exe,83053.0,2
+Other,ipu.exe,77649.0,3
+Other,min_live.exe,76924.0,4
+Other,sstui.exe,76506.0,5
+Other,pdsopla.exe,75039.0,6
+Other,shadow,74074.0,7
+Other,ventas_playa.exe,73341.0,8
+Other,kasa.exe,71061.0,9
+Other,starts4hgastronomia.exe,71026.0,10
+Productivity,xstore.exe,60122.0,1
+Productivity,voffice.exe,53025.0,2
+Productivity,supporteruex.exe,44292.0,3
+Productivity,tritech.visicad.app.wpf.exe,42274.0,4
+Productivity,ezpaycheck.exe,31743.0,5
+Productivity,digitalsignage.exe,31062.0,6
+Productivity,pix4dmapper.exe,27873.0,7
+Productivity,pdv.exe,24712.0,8
+Productivity,rvlsession.exe,24697.0,9
+Productivity,desktop calendar reminder.exe,24348.0,10
+Security,gv-vms.exe,75442.0,1
+Security,acsmntr.exe,54892.0,2
+Security,securitydesk.exe,51284.0,3
+Security,blueiris.exe,41825.0,4
+Security,dw spectrum.exe,38059.0,5
+Security,security monitor pro.exe,34947.0,6
+Security,simnext.exe,33713.0,7
+Security,acsclient.exe,29722.0,8
+Security,unmineable miner (mfi).exe,29688.0,9
+Security,easyview.exe,24249.0,10
+Social,mirc.exe,12837.0,1
+Social,sotgame.exe,8751.0,2
+Social,哔哩哔哩.exe,8167.0,3
+Social,discordptb.exe,5250.0,4
+Social,douyulive.exe,5223.0,5
+Social,houseparty.exe,4481.0,6
+Social,line.exe,3672.0,7
+Social,wxwork.exe,3651.0,8
+Social,discord.exe,3188.0,9
+Social,wechat.exe,2953.0,10
+System,hmirtm.exe,42322.0,1
+System,2touchpos.exe,29056.0,2
+System,materialise.licensing.registrationwizard.exe,27896.0,3
+System,pcloud_windows_3.11.11_x86.exe,24726.0,4
+System,spacedeskwindowsviewer.exe,23825.0,5
+System,psqueue.exe,23670.0,6
+System,pcloud_windows_3.11.4_x64.exe,23377.0,7
+System,notifier,20955.0,8
+System,ivms-4200.framework.c.exe,17194.0,9
+System,moe.exe,14339.0,10
+Utilities + tools,bp budapest.exe,51934.0,1
+Utilities + tools,mxmanagementcenter.exe,44009.0,2
+Utilities + tools,pesar.exe,43781.0,3
+Utilities + tools,e_tinvkke.exe,37149.0,4
+Utilities + tools,ledvision.exe,32712.0,5
+Utilities + tools,adaptivevisionstudio.exe,22624.0,6
+Utilities + tools,openbuildscontrol.exe,22455.0,7
+Utilities + tools,onethingliteapp.exe,21748.0,8
+Utilities + tools,max.exe,20922.0,9
+Utilities + tools,epson projector professional tool.exe,19754.0,10
+Web Browsing,librewolf.exe,38069.0,1
+Web Browsing,sunbrowser.exe,29616.0,2
+Web Browsing,firefoxcobb.exe,23951.0,3
+Web Browsing,dissenter.exe,23898.0,4
+Web Browsing,sleipnir.exe,19787.0,5
+Web Browsing,ibrowser.dll,19501.0,6
+Web Browsing,pcsecurebrowser-apr-21-2020 (1).exe,19350.0,7
+Web Browsing,chrome..exe,19042.0,8
+Web Browsing,360pic.exe,14573.0,9
+Web Browsing,superbrowserupdater.exe,13147.0,10
