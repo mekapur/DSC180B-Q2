@@ -128,7 +128,7 @@ main {
   line-height: 1.25;
   margin: 0 auto 1rem;
   color: var(--text);
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
   letter-spacing: 0.04em;
 }
 
