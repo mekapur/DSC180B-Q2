@@ -34,7 +34,11 @@
   Phuc Tran \\
   {\tt pct001@ucsd.edu} \\\And
   Yu-Xiang Wang \\
-  {\tt yuxiangw@ucsd.edu} \\}
+  {\tt yuxiangw@ucsd.edu} \\
+  {\small\textit{Advisor}} \\\And
+  Bijan Arbab \\
+  {\tt barbab@ucsd.edu} \\
+  {\small\textit{Advisor}} \\}
 
 \begin{document}
 \maketitle
@@ -1342,6 +1346,10 @@ Under binary pass-rate scoring, per-table DP-SGD and MST each pass 6 of 21 queri
 Two structural findings emerge. First, wide-table sparsity (93--99.9\% zeros), not the choice of algorithm, is the dominant failure mode. Second, per-table independence destroys cross-table correlations, while the wide-table approaches at least preserve some relational structure. Conditional PE partially addresses sparsity through per-stratum prompting.
 
 Our PE results are consistent with \citet{swanberg2025apiaccessllmsuseful}. Vanilla PE underperforms training-based methods, but conditional PE closes much of the gap on queries aligned with the stratification. The broader lesson is that data representation and workload alignment matter more than model class alone. The most promising next step is relational DP synthesis that models linked tables directly, handling sparsity and cross-table dependence in a single mechanism.
+
+\subsection{Acknowledgements}
+
+We thank our advisors Yu-Xiang Wang and Bijan Arbab for their guidance and support throughout this project. We also thank the Scalable Statistical Machine Learning (S2ML) Lab at UC San Diego for providing OpenAI API access used in the Private Evolution experiments, and Bijan Arbab for facilitating access to the Intel DCA telemetry corpus through the HDSI Industry Data Repository and for compiling the analytical SQL benchmark queries used in our evaluation.
 
 \newpage
 
